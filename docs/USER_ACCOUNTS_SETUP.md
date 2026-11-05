@@ -19,7 +19,7 @@ The database uses RLS. The application accesses private customer and staff data 
 
 - `SUPABASE_URL`: the Brandon RV Supabase project URL.
 - `SUPABASE_SERVICE_ROLE_KEY`: the project service-role key. Server-side only.
-- `BRANDON_RV_SETUP_SECRET`: a long random one-time secret used to create the first owner.
+- `BRANDON_RV_SETUP_SECRET`: optional legacy bootstrap protection. The current initial-owner flow uses a single-use, hashed invitation token stored in the database.
 - `NEXT_PUBLIC_APP_URL`: the deployed public application origin used to build account links.
 - `RESEND_API_KEY` and `EMAIL_FROM`: optional transactional email delivery settings.
 
@@ -27,12 +27,9 @@ The preview branch needs its own Preview-target versions of the Supabase URL and
 
 ## Create the first owner
 
-1. Open `/initial-owner-setup`.
-2. Enter the one-time setup code, owner name, email and a password of at least 12 characters.
-3. The endpoint creates the first Owner user, staff profile and business membership. It refuses to create another owner.
-4. Remove `BRANDON_RV_SETUP_SECRET` from Vercel after setup and redeploy.
+A deployment operator creates one `user_invitations` row with `account_type='owner'`, `role='owner'`, a SHA-256 token hash and a short expiry. Share the resulting private `/initial-owner-setup?token=...` link with the intended owner. The page collects the owner's name, email and password; the API consumes the invitation once, creates the owner user, staff profile and business membership, and starts the owner session. It refuses to create a second owner.
 
-Do not publish the setup code or leave it configured after the owner has been created.
+The invitation token is stored as a hash, expires after seven days and must not be published or reused. If the link is lost or expires, issue a new invitation through a trusted database operation.
 
 ## Customer account flows
 
