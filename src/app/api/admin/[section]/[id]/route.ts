@@ -1,4 +1,5 @@
 import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+import {sendEmail} from "@/lib/email";
 export const runtime="nodejs";
 const config:any={
  enquiries:{table:"enquiries",permission:"enquiries.manage",status:["new","reviewing","quoted","accepted","declined","converted","closed"],fields:["status","internal_notes"]},
@@ -19,7 +20,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   for(const field of c.fields){if(body[field]===undefined)continue;const value=body[field];
    if(field==="status"){if(!c.status?.includes(String(value)))return jsonError("Invalid status.");update.status=String(value);}
    else if(field==="is_active"||field==="is_published"){if(typeof value!=="boolean")return jsonError("Invalid setting.");update[field]=value;}
-   else if(["starts_at","ends_at","scheduled_start","scheduled_end"].includes(field)){if(value!==null&&(!Number.isFinite(Date.parse(String(value)))))return jsonError("Enter a valid date and time.");update[field]=value?new Date(String(value)).toISOString():null;}
+   else if(["starts_at","ends_at","scheduled_start","scheduled_end"].includes(field)){if(value!==null&&!Number.isFinite(Date.parse(String(value))))return jsonError("Enter a valid date and time.");update[field]=value?new Date(String(value)).toISOString():null;}
    else if(field==="estimated_hours"){const n=Number(value);if(!Number.isFinite(n)||n<0||n>1000)return jsonError("Enter valid estimated hours.");update[field]=n;}
    else if(field==="priority"){if(!["low","normal","high","urgent"].includes(String(value)))return jsonError("Invalid priority.");update[field]=String(value);}
    else if(typeof value==="string")update[field]=value.trim().slice(0,5000)||null;
@@ -30,6 +31,12 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   const db=database();const {data:record,error}=await db.from(c.table).update(update).eq("id",id).eq("business_id",membership.business_id).select("id").maybeSingle();
   if(error||!record)return jsonError("Could not update record. Check the record and your permissions.",500);
   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
-  return Response.json({success:true});
+  let emailSent=false;
+  if(section==="quotes"&&update.status==="sent"){
+   const {data:quote}=await db.from("quotes").select("quote_number,total,customers(full_name,email)").eq("id",id).maybeSingle();
+   const customer=(quote?.customers as any)??null;
+   if(customer?.email){const safeName=String(customer.full_name??"Customer").replace(/[&<>"]/g,"");const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;emailSent=await sendEmail({to:customer.email,subject:"Your Brandon RV quote "+quote.quote_number,html:"<p>Hi "+safeName+",</p><p>Your Brandon RV quote "+quote.quote_number+" is ready for review.</p><p>Quote total: <strong>$"+Number(quote.total).toFixed(2)+" AUD</strong></p><p>Sign in to your customer portal to review and respond: <a href=\""+base+"/portal/quotes\">View your quote</a></p><p>Work is not booked until Brandon RV confirms scheduling.</p>"});}
+  }
+  return Response.json({success:true,emailSent});
  }catch{return jsonError("Could not update record.",500);}
 }
