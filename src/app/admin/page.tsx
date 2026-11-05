@@ -36,12 +36,12 @@ export default async function AdminDashboard() {
   ].filter(item=>allowed.has(item.permission));
 
   const quickLinks=[
-    {label:"Review enquiries",detail:"Respond to new customer requests",href:"/admin/enquiries",permission:"enquiries.view",icon:"↗"},
-    {label:"Manage appointments",detail:"Review requests and schedule visits",href:"/admin/appointments",permission:"appointments.view",icon:"▦"},
-    {label:"Manage work orders",detail:"Track approved work and progress",href:"/admin/jobs",permission:"jobs.view",icon:"▤"},
-    {label:"Prepare a quote",detail:"Create and send an itemised quote",href:"/admin/quotes",permission:"quotes.view",icon:"▧"},
-    {label:"Invoices & payments",detail:"Issue invoices and record payments",href:"/admin/invoices",permission:"invoices.view",icon:"＄"},
-    {label:"Supplier orders",detail:"Track parts, delivery and supplier costs",href:"/admin/supplier-orders",permission:"suppliers.view",icon:"⇢"}
+    {label:"Review enquiries",detail:"Respond to new customer requests",href:"/admin/enquiries",permission:"enquiries.view",icon:""},
+    {label:"Manage appointments",detail:"Review requests and schedule visits",href:"/admin/appointments",permission:"appointments.view",icon:""},
+    {label:"Manage work orders",detail:"Track approved work and progress",href:"/admin/jobs",permission:"jobs.view",icon:""},
+    {label:"Prepare a quote",detail:"Create and send an itemised quote",href:"/admin/quotes",permission:"quotes.view",icon:""},
+    {label:"Invoices & payments",detail:"Issue invoices and record payments",href:"/admin/invoices",permission:"invoices.view",icon:""},
+    {label:"Supplier orders",detail:"Track parts, delivery and supplier costs",href:"/admin/supplier-orders",permission:"suppliers.view",icon:""}
   ].filter(item=>allowed.has(item.permission));
 
   const setupLinks=[
@@ -81,7 +81,7 @@ export default async function AdminDashboard() {
       <div className="brv-admin-section-heading"><div><span>DAILY OPERATIONS</span><h2>Get work moving</h2></div></div>
       <div className="portal-shortcuts brv-admin-quicklinks">
         {quickLinks.map(item=><Link href={item.href} key={item.href}>
-          <span>{item.icon}</span><strong>{item.label}</strong><small>{item.detail}</small><b>Open →</b>
+          <strong>{item.label}</strong><small>{item.detail}</small><span aria-hidden="true">→</span>
         </Link>)}
       </div>
 
