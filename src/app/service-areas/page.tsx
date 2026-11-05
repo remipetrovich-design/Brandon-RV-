@@ -4,7 +4,10 @@ import {getPublishedSitePage,getPublishedServiceAreas,contentText} from "@/lib/p
 
 export const metadata: Metadata = { title: "Service areas", description: "Brandon RV mobile caravan and motorhome interior service around Tamworth, NSW." };
 
-export default function ServiceAreasPage() {
+export default async function ServiceAreasPage() {
+  const [page,areas]=await Promise.all([getPublishedSitePage("service-areas"),getPublishedServiceAreas()]);
+  const base=contentText(page?.content,"base","Tamworth NSW");
+  const radius=typeof page?.content.proposed_radius_km==="number"?page.content.proposed_radius_km:null;
   return <main>
     <section className="page-hero"><div className="shell"><p className="eyebrow"><span className="eyebrow-line" /> WHERE WE WORK</p><h1>Mobile service around <em>Tamworth.</em></h1><p>{page?.content.intro&&typeof page.content.intro==="string"?page.content.intro:"Brandon RV is based in the Tamworth region and considers suitable mobile jobs across the local area."}</p></div></section>
     <section className="content-section"><div className="shell service-area-grid">
