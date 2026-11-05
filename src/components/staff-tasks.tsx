@@ -1,0 +1,10 @@
+"use client";
+import {useEffect,useState} from "react";
+type Task={id:string;title:string;description:string|null;status:string;due_at:string|null;job_id:string};
+export default function StaffTasks(){
+ const [tasks,setTasks]=useState<Task[]>([]);const [notice,setNotice]=useState("");
+ async function load(){try{const r=await fetch("/api/staff/tasks");const d=await r.json();if(r.ok)setTasks(d.tasks??[]);else setNotice(d.error??"Could not load tasks.");}catch{setNotice("Could not load tasks.");}}
+ useEffect(()=>{void load();},[]);
+ async function update(id:string,status:string){const r=await fetch("/api/staff/tasks/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update task.");return;}setNotice("Task updated.");await load();}
+ return <section className="portal-panel"><span className="panel-kicker">JOB TASKS</span><h2>Assigned tasks</h2>{tasks.length?<div className="activity-list">{tasks.map(t=><article className="activity-item" key={t.id}><div className="activity-date">{t.status.replace("_"," ")}</div><div className="activity-copy"><strong>{t.title}</strong><small>{t.description??"No additional instructions"}{t.due_at?" · Due "+new Date(t.due_at).toLocaleDateString("en-AU"):""}</small><div className="quote-actions"><button className="button button-secondary" onClick={()=>void update(t.id,"in_progress")}>Start</button><button className="button button-primary" onClick={()=>void update(t.id,"completed")}>Complete</button><button className="button button-secondary" onClick={()=>void update(t.id,"blocked")}>Blocked</button></div></div></article>)}</div>:<p className="panel-footnote">No tasks are assigned to you.</p>}{notice&&<p className="inline-notice" role="status">{notice}</p>}</section>;
+}
