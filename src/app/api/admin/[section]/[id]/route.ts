@@ -9,7 +9,7 @@ const config:any={
  invoices:{table:"invoices",permission:"invoices.manage",status:["draft","issued","void"],fields:["status"]},
  customers:{table:"customers",permission:"customers.manage",status:["active","inactive"],fields:["status"]},
  suppliers:{table:"suppliers",permission:"suppliers.manage",fields:["is_active","notes"]},
- website:{table:"site_pages",permission:"website.manage",fields:["is_published"]}
+ website:{table:"site_pages",permission:"website.manage",fields:["is_published","title","content","meta_title","meta_description"]}
 };
 export async function PATCH(request:Request,{params}:{params:Promise<{section:string;id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership)return jsonError("Business access required.",403);
@@ -21,6 +21,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    if(field==="status"){if(!c.status?.includes(String(value)))return jsonError("Invalid status.");update.status=String(value);}
    else if(field==="is_active"||field==="is_published"){if(typeof value!=="boolean")return jsonError("Invalid setting.");update[field]=value;}
    else if(["starts_at","ends_at","scheduled_start","scheduled_end"].includes(field)){if(value!==null&&!Number.isFinite(Date.parse(String(value))))return jsonError("Enter a valid date and time.");update[field]=value?new Date(String(value)).toISOString():null;}
+   else if(field==="content"){if(!value||typeof value!=="object"||Array.isArray(value)||JSON.stringify(value).length>30000)return jsonError("Page content must be a JSON object under 30 KB.");update.content=value;}
    else if(field==="estimated_hours"){const n=Number(value);if(!Number.isFinite(n)||n<0||n>1000)return jsonError("Enter valid estimated hours.");update[field]=n;}
    else if(field==="priority"){if(!["low","normal","high","urgent"].includes(String(value)))return jsonError("Invalid priority.");update[field]=String(value);}
    else if(typeof value==="string")update[field]=value.trim().slice(0,5000)||null;
