@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import {getPublishedSitePage,contentText} from "@/lib/public-site";
 
 export const metadata: Metadata = {
   title: "About",
@@ -11,8 +12,8 @@ export default function AboutPage() {
       <section className="page-hero">
         <div className="shell">
           <p className="eyebrow"><span className="eyebrow-line" /> ABOUT BRANDON RV</p>
-          <h1>Experience that understands <em>your setup.</em></h1>
-          <p>A mobile service built around practical caravan and motorhome interior repairs, fittings and accessories.</p>
+          <h1>{words.slice(0,-2).join(" ")} <em>{words.slice(-2).join(" ")}</em></h1>
+          <p>{intro}</p>
         </div>
       </section>
       <section className="content-section">
