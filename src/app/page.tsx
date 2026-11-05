@@ -1,6 +1,8 @@
 import Link from "next/link";
+import {getPublishedServices,getPublishedSitePage,contentText} from "@/lib/public-site";
+export const dynamic="force-dynamic";
 
-const services = [
+const fallbackServices = [
   {
     number: "01",
     title: "Cabinetry & interior repairs",
@@ -25,16 +27,16 @@ export default function HomePage() {
         <div className="shell hero-grid">
           <div className="hero-copy">
             <p className="eyebrow"><span className="eyebrow-line" /> MOBILE CARAVAN & MOTORHOME SERVICE</p>
-            <h1>Keep your next adventure <em>moving.</em></h1>
+            <h1>{heroLead} <em>{heroLast}</em></h1>
             <p className="hero-intro">
               Practical caravan and motorhome interior repairs, fittings and accessories — with mobile service around Tamworth, NSW.
             </p>
             <div className="hero-actions">
               <a className="button button-primary" href="tel:+61407189087">Call 0407 189 087 <span aria-hidden="true">↗</span></a>
               <Link className="button button-secondary" href="/services">Explore services</Link>
-              <Link className="button button-secondary" href="/request-quote">Request a quote</Link>
+              <Link className="button button-secondary" href="/request-quote">{primaryAction}</Link>
             </div>
-            <p className="hero-note">From Factory Experience to Repairs On The Go.</p>
+            <p className="hero-note">{heroSubtitle}</p>
           </div>
 
           <div className="hero-art" aria-label="Brandon RV mobile caravan service">
