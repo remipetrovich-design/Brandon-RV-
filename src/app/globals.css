@@ -408,3 +408,37 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
   .enquiry-layout { gap: 26px; }
   .portal-page-heading { margin-bottom: 20px; }
 }
+
+
+.service-area-grid { display: grid; grid-template-columns: 1fr .9fr; align-items: center; gap: 70px; }
+.service-area-grid h2 { margin: 0 0 18px; font: 400 42px/1.05 var(--display); letter-spacing: -.04em; }
+.service-area-grid h2 em { color: var(--green); }
+.service-area-grid p:not(.eyebrow) { max-width: 500px; color: var(--muted); font-size: 13px; line-height: 1.9; }
+.service-area-grid .button { margin-top: 18px; }
+.service-area-card { position: relative; display: flex; min-height: 330px; flex-direction: column; justify-content: center; overflow: hidden; padding: 38px; background: var(--green-dark); color: var(--white); }
+.service-area-card > span, .service-area-card > small { position: relative; z-index: 1; color: #c4d0c7; font-size: 8px; font-weight: 700; letter-spacing: .18em; }
+.service-area-card > strong { position: relative; z-index: 1; margin: 22px 0; font: 400 56px/.9 var(--display); letter-spacing: -.04em; }
+.service-area-card > strong em { color: #e99a6e; font-weight: 400; }
+.service-area-ring { position: absolute; right: -70px; bottom: -100px; width: 300px; height: 300px; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; box-shadow: 0 0 0 35px rgba(255,255,255,.035), 0 0 0 70px rgba(255,255,255,.025); }
+.invoice-table-head, .invoice-table-row { display: grid; grid-template-columns: 1.5fr 1fr .8fr 1.2fr 45px; align-items: center; gap: 12px; }
+.invoice-table-head { padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: #879087; font-size: 8px; font-weight: 700; letter-spacing: .12em; }
+.invoice-table-row { min-height: 70px; border-bottom: 1px solid var(--line); font-size: 10px; }
+.invoice-table-row > div { display: flex; flex-direction: column; gap: 5px; }
+.invoice-table-row > div small { color: var(--muted); font-size: 9px; }
+.invoice-table-row > strong { font-size: 11px; }
+.invoice-table-row button { justify-self: end; }
+@media (max-width: 850px) {
+  .service-area-grid { gap: 35px; }
+  .invoice-table-head, .invoice-table-row { grid-template-columns: 1.3fr .8fr .8fr; }
+  .invoice-table-head span:nth-child(4), .invoice-table-head span:nth-child(5), .invoice-table-row > .status-pill, .invoice-table-row button { display: none; }
+}
+@media (max-width: 640px) {
+  .service-area-grid { grid-template-columns: 1fr; }
+  .service-area-card { min-height: 260px; }
+  .invoice-table-head { display: none; }
+  .invoice-table-row { grid-template-columns: 1fr auto; padding: 13px 0; }
+  .invoice-table-row > span:nth-child(2) { grid-column: 1; grid-row: 2; color: var(--muted); }
+  .invoice-table-row > strong { grid-column: 2; grid-row: 1; }
+  .invoice-table-row > div { grid-column: 1; grid-row: 1; }
+  .invoice-table-row > div small { display: none; }
+}
