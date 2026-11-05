@@ -1,0 +1,4 @@
+export default async function VerifyEmailPage({searchParams}:{searchParams:Promise<{token?:string}>}){
+ const {token}=await searchParams;
+ return <div className="auth-wrap"><div className="auth-card"><p className="eyebrow"><span className="eyebrow-line"/> ACCOUNT VERIFICATION</p><h1>Verify your <em>email.</em></h1>{token?<><p className="auth-intro">Confirm this email address to activate your Brandon RV customer account.</p><form action="/api/auth/verify-email" method="post"><input type="hidden" name="token" value={token}/><button className="button button-primary" type="submit">Verify email address →</button></form></>:<p className="auth-intro">This verification link is missing or invalid.</p>}</div></div>;
+}
