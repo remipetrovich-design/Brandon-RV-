@@ -9,7 +9,8 @@ const links = [
   { href: "/portal/quotes", label: "Quotes", icon: "▤" },
   { href: "/portal/bookings", label: "Bookings & jobs", icon: "▦" },
   { href: "/portal/vehicles", label: "My vehicles", icon: "◇" },
-  { href: "/portal/documents", label: "Documents", icon: "▧" },\n  { href: "/portal/invoices", label: "Invoices & payments", icon: "$" },
+  { href: "/portal/documents", label: "Documents", icon: "▧" },
+  { href: "/portal/invoices", label: "Invoices & payments", icon: "$" },
   { href: "/portal/profile", label: "My details", icon: "○" }
 ];
 
