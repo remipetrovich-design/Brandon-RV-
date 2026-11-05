@@ -20,7 +20,19 @@ const fallbackServices = [
   }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [page,business,publishedServices]=await Promise.all([getPublishedSitePage("home"),getPublicBusiness(),getPublishedServices()]);
+  const phone=business.phone??"0407 189 087";
+  const callLink=phoneHref(phone);
+  const location=[business.city,business.region].filter(Boolean).join(" ")||"Tamworth NSW";
+  const services=publishedServices.length?publishedServices.slice(0,3).map((s,i)=>({number:String(i+1).padStart(2,"0"),title:s.name,description:s.description??s.scope_notes??"Contact Brandon RV to confirm whether this work is suitable."})):fallbackServices;
+  const heroTitle=contentText(page?.content,"hero_title","Keep your next adventure moving.");
+  const heroWords=heroTitle.split(/\s+/);
+  const heroLead=heroWords.slice(0,-1).join(" ");
+  const heroLast=heroWords.at(-1)??"";
+  const heroIntro=contentText(page?.content,"intro","{heroIntro}");
+  const heroSubtitle=contentText(page?.content,"hero_subtitle","From Factory Experience to Repairs On The Go.");
+  const primaryAction=contentText(page?.content,"primary_action","Request a quote");
   return (
     <main>
       <section className="hero">
@@ -107,7 +119,7 @@ export default function HomePage() {
       <section className="contact-strip">
         <div className="shell contact-strip-inner">
           <div><p className="eyebrow"><span className="eyebrow-line" /> HAVE A JOB IN MIND?</p><h2>Let’s get it <em>sorted.</em></h2></div>
-          <div className="contact-strip-action"><a className="button button-dark" href="tel:+61407189087">Call Chris · {phone} <span aria-hidden="true">↗</span></a><span>Based in {location}</span></div>
+          <div className="contact-strip-action"><a className="button button-dark" href={callLink}>Call Chris · {phone} <span aria-hidden="true">↗</span></a><span>Based in {location}</span></div>
         </div>
       </section>
     </main>
