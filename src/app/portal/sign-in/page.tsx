@@ -15,7 +15,7 @@ export default function SignInPage() {
       const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: form.get("email"), password: form.get("password") }) });
       const result = await response.json();
       if (!response.ok) { setNotice(result.error ?? "Could not sign in."); return; }
-      router.replace("/portal"); router.refresh();
+      router.replace(result.user?.account_type === "staff" || result.user?.account_type === "owner" ? "/staff" : "/portal"); router.refresh();
     } catch { setNotice("Sign-in is temporarily unavailable."); }
     finally { setBusy(false); }
   }
