@@ -6,8 +6,13 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
   const form=await request.formData();
-  const first=String(form.get("firstName")??"").trim();const last=String(form.get("lastName")??"").trim();const name=(first+" "+last).trim();
-  const email=normalizeEmail(String(form.get("email")??""));const phone=String(form.get("phone")??"").trim();
+  const first=String(form.get("firstName")??"").trim();const last=String(form.get("lastName")??"").trim();const submittedName=(first+" "+last).trim();
+  const submittedEmail=String(form.get("email")??"");const submittedPhone=String(form.get("phone")??"").trim();
+  const user=await currentUser();
+  const customerAccount=user?.account_type==="customer"?user:null;
+  const name=customerAccount?customerAccount.full_name:submittedName;
+  const email=normalizeEmail(customerAccount?customerAccount.email:submittedEmail);
+  const phone=String(customerAccount?.phone??submittedPhone).trim();
   const vehicleType=String(form.get("vehicleType")??"").trim();const vehicle=String(form.get("vehicle")??"").trim();const year=String(form.get("year")??"").trim();const location=String(form.get("location")??"").trim();
   const workType=String(form.get("workType")??"").trim();const description=String(form.get("description")??"").trim();
   if(name.length<3||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||phone.length<6||phone.length>40)return jsonError("Enter valid contact details.");
@@ -17,8 +22,8 @@ export async function POST(request:Request){
   const db=database();const since=new Date(Date.now()-15*60*1000).toISOString();const {count}=await db.from("enquiries").select("id",{count:"exact",head:true}).eq("email",email).gte("created_at",since);
   if((count??0)>=5)return jsonError("Too many enquiries from this email. Please try again later.",429);
   const {data:business,error:businessError}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();if(businessError||!business)return jsonError("Enquiry service is unavailable.",503);
-  const user=await currentUser();let customerId:string|null=null;let userId:string|null=null;
-  if(user?.account_type==="customer"){userId=user.id;const {data:customer}=await db.from("customers").select("id").eq("user_id",user.id).maybeSingle();customerId=customer?.id??null;}
+  let customerId:string|null=null;let userId:string|null=null;
+  if(customerAccount){userId=customerAccount.id;const {data:customer}=await db.from("customers").select("id").eq("user_id",customerAccount.id).maybeSingle();customerId=customer?.id??null;}
   const vehicleDescription=[vehicleType,vehicle,year].filter(Boolean).join(" · ");
   const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:customerId,user_id:userId,contact_name:name,email,phone,location,vehicle_description:vehicleDescription,requested_service:workType,description,preferred_contact:"email",status:"new",source:"website"}).select("id").single();
   if(error||!enquiry)return jsonError("Could not submit your enquiry. Please try again.",500);
