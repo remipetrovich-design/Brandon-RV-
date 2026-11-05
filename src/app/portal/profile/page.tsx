@@ -1,13 +1,11 @@
 "use client";
-
-import { FormEvent, useState } from "react";
-
-export default function ProfilePage() {
-  const [notice, setNotice] = useState("");
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setNotice("Profile editing is a preview. Changes will be saved once secure customer accounts are connected."); }
-  return <>
-    <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line" /> ACCOUNT SETTINGS</p><h1>Your <em>details.</em></h1><p>Manage the contact information used for service updates and bookings.</p></div>
-    <div className="preview-banner"><span>DEMO PROFILE</span><p>Sample details only. Do not enter real personal information in this preview.</p></div>
-    <form className="profile-form" onSubmit={submit}><h2>Contact information</h2><div className="form-grid"><label>First name<input defaultValue="Alex" /></label><label>Last name<input defaultValue="Taylor" /></label><label>Email address<input type="email" defaultValue="alex@example.com" /></label><label>Mobile number<input type="tel" defaultValue="0400 000 000" /></label></div><h2>Address</h2><div className="form-grid"><label>Street address<input defaultValue="Sample Street" /></label><label>Suburb<input defaultValue="Tamworth" /></label><label>State<input defaultValue="NSW" /></label><label>Postcode<input defaultValue="2340" /></label></div><button className="button button-primary" type="submit">Save changes <span>→</span></button>{notice && <p className="inline-notice" role="status">{notice}</p>}</form>
-  </>;
+import {FormEvent,useEffect,useState} from "react";
+type Profile={full_name:string;email:string;phone:string|null;address:string|null;suburb:string|null;state:string|null;postcode:string|null};
+export default function ProfilePage(){
+ const [profile,setProfile]=useState<Profile>({full_name:"",email:"",phone:"",address:"",suburb:"",state:"NSW",postcode:""});
+ const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
+ useEffect(()=>{void (async()=>{try{const r=await fetch("/api/portal/profile");const d=await r.json();if(r.ok)setProfile(d.profile);else setNotice(d.error??"Could not load your profile.");}catch{setNotice("Could not load your profile.");}})();},[]);
+ function change(e:React.ChangeEvent<HTMLInputElement>){setProfile(p=>({...p,[e.target.name]:e.target.value}));}
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");try{const r=await fetch("/api/portal/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)});const d=await r.json();setNotice(r.ok?"Your details have been saved.":(d.error??"Could not save your details."));}catch{setNotice("Could not save your details.");}finally{setBusy(false);}}
+ return <><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> ACCOUNT SETTINGS</p><h1>Your <em>details.</em></h1><p>Manage the contact information used for service updates and bookings.</p></div><form className="profile-form" onSubmit={submit}><h2>Contact information</h2><div className="form-grid"><label>Full name<input name="full_name" value={profile.full_name} onChange={change} required minLength={2}/></label><label>Email address<input type="email" value={profile.email} readOnly disabled/><small>Contact Brandon RV to change your account email.</small></label><label>Mobile number<input name="phone" value={profile.phone??""} onChange={change} type="tel"/></label></div><h2>Address</h2><div className="form-grid"><label>Street address<input name="address" value={profile.address??""} onChange={change}/></label><label>Suburb<input name="suburb" value={profile.suburb??""} onChange={change}/></label><label>State<input name="state" value={profile.state??""} onChange={change}/></label><label>Postcode<input name="postcode" value={profile.postcode??""} onChange={change}/></label></div><button className="button button-primary" type="submit" disabled={busy}>{busy?"Saving…":"Save changes →"}</button>{notice&&<p className="inline-notice" role="status">{notice}</p>}</form></>;
 }
