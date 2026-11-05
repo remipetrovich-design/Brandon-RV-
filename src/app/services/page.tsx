@@ -30,7 +30,12 @@ const fallbackServiceDetails = [
   }
 ];
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const [page,published]=await Promise.all([getPublishedSitePage("services"),getPublishedServices()]);
+  const serviceDetails=published.length?published.map((s,i)=>({number:String(i+1).padStart(2,"0"),title:s.name,description:s.description??"Contact Brandon RV to confirm the work required.",scope_notes:s.scope_notes})):fallbackServiceDetails.map(s=>({...s,scope_notes:null as string|null}));
+  const intro=contentText(page?.content,"intro","The work is focused on suitable caravan and motorhome interior jobs. Each enquiry is reviewed against the repair required, the vehicle, the location and the parts or equipment needed.");
+  const heroTitle=contentText(page?.content,"hero_title","Practical help for life on the road.");
+  const words=heroTitle.split(/\s+/);
   return (
     <main>
       <section className="page-hero">
