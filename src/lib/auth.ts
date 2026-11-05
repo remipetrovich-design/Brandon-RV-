@@ -58,7 +58,7 @@ export async function currentMembership(userId: string) {
 export async function userHasPermission(userId: string, permission: string) {
   const membership = await currentMembership(userId);
   if (!membership) return false;
-  if (membership.role === "owner") return true;
+  if (["owner", "developer"].includes(membership.role.toLowerCase())) return true;
   const db = database();
   const { data: assigned } = await db.from("member_permission_groups").select("group_id").eq("member_id", membership.id);
   const groupIds = (assigned ?? []).map((x: { group_id: string }) => x.group_id);
