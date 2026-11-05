@@ -18,6 +18,7 @@ export async function POST(request:Request){
   const now=new Date().toISOString();const {data:claimed}=await db.from("user_invitations").update({accepted_at:now}).eq("id",invite.id).is("accepted_at",null).select("id").maybeSingle();if(!claimed)return jsonError("This invitation has already been used.",410);
   let user:any=existing;let created=false;
   if(user&&!user.password_hash){const {error}=await db.from("users").update({password_hash:await passwordHash(password),status:"active",email_verified_at:now,updated_at:now}).eq("id",user.id);if(error)return jsonError("Could not activate this account. Contact Brandon RV for help.",500);}
+  else if(user&&user.status!=="active"){const {error}=await db.from("users").update({status:"active",email_verified_at:now,updated_at:now}).eq("id",user.id);if(error)return jsonError("Could not activate this account. Contact Brandon RV for help.",500);}
   if(!user){
    const {data:newUser,error}=await db.from("users").insert({email,full_name:requestedName,password_hash:await passwordHash(password),account_type:isOwner?"owner":"staff",status:"active",email_verified_at:null,primary_group:"staff",secondary_group:null,business_id:invite.business_id}).select("id,email,full_name,account_type,status").single();
    if(error||!newUser)return jsonError("Could not create the account. The invitation has been consumed; contact Brandon RV for a new setup link.",500);
