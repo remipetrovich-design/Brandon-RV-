@@ -1,28 +1,35 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { currentUser, database } from "@/lib/auth";
 
-const activity = [
-  { date: "12 Oct 2026", title: "Enquiry received", detail: "Cabinet door and drawer repair", status: "Under review", tone: "amber" },
-  { date: "08 Oct 2026", title: "Quote prepared", detail: "Interior hardware replacement", status: "Awaiting response", tone: "blue" }
-];
+export const dynamic = "force-dynamic";
 
-export default function PortalDashboard() {
+export default async function PortalDashboard() {
+  const user = await currentUser();
+  if (!user) redirect("/portal/sign-in");
+  if (user.account_type === "staff" || user.account_type === "owner") redirect("/staff");
+  const db = database();
+  const { data: customer } = await db.from("customers").select("id,full_name").eq("user_id", user.id).maybeSingle();
+  if (!customer) return <section className="portal-panel"><h1>Account setup in progress</h1><p>We could not find a customer profile linked to this account. Contact Brandon RV for help.</p></section>;
+  const [enquiries, quotes, appointments] = await Promise.all([
+    db.from("enquiries").select("id,status,created_at,requested_service").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+    db.from("quotes").select("id,status,total,quote_number").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+    db.from("appointments").select("id,status,preferred_start,starts_at,location").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5)
+  ]);
+  const money = (value: number) => new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(value ?? 0);
   return <>
-    <div className="portal-welcome"><div><p className="eyebrow"><span className="eyebrow-line" /> CUSTOMER OVERVIEW</p><h1>Good morning, <em>Alex.</em></h1><p>Here is an overview of your requests and upcoming work.</p></div><Link className="button button-primary" href="/request-quote">New service enquiry <span>＋</span></Link></div>
-    <div className="preview-banner"><span>PREVIEW ACCOUNT</span><p>This portal is showing sample information so you can review the customer experience. No real customer records or bookings are connected yet.</p></div>
+    <div className="portal-welcome"><div><p className="eyebrow"><span className="eyebrow-line" /> CUSTOMER OVERVIEW</p><h1>Welcome, <em>{customer.full_name.split(" ")[0]}.</em></h1><p>Here is an overview of your Brandon RV requests and account.</p></div><Link className="button button-primary" href="/request-quote">New service enquiry <span>＋</span></Link></div>
     <div className="portal-stat-grid">
-      <article><span>OPEN ENQUIRIES</span><strong>02</strong><small>Requests being reviewed</small></article>
-      <article><span>QUOTES TO REVIEW</span><strong>01</strong><small>Waiting for your response</small></article>
-      <article><span>UPCOMING BOOKINGS</span><strong>01</strong><small>Next scheduled visit</small></article>
+      <article><span>YOUR ENQUIRIES</span><strong>{enquiries.data?.length ?? 0}</strong><small>Recent service requests</small></article>
+      <article><span>YOUR QUOTES</span><strong>{quotes.data?.length ?? 0}</strong><small>Quotes prepared for you</small></article>
+      <article><span>YOUR BOOKINGS</span><strong>{appointments.data?.length ?? 0}</strong><small>Appointment requests and visits</small></article>
     </div>
-    <section className="portal-panel">
-      <div className="portal-panel-heading"><div><span className="panel-kicker">YOUR NEXT APPOINTMENT</span><h2>Interior fitting inspection</h2></div><span className="status-pill status-green">Scheduled · Sample</span></div>
-      <div className="appointment-details"><div><small>DATE</small><strong>Thursday, 19 November 2026</strong></div><div><small>TIME</small><strong>To be confirmed</strong></div><div><small>LOCATION</small><strong>Customer address on file</strong></div></div>
-      <p className="panel-footnote">This is sample appointment data. A real booking is only confirmed after Brandon RV checks availability and job requirements.</p>
+    <section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">RECENT ENQUIRIES</span><h2>Your service requests</h2></div><Link href="/request-quote" className="text-link">New enquiry →</Link></div>
+      {enquiries.data?.length ? <div className="activity-list">{enquiries.data.map(item => <div className="activity-item" key={item.id}><div className="activity-date">{new Date(item.created_at).toLocaleDateString("en-AU")}</div><div className="activity-copy"><strong>{item.requested_service || "Service enquiry"}</strong><span>{item.status}</span></div></div>)}</div> : <p className="panel-footnote">You have not submitted an enquiry yet.</p>}
     </section>
-    <section className="portal-panel">
-      <div className="portal-panel-heading"><div><span className="panel-kicker">RECENT ACTIVITY</span><h2>Updates on your requests</h2></div><Link href="/portal/bookings" className="text-link">View all →</Link></div>
-      <div className="activity-list">{activity.map((item) => <div className="activity-item" key={item.title}><div className="activity-date">{item.date}</div><div className="activity-copy"><strong>{item.title}</strong><span>{item.detail}</span></div><span className={`status-pill status-${item.tone}`}>{item.status}</span></div>)}</div>
+    <section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">YOUR QUOTES</span><h2>Quotes and pricing</h2></div><Link href="/portal/quotes" className="text-link">View quotes →</Link></div>
+      {quotes.data?.length ? <div className="activity-list">{quotes.data.map(item => <div className="activity-item" key={item.id}><div className="activity-date">{item.quote_number}</div><div className="activity-copy"><strong>{money(item.total)}</strong><span>{item.status}</span></div></div>)}</div> : <p className="panel-footnote">No quotes have been issued to your account yet.</p>}
     </section>
-    <div className="portal-shortcuts"><Link href="/portal/quotes"><span>▤</span><strong>Review a quote</strong><small>Check pricing and scope</small><b>→</b></Link><Link href="/portal/vehicles"><span>◇</span><strong>Your vehicles</strong><small>Keep vehicle details current</small><b>→</b></Link><Link href="/portal/documents"><span>▧</span><strong>Your documents</strong><small>Quotes, invoices and job records</small><b>→</b></Link></div>
+    <div className="portal-shortcuts"><Link href="/portal/bookings"><span>▦</span><strong>Bookings & jobs</strong><small>Check appointment and job status</small><b>→</b></Link><Link href="/portal/vehicles"><span>◇</span><strong>Your vehicles</strong><small>Keep vehicle details current</small><b>→</b></Link><Link href="/portal/profile"><span>○</span><strong>Account details</strong><small>Review your contact information</small><b>→</b></Link></div>
   </>;
 }
