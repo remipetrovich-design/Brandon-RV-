@@ -18,12 +18,9 @@ The application is built with Next.js 16, React 19, TypeScript and Supabase.
 
 Supabase is the central source of truth for application data and authentication-related account records.
 
-The `public.users` table is the single account identity table. A user can belong to both customer and staff groups:
+The `public.users` table is the single account identity table. Every account has `primary_group = customer`. Employee and business access is additive: an active `business_members` record stores the user’s secondary business role (for example trial employee, employee, administrator, owner or developer), and permission groups determine which workspace features that role can use.
 
-- `primary_group`: `customer` or `staff`
-- `secondary_group`: optional `customer` or `staff`
-
-Customer and staff compatibility views remain available for application/database compatibility. They are not separate account identity stores. Business membership roles such as owner and developer are separate from the customer/staff group fields.
+There is one login per person. Customer records and employee/business permissions belong to the same user identity; do not create a second staff account or ask users to link separate customer and staff accounts. The `/admin` route is the combined, permission-filtered business workspace. `/staff` is retained only as a redirect to that workspace for existing links. Customer and staff compatibility views remain database compatibility layers, not separate account identity stores.
 
 ## Supabase migrations
 
