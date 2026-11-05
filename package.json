@@ -11,7 +11,9 @@
   "dependencies": {
     "next": "16.4.5",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "@supabase/supabase-js": "^2.80.0",
+    "argon2": "^0.44.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",
