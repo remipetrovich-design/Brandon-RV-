@@ -31,7 +31,7 @@ export default function HomePage() {
             </p>
             <div className="hero-actions">
               <a className="button button-primary" href="tel:+61407189087">Call 0407 189 087 <span aria-hidden="true">↗</span></a>
-              <Link className="button button-secondary" href="/services">Explore services</Link>
+              <Link className="button button-secondary" href="/services">Explore services</Link>\n              <Link className="button button-secondary" href="/request-quote">Request a quote</Link>
             </div>
             <p className="hero-note">From Factory Experience to Repairs On The Go.</p>
           </div>
