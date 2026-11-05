@@ -1,4 +1,4 @@
-import {createSession,database,digest,normalizeEmail,passwordHash,jsonError,sameOrigin} from "@/lib/auth";
+import {createSession,database,digest,normalizeEmail,passwordHash,passwordMatches,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -10,12 +10,14 @@ export async function POST(request:Request){
   const isOwner=invite.account_type==="owner";const email=normalizeEmail(isOwner?String(body.email??""):String(invite.email??""));const requestedName=String(isOwner?body.fullName:invite.full_name??"").trim();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254||requestedName.length<2||requestedName.length>120)return jsonError("Enter a valid name and email address.");
   if(isOwner){const {count}=await db.from("users").select("id",{count:"exact",head:true}).eq("account_type","owner");if((count??0)>0)return jsonError("The business owner account has already been created.",409);}
-  const {data:existing}=await db.from("users").select("id,email,full_name,account_type,status,primary_group,secondary_group").eq("email",email).maybeSingle();
+  const {data:existing}=await db.from("users").select("id,email,full_name,account_type,status,password_hash,primary_group,secondary_group").eq("email",email).maybeSingle();
   if(existing&&isOwner)return jsonError("An account with this email already exists.",409);
-  if(existing&&existing.status!=="active")return jsonError("This existing account is not active. Contact Brandon RV before accepting the invitation.",403);
+  if(existing&&["suspended","disabled"].includes(existing.status))return jsonError("This existing account is not active. Contact Brandon RV before accepting the invitation.",403);
+  if(existing?.password_hash&&!await passwordMatches(password,existing.password_hash))return jsonError("This email already has an account. Enter its existing password to add staff access.",401);
   if(existing&&[existing.primary_group,existing.secondary_group].includes("staff"))return jsonError("This account already has staff access.",409);
   const now=new Date().toISOString();const {data:claimed}=await db.from("user_invitations").update({accepted_at:now}).eq("id",invite.id).is("accepted_at",null).select("id").maybeSingle();if(!claimed)return jsonError("This invitation has already been used.",410);
   let user:any=existing;let created=false;
+  if(user&&!user.password_hash){const {error}=await db.from("users").update({password_hash:await passwordHash(password),status:"active",email_verified_at:now,updated_at:now}).eq("id",user.id);if(error)return jsonError("Could not activate this account. Contact Brandon RV for help.",500);}
   if(!user){
    const {data:newUser,error}=await db.from("users").insert({email,full_name:requestedName,password_hash:await passwordHash(password),account_type:isOwner?"owner":"staff",status:"active",email_verified_at:null,primary_group:"staff",secondary_group:null,business_id:invite.business_id}).select("id,email,full_name,account_type,status").single();
    if(error||!newUser)return jsonError("Could not create the account. The invitation has been consumed; contact Brandon RV for a new setup link.",500);
