@@ -15,7 +15,7 @@ export default function SiteFooter({phone,phoneLink,brandLine,location}:{phone:s
           <p>{brandLine}</p>
         </div>
         <div className="footer-links">
-          <Link href="/services">Services</Link>
+          <Link href="/services">Services</Link>\n          <Link href="/how-it-works">How it works</Link>\n          <Link href="/gallery">Previous work</Link>\n          <Link href="/faq">FAQs</Link>
           <Link href="/about">About</Link>
           <Link href="/contact">Contact</Link>
         </div>
