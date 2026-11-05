@@ -1,0 +1,35 @@
+import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+export const runtime="nodejs";
+const config:any={
+ enquiries:{table:"enquiries",permission:"enquiries.manage",status:["new","reviewing","quoted","accepted","declined","converted","closed"],fields:["status","internal_notes"]},
+ appointments:{table:"appointments",permission:"appointments.manage",status:["requested","confirmed","rescheduled","completed","cancelled"],fields:["status","starts_at","ends_at","location","internal_notes"]},
+ jobs:{table:"jobs",permission:"jobs.manage",status:["scheduled","in_progress","waiting_parts","completed","cancelled"],fields:["status","priority","scheduled_start","scheduled_end","customer_visible_notes","internal_notes","estimated_hours"]},
+ quotes:{table:"quotes",permission:"quotes.manage",status:["draft","sent","expired"],fields:["status"]},
+ invoices:{table:"invoices",permission:"invoices.manage",status:["draft","issued","void"],fields:["status"]},
+ customers:{table:"customers",permission:"customers.manage",status:["active","inactive"],fields:["status"]},
+ suppliers:{table:"suppliers",permission:"suppliers.manage",fields:["is_active","notes"]},
+ website:{table:"site_pages",permission:"website.manage",fields:["is_published"]}
+};
+export async function PATCH(request:Request,{params}:{params:Promise<{section:string;id:string}>}){
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership)return jsonError("Business access required.",403);
+ const {section,id}=await params;const c=config[section];if(!c||!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Record not found.",404);
+ if(!(await userHasPermission(user.id,c.permission)))return jsonError("You do not have permission to update this record.",403);
+ try{
+  const body=await request.json();const update:any={};
+  for(const field of c.fields){if(body[field]===undefined)continue;const value=body[field];
+   if(field==="status"){if(!c.status?.includes(String(value)))return jsonError("Invalid status.");update.status=String(value);}
+   else if(field==="is_active"||field==="is_published"){if(typeof value!=="boolean")return jsonError("Invalid setting.");update[field]=value;}
+   else if(["starts_at","ends_at","scheduled_start","scheduled_end"].includes(field)){if(value!==null&&(!Number.isFinite(Date.parse(String(value)))))return jsonError("Enter a valid date and time.");update[field]=value?new Date(String(value)).toISOString():null;}
+   else if(field==="estimated_hours"){const n=Number(value);if(!Number.isFinite(n)||n<0||n>1000)return jsonError("Enter valid estimated hours.");update[field]=n;}
+   else if(field==="priority"){if(!["low","normal","high","urgent"].includes(String(value)))return jsonError("Invalid priority.");update[field]=String(value);}
+   else if(typeof value==="string")update[field]=value.trim().slice(0,5000)||null;
+  }
+  if(!Object.keys(update).length)return jsonError("No valid changes supplied.");
+  if(section==="quotes"&&update.status==="sent")update.issue_date=new Date().toISOString().slice(0,10);
+  update.updated_at=new Date().toISOString();
+  const db=database();const {data:record,error}=await db.from(c.table).update(update).eq("id",id).eq("business_id",membership.business_id).select("id").maybeSingle();
+  if(error||!record)return jsonError("Could not update record. Check the record and your permissions.",500);
+  await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
+  return Response.json({success:true});
+ }catch{return jsonError("Could not update record.",500);}
+}
