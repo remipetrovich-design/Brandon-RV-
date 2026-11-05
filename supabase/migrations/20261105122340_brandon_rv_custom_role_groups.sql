@@ -1,0 +1,2 @@
+ALTER TABLE public.business_members DROP CONSTRAINT IF EXISTS business_members_role_check;
+COMMENT ON COLUMN public.business_members.role IS 'Role label. Preset roles use permission groups with the same name; custom roles use a business-specific permission group and assigned membership.';
