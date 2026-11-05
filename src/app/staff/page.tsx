@@ -7,7 +7,6 @@ import StaffTasks from "@/components/staff-tasks";
 export const dynamic="force-dynamic";
 export default async function StaffHomePage(){
  const user=await currentUser(); if(!user) redirect("/portal/sign-in");
- if(user.account_type!=="staff"&&user.account_type!=="owner") redirect("/portal");
  const membership=await currentMembership(user.id); if(!membership) redirect("/portal/sign-in");
  const db=database();
  const {data:staff}=await db.from("staff").select("id,job_title,employee_number,employment_status").eq("user_id",user.id).maybeSingle();
