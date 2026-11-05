@@ -10,7 +10,7 @@ DECLARE
   developer_group_id uuid;
 BEGIN
   SELECT id INTO v_business_id FROM public.businesses WHERE slug='brandon-rv' LIMIT 1;
-  IF business_id IS NULL THEN
+  IF v_business_id IS NULL THEN
     RAISE EXCEPTION 'Brandon RV business record missing';
   END IF;
 
