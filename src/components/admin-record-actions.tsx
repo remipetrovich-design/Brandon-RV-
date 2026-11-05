@@ -6,5 +6,7 @@ export default function AdminRecordActions({section,id,status,isActive,isPublish
  const [value,setValue]=useState(status??(isActive!==undefined?String(isActive):String(!!isPublished)));const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const router=useRouter();
  async function save(){setBusy(true);setNotice("");const body:any={};if(options[section])body.status=value;else if(section==="suppliers")body.is_active=value==="true";else if(section==="website")body.is_published=value==="true";try{const r=await fetch("/api/admin/"+section+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not save changes.");return;}setNotice("Saved.");router.refresh();}catch{setNotice("Could not save changes.");}finally{setBusy(false);}}
  if(!options[section]&&section!=="suppliers"&&section!=="website")return null;
+ if(section==="quotes"&&!["draft","sent"].includes(status??""))return null;
+ if(section==="invoices"&&!["draft","issued"].includes(status??""))return null;
  return <div className="record-actions"><select value={value} onChange={e=>setValue(e.target.value)}>{(options[section]??["false","true"]).map((x:string)=><option key={x} value={x}>{x.replace("_"," ")}</option>)}</select><button className="button button-secondary" disabled={busy} onClick={()=>void save()}>{busy?"Saving…":"Update"}</button>{notice&&<small role="status">{notice}</small>}</div>;
 }
