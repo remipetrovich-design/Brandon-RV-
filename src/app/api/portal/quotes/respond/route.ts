@@ -1,6 +1,7 @@
-import { currentUser,database,jsonError } from "@/lib/auth";
+import { currentUser,database,jsonError,sameOrigin } from "@/lib/auth";
 export const runtime="nodejs";
 export async function POST(request:Request){
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const user=await currentUser();
  if(!user) return Response.redirect(new URL("/portal/sign-in",request.url),303);
  if(user.account_type!=="customer") return jsonError("Customer account required.",403);
