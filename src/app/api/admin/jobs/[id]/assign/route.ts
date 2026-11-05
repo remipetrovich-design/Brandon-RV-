@@ -9,7 +9,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,"jobs.assign")))return jsonError("You do not have permission to assign jobs.",403);
  try{
-  const {id}=await params;const body=await request.json();const ids=Array.isArray(body.staffIds)?body.staffIds.map((x:unknown)=>String(x)):[];if(ids.length>20||ids.some(x=>!/^[0-9a-f-]{36}$/i.test(x)))return jsonError("Invalid staff selection.");
+  const {id}=await params;const body=await request.json();const ids:string[]=Array.isArray(body.staffIds)?body.staffIds.map((x:unknown)=>String(x)):[];if(ids.length>20||ids.some(x=>!/^[0-9a-f-]{36}$/i.test(x)))return jsonError("Invalid staff selection.");
   const db=database();const {data:job}=await db.from("jobs").select("id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();if(!job)return jsonError("Job not found.",404);
   if(ids.length){const {data:staff}=await db.from("staff").select("id").eq("business_id",membership.business_id).eq("employment_status","active").in("id",ids);if((staff??[]).length!==ids.length)return jsonError("One or more staff members are not active in this business.");}
   await db.from("job_assignments").delete().eq("job_id",id);
