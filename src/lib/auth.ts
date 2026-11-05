@@ -18,12 +18,20 @@ export const digest = (value: string) => createHash("sha256").update(value).dige
 export const newToken = () => randomBytes(32).toString("base64url");
 export const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
+export function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return request.headers.get("sec-fetch-site") !== "cross-site";
+  try { return new URL(origin).origin === new URL(request.url).origin; } catch { return false; }
+}
+
 export async function createSession(userId: string, request?: Request) {
   const db = database();
   const token = newToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
   const agent = request?.headers.get("user-agent")?.slice(0, 500) ?? null;
-  const { error } = await db.from("user_sessions").insert({ user_id: userId, token_hash: digest(token), expires_at: expiresAt, user_agent: agent });
+  const ip = request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
+  const ipHash = ip ? digest(ip) : null;
+  const { error } = await db.from("user_sessions").insert({ user_id: userId, token_hash: digest(token), expires_at: expiresAt, user_agent: agent, ip_hash: ipHash });
   if (error) throw error;
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", expires: new Date(expiresAt) });
@@ -39,6 +47,36 @@ export async function currentUser() {
   const { data: user } = await db.from("users").select("id,email,full_name,phone,account_type,status,email_verified_at,force_password_change").eq("id", session.user_id).eq("status", "active").maybeSingle();
   if (!user) return null;
   return user;
+}
+
+export async function currentMembership(userId: string) {
+  const db = database();
+  const { data } = await db.from("business_members").select("id,business_id,role,is_active").eq("user_id", userId).eq("is_active", true).maybeSingle();
+  return data ?? null;
+}
+
+export async function userHasPermission(userId: string, permission: string) {
+  const membership = await currentMembership(userId);
+  if (!membership) return false;
+  if (membership.role === "owner") return true;
+  const db = database();
+  const { data: assigned } = await db.from("member_permission_groups").select("group_id").eq("member_id", membership.id);
+  const groupIds = (assigned ?? []).map((x: { group_id: string }) => x.group_id);
+  const { data: roleGroup } = await db.from("permission_groups").select("id").eq("business_id", membership.business_id).ilike("name", membership.role).maybeSingle();
+  if (roleGroup?.id && !groupIds.includes(roleGroup.id)) groupIds.push(roleGroup.id);
+  if (!groupIds.length) return false;
+  const { data } = await db.from("permission_group_permissions").select("permission_key").in("group_id", groupIds).eq("permission_key", permission).limit(1);
+  return !!data?.length;
+}
+
+export async function authorizePermission(permission: string) {
+  const user = await currentUser();
+  if (!user) return { user: null, membership: null, response: jsonError("Not signed in.", 401) };
+  const membership = await currentMembership(user.id);
+  if (!membership || !(await userHasPermission(user.id, permission))) {
+    return { user, membership, response: jsonError("You do not have permission to perform this action.", 403) };
+  }
+  return { user, membership, response: null };
 }
 
 export async function destroySession() {
