@@ -20,7 +20,7 @@ export async function POST(request:Request){
   const now=new Date().toISOString();
   const {data:claimed}=await db.from("user_invitations").update({accepted_at:now}).eq("id",invite.id).is("accepted_at",null).select("id").maybeSingle();
   if(!claimed) return jsonError("This invitation has already been used.",410);
-  const {data:user,error}=await db.from("users").insert({email,full_name:fullName,password_hash:await passwordHash(password),account_type:isOwner?"owner":"staff",status:"active",email_verified_at:now}).select("id,email,full_name,account_type").single();
+  const {data:user,error}=await db.from("users").insert({email,full_name:fullName,password_hash:await passwordHash(password),account_type:isOwner?"owner":"staff",status:"active",email_verified_at:null}).select("id,email,full_name,account_type").single();
   if(error||!user) return jsonError("Could not create the account. The invitation has been consumed; contact Brandon RV for a new setup link.",500);
   const {error:staffError}=await db.from("staff").insert({business_id:invite.business_id,user_id:user.id,job_title:isOwner?"Owner":invite.role,employment_status:"active",start_date:now.slice(0,10),employee_number:isOwner?"OWNER":null});
   const {error:memberError}=await db.from("business_members").insert({business_id:invite.business_id,user_id:user.id,role:isOwner?"owner":invite.role,is_active:true,invited_at:invite.created_at,joined_at:now});
