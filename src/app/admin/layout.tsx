@@ -6,31 +6,31 @@ export const dynamic="force-dynamic";
 
 const navigation:AdminNavGroup[]=[
   {title:"Customer management",items:[
-    {label:"Enquiries",href:"/admin/enquiries",permission:"enquiries.view",icon:"↗"},
-    {label:"Customers",href:"/admin/customers",permission:"customers.view",icon:"♙"},
-    {label:"Vehicles",href:"/admin/vehicles",permission:"vehicles.view",icon:"▱"}
+    {label:"Enquiries",href:"/admin/enquiries",permission:"enquiries.view",icon:"inbox"},
+    {label:"Customers",href:"/admin/customers",permission:"customers.view",icon:"users"},
+    {label:"Vehicles",href:"/admin/vehicles",permission:"vehicles.view",icon:"vehicle"}
   ]},
   {title:"Bookings & workshop",items:[
-    {label:"Appointments & calendar",href:"/admin/appointments",permission:"appointments.view",icon:"▦"},
-    {label:"Work orders",href:"/admin/jobs",permission:"jobs.view",icon:"▤"},
-    {label:"Quotes",href:"/admin/quotes",permission:"quotes.view",icon:"▧"}
+    {label:"Appointments & calendar",href:"/admin/appointments",permission:"appointments.view",icon:"calendar"},
+    {label:"Work orders",href:"/admin/jobs",permission:"jobs.view",icon:"jobs"},
+    {label:"Quotes",href:"/admin/quotes",permission:"quotes.view",icon:"quote"}
   ]},
   {title:"Finance & purchasing",items:[
-    {label:"Invoices & payments",href:"/admin/invoices",permission:"invoices.view",icon:"＄"},
-    {label:"Suppliers",href:"/admin/suppliers",permission:"suppliers.view",icon:"▣"},
-    {label:"Supplier orders",href:"/admin/supplier-orders",permission:"suppliers.view",icon:"⇢"},
-    {label:"Expenses",href:"/admin/expenses",permission:"expenses.view",icon:"−"}
+    {label:"Invoices & payments",href:"/admin/invoices",permission:"invoices.view",icon:"finance"},
+    {label:"Suppliers",href:"/admin/suppliers",permission:"suppliers.view",icon:"supplier"},
+    {label:"Supplier orders",href:"/admin/supplier-orders",permission:"suppliers.view",icon:"supplier"},
+    {label:"Expenses",href:"/admin/expenses",permission:"expenses.view",icon:"expense"}
   ]},
   {title:"People & access",items:[
-    {label:"Employees",href:"/admin/staff",permission:"staff.view",icon:"♧"},
-    {label:"Roles & permissions",href:"/admin/roles",permission:"roles.manage",icon:"⌘"}
+    {label:"Employees",href:"/admin/staff",permission:"staff.view",icon:"staff"},
+    {label:"Roles & permissions",href:"/admin/roles",permission:"roles.manage",icon:"access"}
   ]},
   {title:"Business configuration",items:[
-    {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"▤"},
-    {label:"Services",href:"/admin/services",permission:"business.settings.manage",icon:"⚙"},
-    {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"⌖"},
-    {label:"Business profile",href:"/admin/business-profile",permission:"business.settings.manage",icon:"▧"},
-    {label:"Business settings",href:"/admin/settings",permission:"settings.manage",icon:"⚙"}
+    {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"jobs"},
+    {label:"Services",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
+    {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
+    {label:"Business profile",href:"/admin/business-profile",permission:"business.settings.manage",icon:"quote"},
+    {label:"Business settings",href:"/admin/settings",permission:"settings.manage",icon:"services"}
   ]}
 ];
 
