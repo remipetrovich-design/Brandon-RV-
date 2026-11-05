@@ -9,8 +9,7 @@ export const metadata: Metadata = {
     template: "%s | Brandon RV"
   },
   description:
-    "Mobile caravan and motorhome interior repairs and accessories in Tamworth, NSW. From Factory Experience to Repairs On The Go.",
-  metadataBase: new URL("https://brandonrv.com.au")
+    "Mobile caravan and motorhome interior repairs and accessories in Tamworth, NSW. From Factory Experience to Repairs On The Go."
 };
 
 export default function RootLayout({
