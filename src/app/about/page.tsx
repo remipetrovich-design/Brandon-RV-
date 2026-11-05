@@ -6,7 +6,12 @@ export const metadata: Metadata = {
   description: "Learn about Brandon RV, a mobile caravan and motorhome interior repair service based in Tamworth, NSW."
 };
 
-export default function AboutPage() {
+export const dynamic="force-dynamic";
+export default async function AboutPage() {
+  const page=await getPublishedSitePage("about");
+  const intro=contentText(page?.content,"intro","A mobile service built around practical caravan and motorhome interior repairs, fittings and accessories.");
+  const pageTitle=page?.title??"Experience that understands your setup.";
+  const words=pageTitle.split(/\s+/);
   return (
     <main>
       <section className="page-hero">
