@@ -8,7 +8,7 @@ export async function POST(request:Request){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||fullName.length<2||password.length<12||password.length>128)return jsonError("Provide a valid name, email and password of at least 12 characters.");
   const db=database();const {count}=await db.from("users").select("id",{count:"exact",head:true}).eq("account_type","owner");if((count??0)>0)return jsonError("An owner account has already been created.",409);
   const {data:business,error:businessError}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();if(businessError||!business)return jsonError("Business setup is incomplete.",503);
-  const {data:user,error}=await db.from("users").insert({email,full_name:fullName,password_hash:await passwordHash(password),account_type:"owner",status:"active",email_verified_at:new Date().toISOString(),primary_group:"staff",secondary_group:"owner",business_id:business.id}).select("id,email,full_name,account_type").single();if(error||!user)return jsonError("Could not create owner account.",500);
+  const {data:user,error}=await db.from("users").insert({email,full_name:fullName,password_hash:await passwordHash(password),account_type:"owner",status:"active",email_verified_at:new Date().toISOString(),primary_group:"staff",secondary_group:null,business_id:business.id}).select("id,email,full_name,account_type").single();if(error||!user)return jsonError("Could not create owner account.",500);
   const now=new Date().toISOString();
   const {error:memberError}=await db.from("business_members").insert({business_id:business.id,user_id:user.id,role:"owner",is_active:true,joined_at:now});
   if(memberError){await db.from("users").delete().eq("id",user.id);return jsonError("Could not assign owner access.",500);}
