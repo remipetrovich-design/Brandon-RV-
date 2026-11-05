@@ -3,30 +3,36 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 
 export default function SiteFooter({phone,phoneLink,brandLine,location}:{phone:string;phoneLink:string;brandLine:string;location:string}) {
-  const pathname = usePathname();
-  const appArea = ["/portal", "/staff", "/admin", "/dev", "/initial-owner-setup"].some((base) => pathname === base || pathname.startsWith(base + "/"));
-  if (appArea) return null;
-
+  const pathname=usePathname();
+  const appArea=["/portal","/staff","/admin","/dev","/initial-owner-setup"].some(base=>pathname===base||pathname.startsWith(base+"/"));
+  if(appArea)return null;
   return (
     <footer className="site-footer">
       <div className="shell footer-main">
-        <div>
-          <Link href="/" className="footer-brand">BRANDON <span>RV</span></Link>
+        <div className="footer-brand-block">
+          <Link href="/" className="footer-brand"><span>BRANDON</span> RV</Link>
           <p>{brandLine}</p>
+          <small>Mobile caravan & motorhome interior repair enquiries.</small>
         </div>
-        <div className="footer-links">
-          <Link href="/services">Services</Link>\n          <Link href="/how-it-works">How it works</Link>\n          <Link href="/gallery">Previous work</Link>\n          <Link href="/faq">FAQs</Link>
+        <nav className="footer-links" aria-label="Footer navigation">
+          <Link href="/services">Services</Link>
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/service-areas">Service areas</Link>
+          <Link href="/gallery">Previous work</Link>
+          <Link href="/faq">FAQs</Link>
           <Link href="/about">About</Link>
           <Link href="/contact">Contact</Link>
-        </div>
+          <Link href="/portal/sign-in">Customer portal</Link>
+        </nav>
         <div className="footer-contact">
-          <span>Mobile service · {location}</span>
+          <span>MOBILE SERVICE · {location}</span>
           <a href={phoneLink}>{phone}</a>
+          <Link href="/request-quote">Request a quote <span aria-hidden="true">→</span></Link>
         </div>
       </div>
       <div className="shell footer-bottom">
         <span>© {new Date().getFullYear()} Brandon RV</span>
-        <span>Service enquiries are assessed before a booking is confirmed.</span>
+        <span>Every request is assessed before a booking is confirmed.</span>
       </div>
     </footer>
   );

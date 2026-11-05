@@ -1,22 +1,22 @@
-import type { Metadata } from "next";
+import type {Metadata} from "next";
 import {getPublishedSitePage,contentText} from "@/lib/public-site";
 
-export const metadata: Metadata = {
-  title: "About",
-  description: "Learn about Brandon RV, a mobile caravan and motorhome interior repair service based in Tamworth, NSW."
+export const metadata:Metadata={
+  title:"About",
+  description:"Learn about Brandon RV, a mobile caravan and motorhome interior repair enquiry service based in Tamworth, NSW."
 };
-
 export const dynamic="force-dynamic";
+
 export default async function AboutPage() {
   const page=await getPublishedSitePage("about");
-  const intro=contentText(page?.content,"intro","A mobile service built around practical caravan and motorhome interior repairs, fittings and accessories.");
+  const intro=contentText(page?.content,"intro","Brandon RV is being developed as a mobile, appointment-based service for suitable caravan and motorhome interior repair and accessory enquiries around Tamworth, NSW.");
   const pageTitle=page?.title??"Experience that understands your setup.";
   const words=pageTitle.split(/\s+/);
   return (
     <main>
       <section className="page-hero">
         <div className="shell">
-          <p className="eyebrow"><span className="eyebrow-line" /> ABOUT BRANDON RV</p>
+          <p className="eyebrow"><span className="eyebrow-line"/> ABOUT BRANDON RV</p>
           <h1>{words.slice(0,-2).join(" ")} <em>{words.slice(-2).join(" ")}</em></h1>
           <p>{intro}</p>
         </div>
@@ -25,13 +25,13 @@ export default async function AboutPage() {
         <div className="shell about-grid">
           <aside className="about-aside">
             <strong>From Factory Experience to Repairs On The Go.</strong>
-            <p>Mobile caravan and motorhome interior service · Tamworth NSW</p>
+            <p>Mobile caravan and motorhome interior repair enquiries · Tamworth NSW</p>
           </aside>
           <div className="about-copy">
-            <h2>Keeping the inside working for the journey.</h2>
-            <p>Brandon RV is a Tamworth-based mobile caravan and motorhome interior repair and accessory service. The focus is on the practical details that make a difference when you are travelling or spending time away: doors that do not close properly, worn hardware, loose fittings and suitable interior upgrades.</p>
-            <p>The business draws on hands-on experience across motorhome manufacturing and caravan parts and service. Every job is considered individually, with clear communication about what can be done, what is required and whether another specialist is needed.</p>
-            <p>Brandon RV aims to make the repair process straightforward: understand the issue, confirm the scope, agree on the next step and arrange a visit where the work is suitable.</p>
+            <h2>A practical approach to mobile RV repairs.</h2>
+            <p>Chris's background includes motorhome manufacturing at Trakka, including B-Class production team leadership, and caravan parts, customer service and repair coordination at Tow World. He also holds a Certificate II in automotive servicing.</p>
+            <p>That background informs the business approach: understand the issue, check the exact scope, explain the options and agree on the next step before work begins.</p>
+            <p>A qualification or previous experience does not automatically authorise regulated work. Each request is assessed against the actual task, demonstrated capability, applicable permissions, insurance, tools and customer-site conditions. Work outside the confirmed scope is declined or referred to an appropriately qualified specialist.</p>
           </div>
         </div>
       </section>

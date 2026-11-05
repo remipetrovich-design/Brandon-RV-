@@ -2,45 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {getPublishedServices,getPublishedSitePage,contentText} from "@/lib/public-site";
 
-export const metadata: Metadata = {
-  title: "Services",
-  description: "Caravan and motorhome interior repairs, hardware and selected accessories from Brandon RV in Tamworth, NSW."
+export const metadata:Metadata={
+  title:"Services",
+  description:"Ask Brandon RV about suitable caravan and motorhome interior repair enquiries around Tamworth, NSW."
 };
 
-const fallbackServiceDetails = [
-  {
-    number: "01",
-    title: "Cabinetry & interior repairs",
-    description: "Minor interior repairs and adjustments, including cupboard doors, drawer fronts, hinges, latches and runners."
-  },
-  {
-    number: "02",
-    title: "Interior hardware & fittings",
-    description: "Help with selected handles, catches, trims and other interior fittings that have become worn, loose or damaged."
-  },
-  {
-    number: "03",
-    title: "Accessory installation",
-    description: "Selected caravan and motorhome interior accessories and practical upgrades. The product and installation requirements are checked before work is accepted."
-  },
-  {
-    number: "04",
-    title: "Fault assessment",
-    description: "Discuss an interior issue, provide photos and details, and confirm whether it is suitable for a mobile repair visit."
-  }
+const enquiryCategories=[
+  {number:"01",title:"Cabinetry & interior hardware",description:"Ask about minor, non-structural repairs to suitable hinges, latches, runners, doors and trims."},
+  {number:"02",title:"Living-area fittings",description:"Discuss suitable handles, catches and interior fittings. The exact task and installation method are checked first."},
+  {number:"03",title:"Accessory enquiries",description:"Send the product details and photos. Electrical, plumbing and specialist systems are not assumed to be within scope."},
+  {number:"04",title:"Repair assessment",description:"Describe the issue and provide photos so the work, vehicle and location can be reviewed before a visit is discussed."}
 ];
 
 export default async function ServicesPage() {
   const [page,published]=await Promise.all([getPublishedSitePage("services"),getPublishedServices()]);
-  const serviceDetails=published.length?published.map((s,i)=>({number:String(i+1).padStart(2,"0"),title:s.name,description:s.description??"Contact Brandon RV to confirm the work required.",scope_notes:s.scope_notes})):fallbackServiceDetails.map(s=>({...s,scope_notes:null as string|null}));
-  const intro=contentText(page?.content,"intro","The work is focused on suitable caravan and motorhome interior jobs. Each enquiry is reviewed against the repair required, the vehicle, the location and the parts or equipment needed.");
+  const services=published.length
+    ? published.map((service,index)=>({number:String(index+1).padStart(2,"0"),title:service.name,description:service.description??"Contact Brandon RV to discuss whether this work is suitable.",scope_notes:service.scope_notes}))
+    : enquiryCategories.map(service=>({...service,scope_notes:null as string|null}));
+  const intro=contentText(page?.content,"intro","Brandon RV focuses on suitable caravan and motorhome living-area repair enquiries. Each request is checked against the actual task, vehicle, location, capability and applicable requirements before work is accepted.");
   const heroTitle=contentText(page?.content,"hero_title","Practical help for life on the road.");
   const words=heroTitle.split(/\s+/);
   return (
     <main>
       <section className="page-hero">
         <div className="shell">
-          <p className="eyebrow"><span className="eyebrow-line" /> BRANDON RV SERVICES</p>
+          <p className="eyebrow"><span className="eyebrow-line"/> WHAT WE CAN ASSESS</p>
           <h1>{words.slice(0,-2).join(" ")} <em>{words.slice(-2).join(" ")}</em></h1>
           <p>{intro}</p>
         </div>
@@ -49,18 +35,17 @@ export default async function ServicesPage() {
         <div className="shell">
           <p className="content-intro">{intro}</p>
           <div className="detail-list">
-            {serviceDetails.map((service) => (
+            {services.map(service=>(
               <article className="detail-item" key={service.number}>
-                <span>{service.number}</span>
-                <h2>{service.title}</h2>
-                <p>{service.description}</p>{service.scope_notes&&<small className="service-scope-note">{service.scope_notes}</small>}
+                <span>{service.number}</span><h2>{service.title}</h2><p>{service.description}</p>
+                {service.scope_notes&&<small className="service-scope-note">{service.scope_notes}</small>}
               </article>
             ))}
           </div>
           <div className="note-panel">
-            <p>Not sure whether your job is covered? Contact Brandon RV with a description and photos. Some work may need to be referred to a suitably qualified specialist. A booking is only confirmed after the job scope and availability have been checked.</p>
+            <p>These categories are not a promise that every task can be accepted. Work proceeds only when it is within the confirmed service scope, demonstrated capability and insurance cover, and can be completed with suitable tools and safe site conditions. Some requests must be referred to a specialist.</p>
           </div>
-          <div className="section-link-row"><Link href="/contact" className="text-link">Enquire about a job <span aria-hidden="true">→</span></Link></div>
+          <div className="section-link-row"><Link href="/request-quote" className="text-link">Send a service enquiry <span aria-hidden="true">→</span></Link></div>
         </div>
       </section>
     </main>
