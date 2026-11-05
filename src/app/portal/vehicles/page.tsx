@@ -1,14 +1,12 @@
 "use client";
-
-import { useState } from "react";
-
-export default function VehiclesPage() {
-  const [notice, setNotice] = useState("");
-  return <>
-    <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line" /> YOUR VEHICLES</p><h1>Vehicles <em>on file.</em></h1><p>Keep your caravan or motorhome details together for easier service enquiries.</p></div>
-    <div className="preview-banner"><span>SAMPLE VEHICLE</span><p>This vehicle is fictional sample data. Vehicle records will be saved securely after backend integration.</p></div>
-    <article className="vehicle-card"><div className="vehicle-visual"><span>BR</span><small>VEHICLE PROFILE</small></div><div className="vehicle-details"><span className="panel-kicker">CARAVAN · SAMPLE RECORD</span><h2>2021 Jayco Journey</h2><div className="vehicle-meta"><div><small>MAKE</small><strong>Jayco</strong></div><div><small>MODEL</small><strong>Journey</strong></div><div><small>YEAR</small><strong>2021</strong></div><div><small>REGISTRATION</small><strong>ABC-123</strong></div></div><p>Notes: Sample vehicle profile for layout preview.</p><button className="text-button" onClick={() => setNotice("Vehicle editing will be available when secure customer records are connected.")}>Edit vehicle details →</button></div></article>
-    <button className="button button-secondary add-vehicle" onClick={() => setNotice("Adding vehicles will be enabled after the customer account backend is connected.")}>＋ Add another vehicle</button>
-    {notice && <p className="inline-notice" role="status">{notice}</p>}
-  </>;
+import { FormEvent,useEffect,useState } from "react";
+type Vehicle={id:string;make:string|null;model:string|null;year:number|null;vehicle_type:string|null;registration:string|null;vin:string|null;notes:string|null};
+export default function VehiclesPage(){
+ const [vehicles,setVehicles]=useState<Vehicle[]>([]); const [notice,setNotice]=useState(""); const [busy,setBusy]=useState(false);
+ async function load(){const r=await fetch("/api/portal/vehicles");const d=await r.json();if(r.ok)setVehicles(d.vehicles??[]);else setNotice(d.error??"Could not load vehicles.");}
+ useEffect(()=>{void load();},[]);
+ async function add(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");const form=e.currentTarget;const values=Object.fromEntries(new FormData(form));try{const r=await fetch("/api/portal/vehicles",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(values)});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not save vehicle.");return;}form.reset();setNotice("Vehicle saved.");await load();}catch{setNotice("Could not save vehicle.");}finally{setBusy(false);}}
+ return <><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> YOUR VEHICLES</p><h1>Vehicles <em>on file.</em></h1><p>Keep your caravan or motorhome details current for service requests.</p></div>
+ <section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">VEHICLE RECORDS</span><h2>Your vehicles</h2></div></div>{vehicles.length?<div className="activity-list">{vehicles.map(v=><article className="activity-item" key={v.id}><div className="activity-date">{v.year??"RV"}</div><div className="activity-copy"><strong>{[v.make,v.model].filter(Boolean).join(" ")||"Vehicle"}</strong><span>{v.vehicle_type??"Vehicle"}{v.registration?" · "+v.registration:""}</span>{v.vin&&<small>VIN: {v.vin}</small>}{v.notes&&<small>{v.notes}</small>}</div></article>)}</div>:<p className="panel-footnote">No vehicles are saved to your account yet.</p>}</section>
+ <section className="portal-panel"><span className="panel-kicker">ADD A VEHICLE</span><h2>Vehicle details</h2><form className="auth-form" onSubmit={add}><label>Make<input name="make" maxLength={80}/></label><label>Model<input name="model" maxLength={100}/></label><label>Year<input name="year" type="number" min="1950" max="2100"/></label><label>Vehicle type<select name="vehicle_type"><option value="">Select type</option><option>Caravan</option><option>Motorhome</option><option>Camper trailer</option><option>Other</option></select></label><label>Registration<input name="registration" maxLength={20}/></label><label>VIN (optional)<input name="vin" maxLength={40}/></label><label>Notes<textarea name="notes" rows={3} maxLength={1000}/></label><button className="button button-primary" disabled={busy}>{busy?"Saving…":"Save vehicle →"}</button></form>{notice&&<p className="inline-notice" role="status">{notice}</p>}</section></>;
 }
