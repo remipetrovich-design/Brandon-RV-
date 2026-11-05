@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
+import {getPublicBusiness,phoneHref} from "@/lib/public-site";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
     "Mobile caravan and motorhome interior repairs and accessories in Tamworth, NSW. From Factory Experience to Repairs On The Go."
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: ReactNode;
@@ -21,9 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en-AU">
       <body>
-        <SiteHeader />
+        <SiteHeader phone={phone} phoneLink={phoneHref(phone)} brandLine={brandLine} />
         {children}
-        <SiteFooter />
+        <SiteFooter phone={phone} phoneLink={phoneHref(phone)} brandLine={brandLine} location={location} />
       </body>
     </html>
   );
