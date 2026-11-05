@@ -17,7 +17,7 @@ export async function POST(request:Request){
   const {data:existing}=await db.from("users").select("id").eq("email",email).maybeSingle();if(existing)return jsonError("An account with that email already exists.",409);
   const {data:business,error:businessError}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();if(businessError||!business)return jsonError("Business setup is incomplete. Please contact Brandon RV.",503);
   const verificationEnabled=isEmailConfigured();const now=new Date().toISOString();
-  const {data:user,error}=await db.from("users").insert({email,password_hash:await passwordHash(password),full_name:fullName,phone:phone||null,account_type:"customer",status:verificationEnabled?"pending":"active",email_verified_at:verificationEnabled?null:now}).select("id").single();
+  const {data:user,error}=await db.from("users").insert({email,password_hash:await passwordHash(password),full_name:fullName,phone:phone||null,account_type:"customer",status:verificationEnabled?"pending":"active",email_verified_at:null}).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
   const {data:customer,error:customerError}=await db.from("customers").insert({business_id:business.id,user_id:user.id,full_name:fullName,email,phone:phone||null,status:"active"}).select("id").single();
   if(customerError||!customer){await db.from("users").delete().eq("id",user.id);return jsonError("Could not finish setting up your customer profile.",500);}
