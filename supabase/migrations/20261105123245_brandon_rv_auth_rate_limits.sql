@@ -1,0 +1,3 @@
+ALTER TABLE public.login_attempts ADD COLUMN IF NOT EXISTS attempt_type text NOT NULL DEFAULT 'login' CHECK (attempt_type IN ('login','password_reset','registration'));
+CREATE INDEX IF NOT EXISTS login_attempts_type_email_time_idx ON public.login_attempts(attempt_type,email,attempted_at DESC);
+CREATE INDEX IF NOT EXISTS login_attempts_type_ip_time_idx ON public.login_attempts(attempt_type,ip_hash,attempted_at DESC);
