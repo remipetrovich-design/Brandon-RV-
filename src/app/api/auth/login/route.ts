@@ -10,7 +10,7 @@ export async function POST(request:Request){
   const {count}=await db.from("login_attempts").select("id",{count:"exact",head:true}).eq("attempt_type","login").eq("email",email).eq("ip_hash",ipHash).eq("succeeded",false).gte("attempted_at",since);
   if((count??0)>=8)return jsonError("Too many attempts. Try again in 15 minutes.",429);
   const {data:user}=await db.from("users").select("id,email,full_name,phone,account_type,status,password_hash,email_verified_at,force_password_change").eq("email",email).maybeSingle();
-  const valid=!!user&&user.status==="active"&&!!user.email_verified_at&&await passwordMatches(password,user.password_hash);
+  const valid=!!user&&user.status==="active"&&await passwordMatches(password,user.password_hash);
   await db.from("login_attempts").insert({attempt_type:"login",email,ip_hash:ipHash,succeeded:valid});
   if(!valid||!user)return jsonError("Email or password is incorrect.",401);
   await db.from("users").update({last_login_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",user.id);
