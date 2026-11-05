@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AcceptStaffInvitationPage() {
+function InvitationForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") ?? "";
@@ -26,4 +26,8 @@ export default function AcceptStaffInvitationPage() {
     {!token ? <p className="inline-notice">This invitation link is missing its token.</p> : <form className="auth-form" onSubmit={submit}><label>Password<input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" /></label><label>Confirm password<input name="confirmPassword" type="password" minLength={12} maxLength={128} required autoComplete="new-password" /></label><button className="button button-primary" disabled={busy}>{busy ? "Activating…" : "Activate staff account"} →</button></form>}
     {notice && <p className="inline-notice" role="alert">{notice}</p>}
   </section></main>;
+}
+
+export default function AcceptStaffInvitationPage() {
+  return <Suspense fallback={<main className="auth-wrap">Loading invitation…</main>}><InvitationForm /></Suspense>;
 }
