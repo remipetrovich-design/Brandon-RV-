@@ -6,7 +6,12 @@ export const metadata: Metadata = {
   description: "Contact Brandon RV in Tamworth, NSW about caravan and motorhome interior repairs and accessories."
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const [business,page]=await Promise.all([getPublicBusiness(),getPublishedSitePage("contact")]);
+  const phone=business.phone??"0407 189 087";
+  const callLink=phoneHref(phone);
+  const location=[business.city,business.region].filter(Boolean).join(" ")||"Tamworth NSW";
+  const intro=contentText(page?.content,"intro","Start with a call and a few details about your caravan or motorhome. We can discuss whether the job is suitable and what happens next.");
   return (
     <main>
       <section className="page-hero">
