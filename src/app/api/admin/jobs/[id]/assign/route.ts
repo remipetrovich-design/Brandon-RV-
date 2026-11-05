@@ -3,7 +3,7 @@ export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,"jobs.assign")))return jsonError("You do not have permission to assign jobs.",403);
  const {id}=await params;const db=database();const {data:job}=await db.from("jobs").select("id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();if(!job)return jsonError("Job not found.",404);
- const [{data:staff},{data:assignments}]=await Promise.all([db.from("staff").select("id,user_id,job_title,employment_status,users(full_name,email)").eq("business_id",membership.business_id).eq("employment_status","active"),db.from("job_assignments").select("staff_id,status").eq("job_id",id)]);
+ const [{data:staff},{data:assignments}]=await Promise.all([db.from("staff").select("id,user_id,job_title,employment_status,full_name,email").eq("business_id",membership.business_id).eq("employment_status","active"),db.from("job_assignments").select("staff_id,status").eq("job_id",id)]);
  return Response.json({staff:staff??[],assignments:assignments??[]});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
