@@ -1,31 +1,57 @@
 # Brandon RV account system setup
 
-The application now owns customer and staff identities in the `public.users` table. Supabase is used as database infrastructure only; the account flow does not use Supabase Auth.
+The application owns customer and staff identities in the `public.users` table. Supabase is database infrastructure only; customer and staff login do not use Supabase Auth.
+
+## Database
+
+The Brandon RV Supabase project contains the business, customer, vehicle, enquiry, quote, appointment, job, invoice, payment and document tables, plus app-owned identity/session tables:
+
+- `users`, `user_sessions`, `login_attempts`
+- `email_verification_tokens`, `password_reset_tokens`
+- `user_invitations`, `staff`, `business_members`
+- `permissions`, `permission_groups`, `permission_group_permissions`, `member_permission_groups`
+
+The seeded staff roles are Owner, Administrator, Manager, Technician, Office and Accounts. The Owner group has all 34 configured permissions; the other groups have their own permission sets. Owners can create custom roles and adjust permission assignments in `/admin/roles`.
+
+The database uses RLS. The application accesses private customer and staff data through server-side Supabase service-role access only. Do not expose the service key to the browser.
 
 ## Required Vercel environment variables
 
-Set these for the Brandon RV application:
-
 - `SUPABASE_URL`: the Brandon RV Supabase project URL.
-- `SUPABASE_SERVICE_ROLE_KEY`: the project service-role key. Server-side only; never expose it as a `NEXT_PUBLIC_` variable.
-- `BRANDON_RV_SETUP_SECRET`: a long random one-time secret used to create the first owner.
-- `NEXT_PUBLIC_APP_URL`: the deployed public application URL, used in staff invitation links.
+- `SUPABASE_SERVICE_ROLE_KEY`: the project service-role key. Server-side only.
+- `BRANDON_RV_SETUP_SECRET`: optional legacy bootstrap protection. The current initial-owner flow uses a single-use, hashed invitation token stored in the database.
+- `NEXT_PUBLIC_APP_URL`: the deployed public application origin used to build account links.
+- `RESEND_API_KEY` and `EMAIL_FROM`: optional transactional email delivery settings.
 
-Redeploy after setting the variables.
+The preview branch needs its own Preview-target versions of the Supabase URL and service-role key. Redeploy after changing environment variables.
 
 ## Create the first owner
 
-Before opening customer registration, make one POST request to `/api/auth/bootstrap-owner` with the setup secret in the `x-setup-secret` header and JSON containing `fullName`, `email`, and a password of at least 12 characters. This endpoint refuses to create a second owner. After successful setup, remove `BRANDON_RV_SETUP_SECRET` from Vercel and redeploy.
+A deployment operator creates one `user_invitations` row with `account_type='owner'`, `role='owner'`, a SHA-256 token hash and a short expiry. Share the resulting private `/initial-owner-setup?token=...` link with the intended owner. The page collects the owner's name, email and password; the API consumes the invitation once, creates the owner user, staff profile and business membership, and starts the owner session. It refuses to create a second owner.
 
-## Basic account flows
+The invitation token is stored as a hash, expires after seven days and must not be published or reused. If the link is lost or expires, issue a new invitation through a trusted database operation.
 
-- Customers register at `/portal/register`, then sign in at `/portal/sign-in`.
-- Staff invitations are created from `/admin/staff` by an active owner or administrator. The invitation link is shown once and expires after seven days.
-- Staff activate their account at `/staff/accept-invitation`, choose a password, and are assigned their business role.
-- Staff and owners land in `/staff`; customers land in `/portal`.
-- Sessions use opaque random tokens stored as SHA-256 hashes in `user_sessions`, delivered in HttpOnly cookies. Passwords use Argon2id hashes.
-- Customer and staff account tables are protected by RLS and are only accessed by the server using the private service key. The browser never receives that key.
+## Customer account flows
 
-## Current scope
+- Customers register at `/portal/register` and sign in at `/portal/sign-in`.
+- With Resend configured, registration requires email verification before sign-in.
+- Without an email provider, registration activates the account immediately and clearly tells the customer that email verification and password-recovery email are unavailable. Customers should use an email address they can access.
+- Password recovery is available at `/portal/forgot-password` and `/portal/reset-password` when email delivery is configured. Without email delivery, customers must contact Brandon RV for account recovery.
+- Customer portal pages: Overview, Quotes, Bookings & Jobs, Vehicles, Documents, Invoices & Payments, and My Details.
+- Customers can submit service enquiries, request appointments, manage their vehicle records, review issued quotes and accept or decline a quote. Appointment requests are not confirmed until Brandon RV approves the time.
 
-Customer registration, login, logout, session checks, owner bootstrap, staff invitations and staff activation are implemented. Password-reset token storage exists, but password-reset email delivery and the reset UI are not yet connected. Email verification and outbound invitation email are also not connected; invitations must currently be shared using the one-time link shown by the admin screen.
+## Staff and role flows
+
+- Owners and administrators invite staff from `/admin/staff`.
+- Staff roles are checked against the business permission groups. Custom roles can be created and assigned through `/admin/roles`.
+- With email delivery configured, invitations are emailed. Without it, the admin screen displays the invitation URL so it can be shared manually. Invitation links expire after seven days.
+- Staff activate their account at `/staff/accept-invitation` and choose a password.
+- Staff and owners are routed to `/staff`; customers are routed to `/portal`.
+
+## Security model
+
+- Sessions use opaque random tokens stored as SHA-256 hashes in `user_sessions`, delivered in HttpOnly, SameSite=Lax cookies.
+- Passwords use Argon2id hashes.
+- Registration and login attempts are rate-limited using `login_attempts`.
+- Password reset and email verification tokens are random, hashed at rest, single-use and time-limited.
+- Customer APIs derive ownership from the authenticated server-side session; client-supplied customer or user IDs are not trusted.

@@ -5,7 +5,7 @@ export async function POST(request:Request){
  try{
   const body=await request.json();const start=String(body.preferredStart??"");const location=String(body.location??"").trim();const notes=String(body.notes??"").trim().slice(0,2000);const vehicleId=body.vehicleId?String(body.vehicleId):null;const serviceId=body.serviceId?String(body.serviceId):null;
   const startDate=new Date(start);if(!start||!Number.isFinite(startDate.getTime())||startDate.getTime()<Date.now()+60*60*1000)return jsonError("Choose a preferred time at least one hour from now.");
-  if(location.length>200)return jsonError("Enter a valid service location.");
+  if(location.length<3||location.length>200)return jsonError("Enter the vehicle location so travel can be assessed.");
   const db=database();const {data:customer}=await db.from("customers").select("id,business_id").eq("user_id",user.id).maybeSingle();if(!customer)return jsonError("Customer profile not found.",404);
   if(vehicleId){const {data:vehicle}=await db.from("vehicles").select("id").eq("id",vehicleId).eq("customer_id",customer.id).maybeSingle();if(!vehicle)return jsonError("Select one of your saved vehicles.");}
   if(serviceId){const {data:service}=await db.from("services").select("id").eq("id",serviceId).eq("business_id",customer.business_id).eq("is_active",true).maybeSingle();if(!service)return jsonError("Select a valid service.");}

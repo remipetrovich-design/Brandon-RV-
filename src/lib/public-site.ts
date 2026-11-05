@@ -1,0 +1,41 @@
+import "server-only";
+import {database} from "@/lib/auth";
+export type PublicSitePage={title:string;meta_title:string|null;meta_description:string|null;content:Record<string,unknown>};
+export type PublicService={id:string;name:string;slug:string;category:string|null;description:string|null;scope_notes:string|null;sort_order:number};
+export async function getPublishedSitePage(slug:string):Promise<PublicSitePage|null>{
+ try{
+  const db=database();const {data:business}=await db.from("businesses").select("id").eq("slug","brandon-rv").maybeSingle();if(!business)return null;
+  const {data}=await db.from("site_pages").select("title,meta_title,meta_description,content").eq("business_id",business.id).eq("slug",slug).eq("is_published",true).maybeSingle();
+  if(!data)return null;const content=data.content&&typeof data.content==="object"&&!Array.isArray(data.content)?data.content as Record<string,unknown>:{};
+  return {...data,content};
+ }catch{return null;}
+}
+export async function getPublishedServices():Promise<PublicService[]>{
+ try{
+  const db=database();const {data:business}=await db.from("businesses").select("id").eq("slug","brandon-rv").maybeSingle();if(!business)return [];
+  const {data}=await db.from("services").select("id,name,slug,category,description,scope_notes,sort_order").eq("business_id",business.id).eq("is_active",true).eq("is_published",true).order("sort_order").order("name");
+  return data??[];
+ }catch{return [];}
+}
+export async function getPublishedServiceAreas(){
+ try{
+  const db=database();const {data:business}=await db.from("businesses").select("id").eq("slug","brandon-rv").maybeSingle();if(!business)return [];
+  const {data}=await db.from("service_areas").select("id,name,description,radius_km,travel_fee,sort_order").eq("business_id",business.id).eq("is_published",true).order("sort_order");
+  return data??[];
+ }catch{return [];}
+}
+export function contentText(content:Record<string,unknown>|undefined,key:string,fallback:string){
+ const value=content?.[key];return typeof value==="string"&&value.trim()?value.trim():fallback;
+}
+
+export type PublicBusiness={name:string;brand_line:string|null;phone:string|null;city:string|null;region:string|null};
+export async function getPublicBusiness():Promise<PublicBusiness>{
+ const fallback:PublicBusiness={name:"Brandon RV",brand_line:"From Factory Experience to Repairs On The Go",phone:"0407 189 087",city:"Tamworth",region:"NSW"};
+ try{const {data}=await database().from("businesses").select("name,brand_line,phone,city,region").eq("slug","brandon-rv").maybeSingle();return data?{...fallback,...data}:fallback;}catch{return fallback;}
+}
+export function phoneHref(value:string|null|undefined){
+ const digits=String(value??"").replace(/[^0-9+]/g,"");
+ if(!digits)return "tel:+61407189087";
+ if(digits.startsWith("0"))return "tel:+61"+digits.slice(1);
+ return "tel:"+digits;
+}

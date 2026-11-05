@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
+import {getPublishedSitePage,contentText} from "@/lib/public-site";
 
 export const metadata: Metadata = {
   title: "About",
   description: "Learn about Brandon RV, a mobile caravan and motorhome interior repair service based in Tamworth, NSW."
 };
 
-export default function AboutPage() {
+export const dynamic="force-dynamic";
+export default async function AboutPage() {
+  const page=await getPublishedSitePage("about");
+  const intro=contentText(page?.content,"intro","A mobile service built around practical caravan and motorhome interior repairs, fittings and accessories.");
+  const pageTitle=page?.title??"Experience that understands your setup.";
+  const words=pageTitle.split(/\s+/);
   return (
     <main>
       <section className="page-hero">
         <div className="shell">
           <p className="eyebrow"><span className="eyebrow-line" /> ABOUT BRANDON RV</p>
-          <h1>Experience that understands <em>your setup.</em></h1>
-          <p>A mobile service built around practical caravan and motorhome interior repairs, fittings and accessories.</p>
+          <h1>{words.slice(0,-2).join(" ")} <em>{words.slice(-2).join(" ")}</em></h1>
+          <p>{intro}</p>
         </div>
       </section>
       <section className="content-section">

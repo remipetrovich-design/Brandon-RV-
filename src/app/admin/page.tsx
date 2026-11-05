@@ -25,6 +25,10 @@ const menuGroups=[
  {title:"Business administration",description:"Manage operating costs and the public customer experience.",items:[
   ["Expenses","/admin/expenses","Business expenses and receipts","expenses.view"],
   ["Website editor","/admin/website","Public website content and service information","website.manage"],
+  ["Services","/admin/services","Configure the approved service catalogue","business.settings.manage"],
+  ["Business profile","/admin/business-profile","Public business details and contact information","business.settings.manage"],
+  ["Service areas","/admin/service-areas","Mobile service boundaries and travel settings","business.settings.manage"],
+  ["Reports","/admin/reports","Business and job reporting","reports.view"],
   ["Business settings","/admin/settings","Business configuration and booking rules","settings.manage"]
  ]}
 ] as const;
