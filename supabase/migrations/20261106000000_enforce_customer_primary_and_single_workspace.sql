@@ -1,13 +1,19 @@
 -- Every identity remains customer-primary. Business roles are additive membership roles.
+-- Normalize all legacy group values before tightening constraints.
 update public.users
 set secondary_group = case
-  when primary_group in ('staff','owner','developer') or secondary_group in ('staff','owner','developer') then 'staff'
+  when primary_group in ('staff','owner','developer')
+    or secondary_group in ('staff','owner','developer') then 'staff'
   else null
 end,
 primary_group = 'customer',
-updated_at = now()
-where primary_group is distinct from 'customer'
-   or secondary_group in ('owner','developer');
+updated_at = now();
+
+-- Preserve the business association for existing members created before the identity merge.
+update public.users u
+set business_id = bm.business_id, updated_at = now()
+from public.business_members bm
+where bm.user_id = u.id and bm.is_active = true and u.business_id is null;
 
 alter table public.users drop constraint if exists users_primary_group_check;
 alter table public.users add constraint users_primary_group_check check (primary_group = 'customer');
