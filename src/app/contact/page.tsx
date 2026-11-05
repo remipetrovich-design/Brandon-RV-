@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import {getPublicBusiness,phoneHref,getPublishedSitePage,contentText} from "@/lib/public-site";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -12,7 +13,7 @@ export default function ContactPage() {
         <div className="shell">
           <p className="eyebrow"><span className="eyebrow-line" /> CONTACT BRANDON RV</p>
           <h1>Tell us what needs <em>attention.</em></h1>
-          <p>Start with a call and a few details about your caravan or motorhome. We can discuss whether the job is suitable and what happens next.</p>
+          <p>{intro}</p>
         </div>
       </section>
       <section className="content-section">
@@ -24,8 +25,8 @@ export default function ContactPage() {
           </div>
           <div className="contact-card">
             <span>Call Chris</span>
-            <strong><a href="tel:+61407189087">0407 189 087</a></strong>
-            <p>Mobile service based in Tamworth, NSW. Contact us to discuss your location and the job you need done.</p>
+            <strong><a href={callLink}>{phone}</a></strong>
+            <p>Mobile service based in {[business.city,business.region].filter(Boolean).join(" ")||"Tamworth NSW"}. Contact us to discuss your location and the job you need done.</p>
             <span>Service area</span>
             <strong>Tamworth & surrounds</strong>
             <p>Travel outside the usual local area can be discussed when you enquire.</p>
