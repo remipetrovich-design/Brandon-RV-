@@ -1,19 +1,14 @@
-"use client";
-
-import { useState } from "react";
-
-export default function QuotesPage() {
-  const [response, setResponse] = useState("");
-  return <>
-    <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line" /> YOUR QUOTES</p><h1>Quotes & <em>approvals.</em></h1><p>Review proposed work, pricing and the next steps before deciding how to proceed.</p></div>
-    <div className="preview-banner"><span>SAMPLE QUOTE</span><p>The quote below is example content for the portal preview, not a real offer or price.</p></div>
-    <article className="quote-card">
-      <div className="quote-card-top"><div><span className="panel-kicker">QUOTE BRV-00024</span><h2>Interior hardware replacement</h2><p>Prepared 10 November 2026 · Expires 24 November 2026</p></div><span className="status-pill status-amber">Awaiting response</span></div>
-      <div className="quote-scope"><h3>Proposed work</h3><p>Inspect and replace selected cupboard hinges and drawer catches in the living area. Final parts and fitment to be confirmed against the vehicle.</p><ul><li>Check existing fittings and measurements</li><li>Supply agreed replacement hardware</li><li>Fit and check operation</li></ul></div>
-      <div className="quote-total"><span>Sample estimate (incl. GST)</span><strong>$385.00</strong></div>
-      <div className="quote-actions"><button className="button button-primary" onClick={() => setResponse("Preview only: accepting a quote will be enabled when customer accounts and quote workflows are connected.")}>Accept quote</button><button className="button button-secondary" onClick={() => setResponse("Preview only: quote change requests will be connected to the secure customer portal backend.")}>Ask a question / request a change</button></div>
-      {response && <p className="inline-notice" role="status">{response}</p>}
-    </article>
-    <p className="portal-muted-note">A quote only becomes an approved job after your acceptance is recorded and Brandon RV confirms the next steps.</p>
-  </>;
+import { redirect } from "next/navigation";
+import { currentUser,database } from "@/lib/auth";
+export const dynamic="force-dynamic";
+const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v||0));
+export default async function QuotesPage(){
+ const user=await currentUser(); if(!user) redirect("/portal/sign-in");
+ const db=database();
+ const {data:quotes}=await db.from("quotes").select("id,quote_number,status,issue_date,expiry_date,subtotal,tax_amount,total,notes,terms,quote_items(id,description,quantity,unit_price,line_total)").eq("user_id",user.id).in("status",["sent","accepted","declined","expired","converted"]).order("created_at",{ascending:false});
+ return <><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> YOUR QUOTES</p><h1>Quotes & <em>approvals.</em></h1><p>Review real quotes issued by Brandon RV and respond securely.</p></div>
+ {quotes.data?.length?quotes.data.map(q=><article className="quote-card" key={q.id}><div className="quote-card-top"><div><span className="panel-kicker">QUOTE {q.quote_number}</span><h2>Service quote</h2><p>Issued {new Date(q.issue_date).toLocaleDateString("en-AU")}{q.expiry_date?" · Expires "+new Date(q.expiry_date).toLocaleDateString("en-AU"):""}</p></div><span className="status-pill">{q.status}</span></div>
+ <div className="quote-scope"><h3>Proposed work</h3>{q.quote_items?.length?<ul>{q.quote_items.map((i:any)=><li key={i.id}>{i.description} · {i.quantity} × {money(i.unit_price)} = {money(i.line_total)}</li>)}</ul>:<p>See the notes and terms below.</p>}{q.notes&&<p>{q.notes}</p>}{q.terms&&<p>{q.terms}</p>}</div><div className="quote-total"><span>Quote total</span><strong>{money(q.total)}</strong></div>
+ {q.status==="sent"&&<div className="quote-actions"><form action="/api/portal/quotes/respond" method="post"><input type="hidden" name="quoteId" value={q.id}/><input type="hidden" name="response" value="accepted"/><button className="button button-primary" type="submit">Accept quote</button></form><form action="/api/portal/quotes/respond" method="post"><input type="hidden" name="quoteId" value={q.id}/><input type="hidden" name="response" value="declined"/><button className="button button-secondary" type="submit">Decline quote</button></form></div>}</article>):<section className="portal-panel"><p className="panel-footnote">There are no quotes issued to your account yet.</p></section>}
+ <p className="portal-muted-note">Accepting a quote records your response. Work is not booked until Brandon RV confirms scheduling and any required checks.</p></>;
 }
