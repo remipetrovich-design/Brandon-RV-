@@ -1,6 +1,6 @@
 import {redirect} from "next/navigation";
 import {currentUser,currentMembership,userHasPermission} from "@/lib/auth";
-import AdminShell, {type AdminNavGroup} from "@/components/admin-shell";
+import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 export const dynamic="force-dynamic";
 const navigation:AdminNavGroup[]=[
  {title:"Customer management",items:[{label:"Enquiries",href:"/admin/enquiries",permission:"enquiries.view",icon:"inbox"},{label:"Customers",href:"/admin/customers",permission:"customers.view",icon:"users"},{label:"Vehicles",href:"/admin/vehicles",permission:"vehicles.view",icon:"vehicle"}]},
@@ -17,6 +17,7 @@ export default async function AdminLayout({children}:{children:React.ReactNode})
  const permitted=new Set(permissionKeys.filter((_,index)=>checks[index]));
  const groups=navigation.map(group=>({...group,items:group.items.filter(item=>permitted.has(item.permission))})).filter(group=>group.items.length>0);
  const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
- if(!canSeeOverview&&!groups.length)redirect("/portal");
+ const employeeTools=await Promise.all(["jobs.complete","time.view","time.manage"].map(permission=>userHasPermission(user.id,permission)));
+ if(!canSeeOverview&&!groups.length&&!employeeTools.some(Boolean))redirect("/portal");
  return <AdminShell userName={user.full_name||user.email} role={membership.role} groups={groups}>{children}</AdminShell>;
 }
