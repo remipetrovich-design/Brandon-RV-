@@ -15,11 +15,6 @@ export default function PortalAuthGuard({children}:{children:ReactNode}){
   fetch("/api/auth/me",{cache:"no-store"}).then(async response=>{
    if(!active)return;
    if(response.ok){
-    const result=await response.json();
-    if(isPublic){
-     router.replace(result.user?.account_type==="staff"||result.user?.account_type==="owner"?"/staff":"/portal");
-     return;
-    }
     setReadyPath(pathname);
    }else if(isPublic){
     setReadyPath(pathname);

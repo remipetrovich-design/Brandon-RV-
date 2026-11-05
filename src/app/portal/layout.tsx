@@ -17,6 +17,8 @@ export default function PortalLayout({children}:{children:React.ReactNode}) {
           </Link>
           <div className="portal-topbar-right">
             {!isAuthPage&&<span className="portal-account-label">CUSTOMER ACCOUNT</span>}
+            <Link href="/staff" className="portal-workspace-link">Employee panel</Link>
+            <Link href="/admin" className="portal-workspace-link">Admin panel</Link>
             <Link href="/">Back to website <span aria-hidden="true">↗</span></Link>
           </div>
         </div>

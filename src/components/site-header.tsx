@@ -26,7 +26,7 @@ export default function SiteHeader({phone,phoneLink,brandLine}:{phone:string;pho
         })}
       </nav>
       <div className="header-actions">
-        <Link className="header-portal-link" href="/portal/sign-in">Customer portal</Link>
+        <Link className="header-portal-link" href="/portal">Customer portal</Link>
         <Link className="header-quote-link" href="/request-quote">Request a quote <span aria-hidden="true">→</span></Link>
         <a className="header-call" href={phoneLink}><span>Call Chris</span><strong>{phone}</strong></a>
       </div>

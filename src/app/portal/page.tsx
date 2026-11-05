@@ -7,10 +7,9 @@ export const dynamic = "force-dynamic";
 export default async function PortalDashboard() {
   const user = await currentUser();
   if (!user) redirect("/portal/sign-in");
-  if (user.account_type === "staff" || user.account_type === "owner") redirect("/staff");
   const db = database();
   const { data: customer } = await db.from("customers").select("id,full_name").eq("user_id", user.id).maybeSingle();
-  if (!customer) return <section className="portal-panel"><h1>Account setup in progress</h1><p>We could not find a customer profile linked to this account. Contact Brandon RV for help.</p></section>;
+  if (!customer) return <section className="portal-panel brv-no-customer-profile"><p className="eyebrow"><span className="eyebrow-line"/> CUSTOMER PORTAL</p><h1>Customer profile <em>not linked.</em></h1><p>This login does not currently have a customer profile connected. You can still use the employee or admin workspace if your account has the relevant access.</p><div className="brv-workspace-actions"><Link className="button button-secondary" href="/staff">Open employee panel <span>→</span></Link><Link className="button button-primary" href="/admin">Open admin panel <span>→</span></Link></div><p className="panel-footnote">If you are expecting customer records here, contact Brandon RV to link your customer profile to this login.</p></section>;
   const [enquiries, quotes, appointments] = await Promise.all([
     db.from("enquiries").select("id,status,created_at,requested_service").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
     db.from("quotes").select("id,status,total,quote_number").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
