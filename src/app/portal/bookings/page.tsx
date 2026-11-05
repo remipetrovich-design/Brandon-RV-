@@ -1,15 +1,16 @@
 import Link from "next/link";
-
-const jobs = [
-  { ref: "BRV-00108", title: "Interior fitting inspection", date: "19 Nov 2026", type: "Appointment request", status: "Scheduled", tone: "green" },
-  { ref: "BRV-00092", title: "Cupboard hinge adjustment", date: "02 Sep 2026", type: "Completed job", status: "Completed", tone: "blue" }
-];
-
-export default function BookingsPage() {
-  return <>
-    <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line" /> APPOINTMENTS & JOBS</p><h1>Your service <em>history.</em></h1><p>See upcoming visits, work in progress and completed jobs.</p></div>
-    <div className="preview-banner"><span>SAMPLE HISTORY</span><p>These entries are example records used to demonstrate the customer portal.</p></div>
-    <div className="job-list">{jobs.map((job) => <article className="job-row" key={job.ref}><div className="job-date"><strong>{job.date.split(" ")[0]}</strong><span>{job.date.split(" ").slice(1).join(" ")}</span></div><div className="job-info"><span>{job.ref} · {job.type}</span><h2>{job.title}</h2><p>Vehicle: Sample caravan</p></div><span className={`status-pill status-${job.tone}`}>{job.status}</span></article>)}</div>
-    <div className="portal-bottom-cta"><div><strong>Need something else looked at?</strong><span>Send through a new service enquiry for assessment.</span></div><Link className="button button-primary" href="/request-quote">New enquiry →</Link></div>
-  </>;
+import { redirect } from "next/navigation";
+import { currentUser,database } from "@/lib/auth";
+export const dynamic="force-dynamic";
+export default async function BookingsPage(){
+ const user=await currentUser(); if(!user) redirect("/portal/sign-in");
+ const db=database();
+ const [appointments,jobs]=await Promise.all([
+  db.from("appointments").select("id,status,preferred_start,starts_at,location,customer_notes,services(name)").eq("user_id",user.id).order("created_at",{ascending:false}),
+  db.from("jobs").select("id,job_number,title,status,scheduled_start,customer_visible_notes").eq("user_id",user.id).order("created_at",{ascending:false})
+ ]);
+ return <><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> APPOINTMENTS & JOBS</p><h1>Your service <em>history.</em></h1><p>Appointment requests, confirmed visits and work being carried out.</p></div>
+ <section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">APPOINTMENTS</span><h2>Visits and booking requests</h2></div></div>{appointments.data?.length?<div className="activity-list">{appointments.data.map(a=><article className="activity-item" key={a.id}><div className="activity-date">{a.starts_at?new Date(a.starts_at).toLocaleDateString("en-AU"):a.preferred_start?new Date(a.preferred_start).toLocaleDateString("en-AU"):"To be arranged"}</div><div className="activity-copy"><strong>{(a.services as any)?.name??"Service appointment"}</strong><span>{a.status.replace("_"," ")}{a.location?" · "+a.location:""}</span><small>{a.customer_notes??"No additional notes"}</small></div></article>)}</div>:<p className="panel-footnote">No appointment requests are linked to your account yet.</p>}</section>
+ <section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">JOB HISTORY</span><h2>Work and repairs</h2></div></div>{jobs.data?.length?<div className="activity-list">{jobs.data.map(j=><article className="activity-item" key={j.id}><div className="activity-date">{j.job_number}</div><div className="activity-copy"><strong>{j.title}</strong><span>{j.status.replace("_"," ")} · {j.scheduled_start?new Date(j.scheduled_start).toLocaleDateString("en-AU"):"Not scheduled"}</span><small>{j.customer_visible_notes??"No customer update available."}</small></div></article>)}</div>:<p className="panel-footnote">No jobs have been created for your account yet.</p>}</section>
+ <div className="portal-bottom-cta"><div><strong>Need to arrange a service?</strong><span>Send a request. Brandon RV will confirm availability before booking.</span></div><Link className="button button-primary" href="/request-quote">New enquiry →</Link></div></>;
 }
