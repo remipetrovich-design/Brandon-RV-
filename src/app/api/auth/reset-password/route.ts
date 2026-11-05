@@ -1,0 +1,16 @@
+import { database,digest,passwordHash,jsonError,sameOrigin } from "@/lib/auth";
+export const runtime="nodejs";
+export async function POST(request:Request){
+ if(!sameOrigin(request)) return jsonError("Invalid request origin.",403);
+ try{
+  const body=await request.json();const token=String(body.token??"");const password=String(body.password??"");
+  if(token.length<32||password.length<12||password.length>128) return jsonError("Use a valid reset link and a password between 12 and 128 characters.");
+  const db=database();const {data:record}=await db.from("password_reset_tokens").select("id,user_id").eq("token_hash",digest(token)).is("used_at",null).gt("expires_at",new Date().toISOString()).maybeSingle();
+  if(!record) return jsonError("This password reset link is invalid or expired.",410);
+  const now=new Date().toISOString();const {error}=await db.from("users").update({password_hash:await passwordHash(password),force_password_change:false,updated_at:now}).eq("id",record.user_id);
+  if(error) return jsonError("Could not update your password.",500);
+  await db.from("password_reset_tokens").update({used_at:now}).eq("id",record.id);
+  await db.from("user_sessions").delete().eq("user_id",record.user_id);
+  return Response.json({success:true,message:"Password updated. Sign in with your new password."});
+ }catch{return jsonError("Password reset is temporarily unavailable.",500);}
+}
