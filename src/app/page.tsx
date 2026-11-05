@@ -1,5 +1,5 @@
 import Link from "next/link";
-import {getPublishedServices,getPublishedSitePage,contentText} from "@/lib/public-site";
+import {getPublishedServices,getPublishedSitePage,getPublicBusiness,contentText,phoneHref} from "@/lib/public-site";
 export const dynamic="force-dynamic";
 
 const fallbackServices = [
@@ -32,7 +32,7 @@ export default function HomePage() {
               Practical caravan and motorhome interior repairs, fittings and accessories — with mobile service around Tamworth, NSW.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href="tel:+61407189087">Call 0407 189 087 <span aria-hidden="true">↗</span></a>
+              <a className="button button-primary" href={callLink}>Call {phone} <span aria-hidden="true">↗</span></a>
               <Link className="button button-secondary" href="/services">Explore services</Link>
               <Link className="button button-secondary" href="/request-quote">{primaryAction}</Link>
             </div>
@@ -107,7 +107,7 @@ export default function HomePage() {
       <section className="contact-strip">
         <div className="shell contact-strip-inner">
           <div><p className="eyebrow"><span className="eyebrow-line" /> HAVE A JOB IN MIND?</p><h2>Let’s get it <em>sorted.</em></h2></div>
-          <div className="contact-strip-action"><a className="button button-dark" href="tel:+61407189087">Call Chris · 0407 189 087 <span aria-hidden="true">↗</span></a><span>Based in Tamworth, NSW</span></div>
+          <div className="contact-strip-action"><a className="button button-dark" href="tel:+61407189087">Call Chris · {phone} <span aria-hidden="true">↗</span></a><span>Based in {location}</span></div>
         </div>
       </section>
     </main>
