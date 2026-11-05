@@ -12,7 +12,7 @@ const navigation = [
 
 export default function SiteHeader() {
   const pathname = usePathname();
-  const appArea = ["/portal", "/staff", "/admin", "/dev"].some((base) => pathname === base || pathname.startsWith(base + "/"));
+  const appArea = ["/portal", "/staff", "/admin", "/dev", "/initial-owner-setup"].some((base) => pathname === base || pathname.startsWith(base + "/"));
   if (appArea) return null;
 
   return (
