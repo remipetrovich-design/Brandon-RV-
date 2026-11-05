@@ -71,3 +71,43 @@ end $$;
 
 comment on column public.users.primary_group is 'Always customer. All users have customer account identity.';
 comment on column public.users.secondary_group is 'Compatibility flag for employee/business access. Specific roles and permissions are stored in business_members and permission groups.';
+
+ 
+-- Keep employee access intact if a customer record is deactivated or removed.
+create or replace function public.brandon_rv_customers_view_write()
+returns trigger language plpgsql security invoker set search_path=public as $$
+declare v_id uuid;
+begin
+ if tg_op='DELETE' then
+  if old.secondary_group='staff' or exists(select 1 from public.business_members bm where bm.user_id=old.id and bm.is_active=true) then
+   update public.users set customer_status='inactive',updated_at=now() where id=old.id;
+  else
+   delete from public.users where id=old.id;
+  end if;
+  return old;
+ elsif tg_op='INSERT' then
+  v_id:=new.user_id;
+  if v_id is null and new.email is not null then select id into v_id from public.users where email=lower(btrim(new.email)) limit 1;end if;
+  if v_id is not null then
+   update public.users set business_id=coalesce(new.business_id,business_id),
+    full_name=coalesce(nullif(new.full_name,''),full_name),email=coalesce(lower(btrim(new.email)),email),
+    phone=coalesce(new.phone,phone),address=new.address,suburb=new.suburb,state=new.state,postcode=new.postcode,
+    customer_internal_notes=new.internal_notes,customer_status=coalesce(new.status,'active'),
+    primary_group='customer',updated_at=now() where id=v_id;
+  else
+   if new.email is null or btrim(new.email)='' then raise exception 'A customer account requires an email address';end if;
+   insert into public.users(email,password_hash,full_name,phone,account_type,status,business_id,primary_group,
+    customer_status,address,suburb,state,postcode,customer_internal_notes)
+   values(lower(btrim(new.email)),null,coalesce(nullif(new.full_name,''),'Customer'),new.phone,'customer','pending',
+    new.business_id,'customer',coalesce(new.status,'active'),new.address,new.suburb,new.state,new.postcode,new.internal_notes)
+   returning id into v_id;
+  end if;
+  new.id:=v_id;new.user_id:=v_id;return new;
+ else
+  update public.users set business_id=new.business_id,full_name=new.full_name,email=lower(btrim(new.email)),
+   phone=new.phone,address=new.address,suburb=new.suburb,state=new.state,postcode=new.postcode,
+   customer_internal_notes=new.internal_notes,customer_status=coalesce(new.status,'active'),
+   primary_group='customer',updated_at=now() where id=old.id;
+  new.id:=old.id;new.user_id:=old.id;return new;
+ end if;
+end $$;
