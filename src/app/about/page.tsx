@@ -29,9 +29,9 @@ export default async function AboutPage() {
           </aside>
           <div className="about-copy">
             <h2>A practical approach to mobile RV repairs.</h2>
-            <p>Chris's background includes motorhome manufacturing at Trakka, including B-Class production team leadership, and caravan parts, customer service and repair coordination at Tow World. He also holds a Certificate II in automotive servicing.</p>
-            <p>That background informs the business approach: understand the issue, check the exact scope, explain the options and agree on the next step before work begins.</p>
-            <p>A qualification or previous experience does not automatically authorise regulated work. Each request is assessed against the actual task, demonstrated capability, applicable permissions, insurance, tools and customer-site conditions. Work outside the confirmed scope is declined or referred to an appropriately qualified specialist.</p>
+            <p>Chris's business plan records experience in motorhome manufacturing at Trakka, including a B-Class production team leadership role, and caravan parts, customer service and repair coordination at Tow World. It also records a Certificate II in automotive servicing. These are owner-reported credentials and should be supported by employment and qualification evidence before publication.</p>
+            <p>That background informs the intended business approach: understand the issue, check the exact scope, explain the options and agree on the next step before work begins.</p>
+            <p>Experience or a qualification does not automatically authorise regulated work. Each request is assessed against the actual task, demonstrated capability, applicable permissions, insurance, tools and customer-site conditions. Work outside the confirmed scope is declined or referred to an appropriately qualified specialist.</p>
           </div>
         </div>
       </section>

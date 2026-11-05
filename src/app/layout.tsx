@@ -9,7 +9,6 @@ import "./brv-refresh.css";
 export const metadata:Metadata={
   title:{default:"Brandon RV | Mobile Caravan & Motorhome Interior Repairs",template:"%s | Brandon RV"},
   description:"Mobile caravan and motorhome interior repair enquiries around Tamworth, NSW. From Factory Experience to Repairs On The Go.",
-  metadataBase:new URL("https://brandon-rv.vercel.app"),
   openGraph:{
     title:"Brandon RV | Repairs On The Go",
     description:"Mobile caravan and motorhome interior repair enquiries around Tamworth, NSW.",

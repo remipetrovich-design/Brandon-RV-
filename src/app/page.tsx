@@ -53,6 +53,7 @@ export default async function HomePage() {
               <span><i aria-hidden="true" /> Based in {location}</span>
               <span>Appointments confirmed after review</span>
             </div>
+            {business.status==="prelaunch"&&<div className="home-launch-note"><strong>Pre-launch</strong><span>Enquiries can be submitted for assessment. No booking or work is confirmed until the service scope, approvals, insurance and operating readiness are in place.</span></div>}
           </div>
           <aside className="home-hero-panel" aria-label="Brandon RV mobile service">
             <div className="home-panel-top"><span>BRANDON RV</span><span>REPAIRS ON THE GO</span></div>

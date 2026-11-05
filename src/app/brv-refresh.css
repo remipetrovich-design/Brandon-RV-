@@ -452,3 +452,7 @@ button, input, textarea, select { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.home-launch-note { display: flex; align-items: flex-start; gap: 11px; max-width: 590px; margin-top: 22px; padding: 12px 14px; border: 1px solid #ecd9ac; border-radius: 9px; background: #fff9ec; }
+.home-launch-note strong { flex: 0 0 auto; color: #87621c; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+.home-launch-note span { color: #786b4f; font-size: 10px; line-height: 1.6; }
