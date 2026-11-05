@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import {usePathname} from "next/navigation";
 
 const navigation = [
   { href: "/", label: "Home" },
@@ -9,6 +11,10 @@ const navigation = [
 ];
 
 export default function SiteHeader() {
+  const pathname = usePathname();
+  const appArea = ["/portal", "/staff", "/admin", "/dev"].some((base) => pathname === base || pathname.startsWith(base + "/"));
+  if (appArea) return null;
+
   return (
     <header className="site-header">
       <div className="shell header-inner">
