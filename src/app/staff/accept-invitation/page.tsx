@@ -22,8 +22,8 @@ function InvitationForm() {
     } catch { setNotice("Could not accept invitation."); }
     finally { setBusy(false); }
   }
-  return <main className="auth-wrap"><section className="auth-card"><p className="eyebrow"><span className="eyebrow-line" /> STAFF ACCESS</p><h1>Set up your <em>account.</em></h1><p className="auth-intro">Choose a password to activate your Brandon RV staff account.</p>
-    {!token ? <p className="inline-notice">This invitation link is missing its token.</p> : <form className="auth-form" onSubmit={submit}><label>Password<input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" /></label><label>Confirm password<input name="confirmPassword" type="password" minLength={12} maxLength={128} required autoComplete="new-password" /></label><button className="button button-primary" disabled={busy}>{busy ? "Activating…" : "Activate staff account"} →</button></form>}
+  return <main className="auth-wrap"><section className="auth-card"><p className="eyebrow"><span className="eyebrow-line" /> STAFF ACCESS</p><h1>Set up your <em>account.</em></h1><p className="auth-intro">If you already have a Brandon RV customer account, enter its existing password in both fields. Otherwise choose a password for your new account.</p>
+    {!token ? <p className="inline-notice">This invitation link is missing its token.</p> : <form className="auth-form" onSubmit={submit}><label>Account password<input name="password" type="password" minLength={12} maxLength={128} required autoComplete="current-password" /></label><label>Confirm password<input name="confirmPassword" type="password" minLength={12} maxLength={128} required autoComplete="new-password" /></label><button className="button button-primary" disabled={busy}>{busy ? "Activating…" : "Activate staff account"} →</button></form>}
     {notice && <p className="inline-notice" role="alert">{notice}</p>}
   </section></main>;
 }
