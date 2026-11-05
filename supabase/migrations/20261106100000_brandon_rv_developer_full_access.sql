@@ -1,9 +1,4 @@
 -- Reserved platform developer role with full Brandon RV application access.
-ALTER TABLE public.business_members DROP CONSTRAINT IF EXISTS business_members_role_check;
-ALTER TABLE public.business_members
-  ADD CONSTRAINT business_members_role_check
-  CHECK (role IN ('owner','administrator','manager','technician','office','accounts','developer'));
-
 DO $$
 DECLARE
   v_business_id uuid;
