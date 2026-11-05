@@ -442,3 +442,157 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
   .invoice-table-row > div { grid-column: 1; grid-row: 1; }
   .invoice-table-row > div small { display: none; }
 }
+
+
+
+
+/* Brandon RV admin workspace: compact operational interface */
+:root{
+  --brv-admin-bg:#f4f6f3;
+  --brv-admin-surface:#fff;
+  --brv-admin-border:#e1e7e1;
+  --brv-admin-text:#1c2d25;
+  --brv-admin-muted:#718078;
+  --brv-admin-green:#244b39;
+  --brv-admin-green-deep:#183328;
+  --brv-admin-accent:#dc8155;
+}
+.brv-admin-frame{min-height:100vh;display:grid;grid-template-columns:226px minmax(0,1fr);background:var(--brv-admin-bg);color:var(--brv-admin-text)}
+.brv-admin-sidebar{position:sticky;top:0;z-index:30;display:flex;height:100vh;min-height:580px;flex-direction:column;overflow-y:auto;padding:18px 12px 12px;background:var(--brv-admin-green-deep);color:#f7faf7}
+.brv-admin-brand{display:flex;min-height:52px;align-items:center;gap:10px;padding:0 7px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.brv-admin-brand img{width:34px;height:34px;object-fit:contain;padding:3px;border-radius:3px;background:#fff}
+.brv-admin-brand>span{display:flex;min-width:0;flex-direction:column;gap:4px}
+.brv-admin-brand strong{font-size:12px;font-weight:750;letter-spacing:.095em;white-space:nowrap}
+.brv-admin-brand em{color:#e9a17c;font-style:normal}
+.brv-admin-brand small{color:#9fb2a5;font-size:7px;font-weight:650;letter-spacing:.13em}
+.brv-admin-nav{display:flex;flex:1;flex-direction:column;gap:2px;padding-top:14px}
+.brv-admin-overview,.brv-admin-nav-link{display:flex;min-height:34px;align-items:center;gap:10px;padding:7px 9px;border-radius:3px;color:#c6d2c9;font-size:10px;font-weight:550;line-height:1.2;transition:background .14s ease,color .14s ease}
+.brv-admin-overview{margin-bottom:9px}
+.brv-nav-svg{width:15px;height:15px;flex:0 0 15px;opacity:.78}
+.brv-admin-overview:hover,.brv-admin-nav-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.brv-admin-overview.active,.brv-admin-nav-link.active{background:#2b4a3b;color:#fff;box-shadow:inset 2px 0 var(--brv-admin-accent)}
+.brv-admin-overview.active .brv-nav-svg,.brv-admin-nav-link.active .brv-nav-svg{color:#f0a17a;opacity:1}
+.brv-admin-nav-group{margin-top:12px}
+.brv-admin-nav-group h2{margin:0 9px 5px;color:#829a8b;font-size:7px;font-weight:750;letter-spacing:.13em;text-transform:uppercase}
+.brv-admin-nav-link{min-height:32px;padding-top:6px;padding-bottom:6px}
+.brv-admin-sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.12)}
+.brv-admin-user{display:flex;min-width:0;align-items:center;gap:9px;padding:0 5px 9px}
+.brv-admin-user>span:last-child{display:flex;min-width:0;flex-direction:column;gap:3px}
+.brv-admin-user strong{overflow:hidden;color:#f4f8f4;font-size:9px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+.brv-admin-user small{color:#9fb1a4;font-size:8px;text-transform:capitalize}
+.brv-admin-avatar{display:grid;width:27px;height:27px;flex:0 0 27px;place-items:center;border:1px solid rgba(255,255,255,.15);border-radius:3px;background:#2a4939;color:#fff;font-size:9px;font-weight:700}
+.brv-admin-sidebar .portal-signout{width:100%;margin:0;padding:7px 5px;border:0;border-radius:3px;background:transparent;color:#aebdb2;text-align:left;font-size:9px}
+.brv-admin-sidebar .portal-signout:hover{background:rgba(255,255,255,.07);color:#fff}
+.brv-admin-main{min-width:0}
+.brv-admin-topbar{position:sticky;top:0;z-index:20;display:flex;min-height:54px;align-items:center;justify-content:space-between;gap:16px;padding:0 27px;border-bottom:1px solid var(--brv-admin-border);background:#fff}
+.brv-admin-topbar-left,.brv-admin-topbar-actions,.brv-admin-breadcrumb{display:flex;align-items:center;gap:11px}
+.brv-admin-breadcrumb{color:#8a9890;font-size:9px}
+.brv-admin-breadcrumb b{color:#c5cec7;font-weight:400}
+.brv-admin-breadcrumb strong{color:#34473c;font-size:10px;font-weight:650}
+.brv-admin-topbar-actions{gap:17px}
+.brv-admin-topbar-actions a{color:#607268;font-size:9px;font-weight:600}
+.brv-admin-topbar-actions a:hover{color:var(--brv-admin-accent)}
+.brv-admin-topbar-actions a span{margin-left:3px;color:var(--brv-admin-accent)}
+.brv-admin-menu-toggle{display:none;width:31px;height:30px;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid var(--brv-admin-border);border-radius:3px;background:#fff}
+.brv-admin-menu-toggle span{width:13px;height:1.5px;background:#355443}
+.brv-admin-content{min-width:0;padding:0 27px 28px}
+.brv-admin-content .portal-topbar{display:none}
+.brv-admin-content .portal-page{min-height:calc(100vh - 54px);background:transparent}
+.brv-admin-content .portal-shell{width:100%;max-width:none!important;padding-top:27px;padding-bottom:35px}
+.brv-admin-content .portal-page-heading{margin-bottom:19px}
+.brv-admin-content .portal-page-heading .eyebrow{margin-bottom:9px;font-size:8px;letter-spacing:.13em}
+.brv-admin-content .portal-page-heading h1{margin:0;color:var(--brv-admin-text);font:650 25px/1.2 Arial,Helvetica,sans-serif;letter-spacing:-.035em}
+.brv-admin-content .portal-page-heading>p:last-child{margin:6px 0 0;color:var(--brv-admin-muted);font-size:10px;line-height:1.5}
+.brv-admin-content .portal-panel{padding:18px;border:1px solid var(--brv-admin-border);border-radius:4px;background:var(--brv-admin-surface);box-shadow:none}
+.brv-admin-content .portal-panel-heading{margin-bottom:13px}
+.brv-admin-content .portal-panel-heading h2{font:650 13px/1.3 Arial,Helvetica,sans-serif;letter-spacing:-.01em}
+.brv-admin-content .panel-kicker{font-size:7px;letter-spacing:.12em}
+.brv-admin-content .activity-list{border-top:1px solid #edf0ed}
+.brv-admin-content .activity-item{min-height:55px;grid-template-columns:105px minmax(0,1fr) auto;gap:13px;padding:10px 4px;border-bottom:1px solid #edf0ed;background:transparent}
+.brv-admin-content .activity-date{color:#85938a;font-size:8px}
+.brv-admin-content .activity-copy{gap:4px}
+.brv-admin-content .activity-copy strong{color:#2b3c32;font-size:10px;font-weight:650}
+.brv-admin-content .activity-copy span{color:#77857c;font-size:8px;line-height:1.45}
+.brv-admin-content .portal-muted-note,.brv-admin-content .panel-footnote{color:#839087;font-size:9px}
+.brv-admin-content input,.brv-admin-content select,.brv-admin-content textarea{border:1px solid #dce4dd;border-radius:3px;background:#fff;font-size:10px}
+.brv-admin-content input:focus,.brv-admin-content select:focus,.brv-admin-content textarea:focus{outline:2px solid rgba(61,112,81,.2);border-color:#638a70}
+.brv-admin-content .button{min-height:34px;border-radius:3px;font-size:9px}
+.brv-admin-content .status-pill{border-radius:3px;font-size:8px}
+.brv-admin-welcome{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:17px}
+.brv-admin-welcome .eyebrow{margin-bottom:9px;font-size:8px;letter-spacing:.13em}
+.brv-admin-welcome h1{margin:0;color:var(--brv-admin-text);font:650 27px/1.15 Arial,Helvetica,sans-serif;letter-spacing:-.04em}
+.brv-admin-welcome h1 em{color:var(--brv-admin-green);font-style:normal;font-weight:650}
+.brv-admin-welcome>div>p:last-child{margin:6px 0 0;color:var(--brv-admin-muted);font-size:10px}
+.brv-admin-status{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid #dce6dd;border-radius:3px;background:#f2f7f2;color:#456b50;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.brv-admin-status.prelaunch{border-color:#eadfc9;background:#fbf7ef;color:#8b6d3d}
+.brv-admin-launch-notice{display:flex;align-items:center;gap:12px;margin:0 0 19px;padding:11px 13px;border:1px solid #eadfc9;border-radius:3px;background:#fbf8f1}
+.brv-admin-launch-notice>span{flex:0 0 auto;padding:5px 6px;background:#f0e8d8;color:#80643b;font-size:7px;font-weight:800;letter-spacing:.08em}
+.brv-admin-launch-notice>div{flex:1}
+.brv-admin-launch-notice strong{color:#4a463a;font-size:9px}
+.brv-admin-launch-notice p{margin:3px 0 0;color:#7e786a;font-size:8px;line-height:1.5}
+.brv-admin-launch-notice>a{color:#755b35;font-size:8px;font-weight:700;white-space:nowrap}
+.brv-admin-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:23px 0 10px}
+.brv-admin-section-heading>div{display:flex;flex-direction:column;gap:3px}
+.brv-admin-section-heading span{color:#849188;font-size:7px;font-weight:750;letter-spacing:.13em}
+.brv-admin-section-heading h2{margin:0;color:#273a2f;font:650 14px/1.3 Arial,Helvetica,sans-serif;letter-spacing:-.015em}
+.brv-admin-section-heading>small{color:#8b978f;font-size:8px}
+.brv-admin-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:20px}
+.brv-admin-stat{display:grid;min-height:91px;grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;gap:3px 8px;padding:12px 13px;border:1px solid var(--brv-admin-border);border-radius:3px;background:#fff;transition:border-color .14s ease,background .14s ease}
+.brv-admin-stat:hover{border-color:#b9cbbd;background:#fcfdfb}
+.brv-admin-stat>span{grid-column:1/-1;color:#78877d;font-size:7px;font-weight:750;letter-spacing:.11em}
+.brv-admin-stat>strong{align-self:center;color:#253a2e;font:650 25px/1 Arial,Helvetica,sans-serif;letter-spacing:-.04em}
+.brv-admin-stat>small{align-self:end;color:#849087;font-size:8px}
+.brv-admin-stat>b{grid-column:2;grid-row:2/4;align-self:end;color:#54745d;font-size:8px;font-weight:650;white-space:nowrap}
+.brv-admin-quicklinks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:20px}
+.brv-admin-quicklinks a{display:grid;min-height:75px;grid-template-columns:22px 1fr;grid-template-rows:auto auto;align-content:center;gap:4px 9px;padding:11px 12px;border:1px solid var(--brv-admin-border);border-radius:3px;background:#fff;transition:border-color .14s ease,background .14s ease}
+.brv-admin-quicklinks a:hover{border-color:#b9cbbd;background:#fcfdfb}
+.brv-admin-quicklinks a>span{grid-row:1/3;display:grid;width:22px;height:22px;place-items:center;border:1px solid #e4ebe4;border-radius:3px;color:#42634d;font-size:11px}
+.brv-admin-quicklinks a>strong{color:#304338;font-size:9px;font-weight:650}
+.brv-admin-quicklinks a>small{color:#839087;font-size:8px;line-height:1.4}
+.brv-admin-quicklinks a>b{display:none}
+.brv-admin-setup-panel{margin-top:17px}
+.brv-admin-setup-panel .portal-panel-heading{margin-bottom:12px}
+.brv-admin-setup-panel .portal-panel-heading h2{font-size:13px}
+.brv-admin-setup-panel .portal-panel-heading p{max-width:620px;margin:5px 0 0;color:#7e8a82;font-size:9px;line-height:1.55}
+.brv-admin-setup-links{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.brv-admin-setup-links a{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:9px;border:1px solid #e4eae4;border-radius:3px;color:#42604b;font-size:8px;font-weight:650}
+.brv-admin-setup-links a:hover{border-color:#bdcfc0;background:#f8faf7}
+.brv-admin-setup-links span{color:var(--brv-admin-accent)}
+.brv-admin-backdrop{display:none}
+.brv-admin-content .portal-form-grid,.brv-admin-content .form-grid{gap:12px}
+.brv-admin-content label{font-size:9px}
+.brv-admin-content .portal-table,.brv-admin-content table{font-size:9px}
+.brv-admin-content button:focus-visible,.brv-admin-content a:focus-visible,.brv-admin-sidebar a:focus-visible{outline:2px solid #df966f;outline-offset:2px}
+@media(max-width:1100px){
+  .brv-admin-frame{grid-template-columns:210px minmax(0,1fr)}
+  .brv-admin-sidebar{padding-left:10px;padding-right:10px}
+  .brv-admin-content{padding-right:20px;padding-left:20px}
+  .brv-admin-setup-links{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .brv-admin-frame{display:block}
+  .brv-admin-sidebar{position:fixed;left:0;top:0;width:250px;max-width:84vw;height:100dvh;min-height:0;transform:translateX(-105%);transition:transform .18s ease;box-shadow:8px 0 24px rgba(15,35,24,.16)}
+  .brv-admin-sidebar.is-open{transform:translateX(0)}
+  .brv-admin-backdrop{position:fixed;inset:0;z-index:25;display:block;border:0;border-radius:0;background:rgba(15,29,21,.4)}
+  .brv-admin-topbar{min-height:49px;padding:0 13px}
+  .brv-admin-menu-toggle{display:flex}
+  .brv-admin-topbar-actions{gap:12px}
+  .brv-admin-topbar-actions a{font-size:8px}
+  .brv-admin-topbar-actions a:first-child{display:none}
+  .brv-admin-content{padding:0 12px 20px}
+  .brv-admin-content .portal-shell{padding-top:20px;padding-bottom:25px}
+  .brv-admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brv-admin-setup-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brv-admin-content .activity-item{grid-template-columns:76px minmax(0,1fr);gap:8px}
+  .brv-admin-content .activity-item>*:last-child{grid-column:2}
+}
+@media(max-width:460px){
+  .brv-admin-breadcrumb{gap:6px;font-size:8px}
+  .brv-admin-topbar-actions a{font-size:7px}
+  .brv-admin-stat-grid,.brv-admin-quicklinks,.brv-admin-setup-links{grid-template-columns:1fr}
+  .brv-admin-welcome{align-items:flex-start;flex-direction:column}
+  .brv-admin-launch-notice{align-items:flex-start;flex-wrap:wrap}
+  .brv-admin-launch-notice>div{flex-basis:calc(100% - 100px)}
+  .brv-admin-section-heading{align-items:flex-start;flex-direction:column}
+}
+@media(prefers-reduced-motion:reduce){.brv-admin-sidebar,.brv-admin-overview,.brv-admin-nav-link,.brv-admin-stat,.brv-admin-quicklinks a{transition:none}}
