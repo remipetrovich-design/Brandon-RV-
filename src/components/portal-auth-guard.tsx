@@ -9,7 +9,8 @@ export default function PortalAuthGuard({ children }: { children: ReactNode }) {
   const isPublic = pathname === "/portal/sign-in" || pathname === "/portal/register";
   const [ready, setReady] = useState(isPublic);
   useEffect(() => {
-    if (isPublic) { setReady(true); return; }
+    setReady(isPublic);
+    if (isPublic) return;
     let active = true;
     fetch("/api/auth/me", { cache: "no-store" }).then(response => {
       if (!active) return;
