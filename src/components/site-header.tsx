@@ -18,17 +18,13 @@ export default function SiteHeader() {
             <small>REPAIRS ON THE GO</small>
           </span>
         </Link>
-
         <nav className="main-nav" aria-label="Main navigation">
-          {navigation.map((item) => (
-            <Link href={item.href} key={item.href}>{item.label}</Link>
-          ))}
+          {navigation.map((item) => <Link href={item.href} key={item.href}>{item.label}</Link>)}
         </nav>
-
-        <a className="header-call" href="tel:+61407189087">
-          <span>Call Chris</span>
-          <strong>0407 189 087</strong>
-        </a>
+        <div className="header-actions">
+          <Link className="header-portal-link" href="/portal/sign-in">Customer portal</Link>
+          <a className="header-call" href="tel:+61407189087"><span>Call Chris</span><strong>0407 189 087</strong></a>
+        </div>
       </div>
     </header>
   );
