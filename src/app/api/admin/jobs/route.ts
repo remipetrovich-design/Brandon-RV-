@@ -11,7 +11,7 @@ export async function GET(){
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
  try{
-  const body=await request.json();const quoteId=String(body.quoteId??"");const title=String(body.title??"").trim();const scope=String(body.scope??"").trim().slice(0,5000);const priority=String(body.priority??"normal");const start=body.scheduledStart?new Date(String(body.scheduledStart)):null;const end=body.scheduledEnd?new Date(String(body.scheduledEnd)):null;const staffIds=Array.isArray(body.staffIds)?body.staffIds.map(String):[];
+  const body=await request.json();const quoteId=String(body.quoteId??"");const title=String(body.title??"").trim();const scope=String(body.scope??"").trim().slice(0,5000);const priority=String(body.priority??"normal");const start=body.scheduledStart?new Date(String(body.scheduledStart)):null;const end=body.scheduledEnd?new Date(String(body.scheduledEnd)):null;const staffIds=Array.isArray(body.staffIds)?body.staffIds.map((x:unknown)=>String(x)):[];
   if(!/^[0-9a-f-]{36}$/i.test(quoteId)||title.length<3||title.length>180)return jsonError("Select an accepted quote and enter a job title.");
   if(!["low","normal","high","urgent"].includes(priority))return jsonError("Select a valid priority.");
   if(start&&!Number.isFinite(start.getTime())||end&&!Number.isFinite(end.getTime())||start&&end&&end<=start)return jsonError("Check the scheduled start and end times.");
