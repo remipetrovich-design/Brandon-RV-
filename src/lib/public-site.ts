@@ -27,3 +27,15 @@ export async function getPublishedServiceAreas(){
 export function contentText(content:Record<string,unknown>|undefined,key:string,fallback:string){
  const value=content?.[key];return typeof value==="string"&&value.trim()?value.trim():fallback;
 }
+
+export type PublicBusiness={name:string;brand_line:string|null;phone:string|null;city:string|null;region:string|null};
+export async function getPublicBusiness():Promise<PublicBusiness>{
+ const fallback:PublicBusiness={name:"Brandon RV",brand_line:"From Factory Experience to Repairs On The Go",phone:"0407 189 087",city:"Tamworth",region:"NSW"};
+ try{const {data}=await database().from("businesses").select("name,brand_line,phone,city,region").eq("slug","brandon-rv").maybeSingle();return data?{...fallback,...data}:fallback;}catch{return fallback;}
+}
+export function phoneHref(value:string|null|undefined){
+ const digits=String(value??"").replace(/[^0-9+]/g,"");
+ if(!digits)return "tel:+61407189087";
+ if(digits.startsWith("0"))return "tel:+61"+digits.slice(1);
+ return "tel:"+digits;
+}
