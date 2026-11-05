@@ -31,9 +31,9 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   update.updated_at=new Date().toISOString();
   const db=database();const {data:record,error}=await db.from(c.table).update(update).eq("id",id).eq("business_id",membership.business_id).select("id").maybeSingle();
   if(error||!record)return jsonError("Could not update record. Check the record and your permissions.",500);
-  if(section==="customers"&&update.status==="inactive"){
+  if(section==="customers"&&(update.status==="inactive"||update.status==="active")){
    const {data:customer}=await db.from("customers").select("user_id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
-   if(customer?.user_id){const {error:userError}=await db.from("users").update({status:"suspended",updated_at:new Date().toISOString()}).eq("id",customer.user_id);if(userError)return jsonError("Customer was marked inactive but account access could not be suspended.",500);await db.from("user_sessions").delete().eq("user_id",customer.user_id);}
+   if(customer?.user_id){const active=update.status==="active";const {error:userError}=await db.from("users").update({status:active?"active":"suspended",updated_at:new Date().toISOString()}).eq("id",customer.user_id);if(userError)return jsonError("Customer record was updated but account access could not be synchronized.",500);if(!active)await db.from("user_sessions").delete().eq("user_id",customer.user_id);}
   }
   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
   let emailSent=false;
