@@ -1,0 +1,10 @@
+"use client";
+import Link from "next/link";
+import {FormEvent,Suspense,useState} from "react";
+import {useSearchParams} from "next/navigation";
+function ResetForm(){
+ const params=useSearchParams();const token=params.get("token")??"";const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");const form=new FormData(e.currentTarget);const password=String(form.get("password")??"");if(password!==String(form.get("confirmPassword")??"")){setNotice("The passwords do not match.");setBusy(false);return;}try{const r=await fetch("/api/auth/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,password})});const d=await r.json();setNotice(r.ok?d.message:(d.error??"Could not reset password."));}catch{setNotice("Could not reset password.");}finally{setBusy(false);}}
+ return <div className="auth-wrap"><div className="auth-card"><p className="eyebrow"><span className="eyebrow-line"/> ACCOUNT RECOVERY</p><h1>Choose a new <em>password.</em></h1>{token?<form className="auth-form" onSubmit={submit}><label>New password<input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password"/></label><label>Confirm password<input name="confirmPassword" type="password" minLength={12} maxLength={128} required autoComplete="new-password"/></label><button className="button button-primary" disabled={busy}>{busy?"Updating…":"Update password →"}</button></form>:<p className="auth-intro">This reset link is missing. Request another password reset email.</p>}{notice&&<p className="inline-notice" role="status">{notice}</p>}<Link className="auth-back" href="/portal/sign-in">← Back to sign in</Link></div></div>;
+}
+export default function ResetPasswordPage(){return <Suspense fallback={<div className="auth-wrap"><div className="auth-card">Loading…</div></div>}><ResetForm/></Suspense>;}
