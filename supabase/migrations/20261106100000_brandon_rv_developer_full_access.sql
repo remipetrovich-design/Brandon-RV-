@@ -6,21 +6,21 @@ ALTER TABLE public.business_members
 
 DO $$
 DECLARE
-  business_id uuid;
+  v_business_id uuid;
   developer_group_id uuid;
 BEGIN
-  SELECT id INTO business_id FROM public.businesses WHERE slug='brandon-rv' LIMIT 1;
+  SELECT id INTO v_business_id FROM public.businesses WHERE slug='brandon-rv' LIMIT 1;
   IF business_id IS NULL THEN
     RAISE EXCEPTION 'Brandon RV business record missing';
   END IF;
 
   INSERT INTO public.permission_groups(business_id,name,description,is_system)
-  VALUES (business_id,'Developer','Reserved technical role with full application access.',true)
+  VALUES (v_business_id,'Developer','Reserved technical role with full application access.',true)
   ON CONFLICT (business_id,name) DO NOTHING;
 
   SELECT id INTO developer_group_id
   FROM public.permission_groups
-  WHERE business_id=business_id AND lower(name)='developer'
+  WHERE permission_groups.business_id=v_business_id AND lower(name)='developer'
   LIMIT 1;
 
   INSERT INTO public.permission_group_permissions(group_id,permission_key)
