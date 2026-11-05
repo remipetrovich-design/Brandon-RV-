@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import SignOutButton from "@/components/sign-out-button";
 
 const links = [
   { href: "/portal", label: "Overview", icon: "⌂" },
@@ -30,7 +31,7 @@ export default function PortalSidebar() {
         <strong>Talk to the team</strong>
         <a href="tel:+61407189087">0407 189 087</a>
       </div>
-      <Link className="portal-signout" href="/portal/sign-in">Sign out <span aria-hidden="true">↗</span></Link>
+      <SignOutButton />
     </aside>
   );
 }
