@@ -9,13 +9,14 @@ export default function StaffManagementPage() {
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setNotice(""); setInviteUrl(""); setBusy(true);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       const response = await fetch("/api/staff/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName: form.get("fullName"), email: form.get("email"), role: form.get("role") }) });
       const result = await response.json();
       if (!response.ok) { setNotice(result.error ?? "Could not invite staff member."); return; }
       setInviteUrl(result.invitationUrl); setNotice("Invitation created. Copy the link and send it to the staff member. It expires in seven days.");
-      event.currentTarget.reset();
+      formElement.reset();
     } catch { setNotice("Could not create invitation."); }
     finally { setBusy(false); }
   }
