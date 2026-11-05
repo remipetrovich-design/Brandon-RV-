@@ -1,4 +1,4 @@
-import {currentUser,currentMembership,database,jsonError,sameOrigin} from "@/lib/auth";
+import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,"jobs.manage")))return jsonError("You do not have permission to create job tasks.",403);
