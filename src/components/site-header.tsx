@@ -10,7 +10,7 @@ const navigation = [
   { href: "/contact", label: "Contact" }
 ];
 
-export default function SiteHeader() {
+export default function SiteHeader({phone,phoneLink,brandLine}:{phone:string;phoneLink:string;brandLine:string}) {
   const pathname = usePathname();
   const appArea = ["/portal", "/staff", "/admin", "/dev", "/initial-owner-setup"].some((base) => pathname === base || pathname.startsWith(base + "/"));
   if (appArea) return null;
@@ -22,7 +22,7 @@ export default function SiteHeader() {
           <span className="brand-mark" aria-hidden="true">BR</span>
           <span className="brand-name">
             <strong>BRANDON <span>RV</span></strong>
-            <small>REPAIRS ON THE GO</small>
+            <small>{brandLine}</small>
           </span>
         </Link>
         <nav className="main-nav" aria-label="Main navigation">
@@ -30,7 +30,7 @@ export default function SiteHeader() {
         </nav>
         <div className="header-actions">
           <Link className="header-portal-link" href="/portal/sign-in">Customer portal</Link>
-          <a className="header-call" href="tel:+61407189087"><span>Call Chris</span><strong>0407 189 087</strong></a>
+          <a className="header-call" href={phoneLink}><span>Call Chris</span><strong>{phone}</strong></a>
         </div>
       </div>
     </header>
