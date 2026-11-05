@@ -3,17 +3,14 @@ export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
  const db=database();const [{data:staff,error},{data:roles}]=await Promise.all([
-  db.from("staff").select("id,user_id,employee_number,job_title,employment_status,start_date").eq("business_id",access.membership!.business_id).order("created_at",{ascending:false}),
+  db.from("staff").select("id,user_id,employee_number,job_title,employment_status,start_date,full_name,email,phone,account_status,created_at").eq("business_id",access.membership!.business_id).order("created_at",{ascending:false}),
   db.from("permission_groups").select("id,name,description,is_system").eq("business_id",access.membership!.business_id).order("name")
  ]);
  if(error)return jsonError("Could not load staff records.",500);
  const ids=(staff??[]).map(x=>x.user_id);
- const [{data:users},{data:members}]=await Promise.all([
-  ids.length?db.from("users").select("id,email,full_name,phone,status,last_login_at").in("id",ids):Promise.resolve({data:[]}),
-  ids.length?db.from("business_members").select("user_id,role,is_active").eq("business_id",access.membership!.business_id).in("user_id",ids):Promise.resolve({data:[]})
- ]);
- const userMap=new Map((users??[]).map(x=>[x.id,x]));const memberMap=new Map((members??[]).map(x=>[x.user_id,x]));
- return Response.json({staff:(staff??[]).map(x=>({...x,user:userMap.get(x.user_id)??null,membership:memberMap.get(x.user_id)??null})),roles:(roles??[]).filter(x=>x.name.toLowerCase()!=="owner"&&(x.name.toLowerCase()!=="developer"||["owner","developer"].includes(access.membership!.role.toLowerCase())))});
+ const {data:members}=await (ids.length?db.from("business_members").select("user_id,role,is_active").eq("business_id",access.membership!.business_id).in("user_id",ids):Promise.resolve({data:[]}));
+ const memberMap=new Map((members??[]).map(x=>[x.user_id,x]));
+ return Response.json({staff:(staff??[]).map(x=>({...x,user:{id:x.user_id,email:x.email,full_name:x.full_name,phone:x.phone,status:x.account_status},membership:memberMap.get(x.user_id)??null})),roles:(roles??[]).filter(x=>x.name.toLowerCase()!=="owner"&&(x.name.toLowerCase()!=="developer"||["owner","developer"].includes(access.membership!.role.toLowerCase())))});
 }
 export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
