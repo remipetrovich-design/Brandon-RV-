@@ -674,3 +674,26 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
  .brv-admin-content .admin-customers-list .activity-item>*:last-child{grid-column:auto}
  .brv-admin-content .admin-create-customer .form-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Horilla-inspired workforce workspace */
+.hr-workforce-hub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.hr-workforce-hub>.portal-panel{min-width:0;margin:0}
+.hr-workforce-hub .portal-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hr-workforce-hub .auth-form{display:grid;gap:14px;margin-top:14px}
+.hr-workforce-hub .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hr-workforce-hub .hr-action-row{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.hr-workforce-hub .hr-record-list{display:grid;gap:8px;margin-top:14px}
+.hr-workforce-hub .hr-record-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:12px;border:1px solid var(--brv-border);border-radius:7px;background:#fff}
+.hr-workforce-hub .hr-record-row>div:first-child{display:grid;gap:5px;min-width:0}
+.hr-workforce-hub .hr-record-row span{font-size:12px;line-height:1.5;color:var(--brv-muted);overflow-wrap:anywhere}
+.hr-workforce-hub .panel-footnote{line-height:1.55}
+.hr-invitations-panel{margin:0 0 16px}
+.hr-invitations-panel .auth-form{display:grid;gap:14px;margin-top:14px}
+.hr-invitations-panel .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hr-invitation-list{display:grid;gap:9px;margin-top:20px}
+.hr-invitation-list h3{margin:0;font-size:14px}
+.hr-invitation-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--brv-border);border-radius:7px;background:#fff}
+.hr-invitation-row>div{display:grid;gap:5px;min-width:0}
+.hr-invitation-row span{font-size:12px;color:var(--brv-muted);overflow-wrap:anywhere}
+@media(max-width:760px){.hr-workforce-hub{grid-template-columns:minmax(0,1fr)}.hr-workforce-hub .form-grid,.hr-invitations-panel .form-grid{grid-template-columns:minmax(0,1fr)}.hr-workforce-hub .hr-record-row,.hr-invitation-row{align-items:flex-start;flex-direction:column}}
