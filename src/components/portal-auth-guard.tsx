@@ -9,12 +9,18 @@ export default function PortalAuthGuard({children}:{children:ReactNode}){
  const router=useRouter();
  const isPublic=publicPages.includes(pathname);
  const [readyPath,setReadyPath]=useState("");
+ const [verified,setVerified]=useState(false);
 
  useEffect(()=>{
+  if(verified){
+   setReadyPath(pathname);
+   return;
+  }
   let active=true;
   fetch("/api/auth/me",{cache:"no-store"}).then(async response=>{
    if(!active)return;
    if(response.ok){
+    setVerified(true);
     setReadyPath(pathname);
    }else if(isPublic){
     setReadyPath(pathname);
@@ -27,7 +33,7 @@ export default function PortalAuthGuard({children}:{children:ReactNode}){
    else router.replace("/portal/sign-in");
   });
   return()=>{active=false;};
- },[isPublic,pathname,router]);
+ },[isPublic,pathname,router,verified]);
 
  if(readyPath!==pathname)return <div className="auth-wrap" role="status">Checking your account…</div>;
  return <>{children}</>;
