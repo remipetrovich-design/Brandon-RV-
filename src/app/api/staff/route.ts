@@ -10,13 +10,18 @@ const isDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id;
- const [{data:employees,error},{data:roles, error:roleError},{data:customers,error:customerError}]=await Promise.all([
-  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,created_at").eq("business_id",businessId).not("employment_status","is",null).order("created_at",{ascending:false}),
-  db.from("user_roles").select("role_key,name,description,is_system").order("name"),
-  db.from("users").select("id,first_name,last_name,full_name,email,phone").eq("business_id",businessId).eq("status","active").is("user_role",null).or("employment_status.is.null,employment_status.eq.terminated").order("full_name")
+ const [{data:employees,error},{data:roles,error:roleError}]=await Promise.all([
+  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").neq("employment_status","terminated").order("full_name"),
+  db.from("user_roles").select("role_key,name,description,is_system").order("name")
  ]);
- if(error||roleError||customerError)return jsonError("Could not load the employee directory.",500);
- return Response.json({employees:employees??[],roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))),customers:customers??[]});
+ if(error||roleError)return jsonError("Could not load the employee directory.",500);
+ const ids=(employees??[]).map(x=>x.id);
+ const {data:customers,error:customerError}=ids.length?await db.from("customers").select("id,user_id").eq("business_id",businessId).in("user_id",ids):{data:[],error:null};
+ if(customerError)return jsonError("Could not match staff to their customer profiles.",500);
+ const customerByUser=new Map((customers??[]).map(x=>[x.user_id,x.id]));
+ const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id)}));
+ return Response.json({employees:directory,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key)))});
+
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
 export async function PATCH(request:Request){
