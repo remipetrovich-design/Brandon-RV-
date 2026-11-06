@@ -3,7 +3,7 @@ import Link from "next/link";
 import {FormEvent,useEffect,useState} from "react";
 type Permission={permission_key:string;description:string};
 type Group={id:string;name:string;description:string|null;is_system:boolean;permissions:string[]};
-const userRoleOrder=["Apprentice","Worker","Senior Worker","Supervisor","Manager","Owner","Website Developer"];
+const userRoleOrder=["Apprentice","Senior Apprentice","Office Roles / Support Roles","Supervisor","Manager","Owner","Website Developer"];
 const sortUserRoles=(items:Group[])=>[...items].sort((a,b)=>{const ai=userRoleOrder.indexOf(a.name);const bi=userRoleOrder.indexOf(b.name);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);});
 export default function RolesPage(){
  const [groups,setGroups]=useState<Group[]>([]);const [catalogue,setCatalogue]=useState<Permission[]>([]);const [selected,setSelected]=useState("");const [checked,setChecked]=useState<string[]>([]);const [name,setName]=useState("");const [description,setDescription]=useState("");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const [loading,setLoading]=useState(true);
