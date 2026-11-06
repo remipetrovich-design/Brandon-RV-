@@ -2,7 +2,9 @@
 import Link from "next/link";
 import {FormEvent,useEffect,useState} from "react";
 type Permission={permission_key:string;description:string};
-type Group={id:string;name:string;description:string|null;is_system:boolean;permissions:string[]};\nconst usergroupOrder=["Apprentice","Worker","Senior Worker","Supervisor","Manager","Owner","Website Developer"];\nconst sortUsergroups=(items:Group[])=>[...items].sort((a,b)=>{const ai=usergroupOrder.indexOf(a.name);const bi=usergroupOrder.indexOf(b.name);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);});
+type Group={id:string;name:string;description:string|null;is_system:boolean;permissions:string[]};
+const usergroupOrder=["Apprentice","Worker","Senior Worker","Supervisor","Manager","Owner","Website Developer"];
+const sortUsergroups=(items:Group[])=>[...items].sort((a,b)=>{const ai=usergroupOrder.indexOf(a.name);const bi=usergroupOrder.indexOf(b.name);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);});
 export default function RolesPage(){
  const [groups,setGroups]=useState<Group[]>([]);const [catalogue,setCatalogue]=useState<Permission[]>([]);const [selected,setSelected]=useState("");const [checked,setChecked]=useState<string[]>([]);const [name,setName]=useState("");const [description,setDescription]=useState("");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
  async function load(){const r=await fetch("/api/admin/roles");const d=await r.json();if(!r.ok){setNotice(d.error??"Could not load roles.");return;}setGroups(sortUsergroups(d.groups??[]));setCatalogue(d.permissions??[]);if(!selected&&d.groups?.length){setSelected(d.groups[0].id);setChecked(d.groups[0].permissions);}}
