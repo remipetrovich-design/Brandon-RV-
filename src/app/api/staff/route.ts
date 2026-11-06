@@ -12,7 +12,7 @@ export async function GET(){
  const {data:members}=await (ids.length?db.from("business_members").select("user_id,role,is_active").eq("business_id",access.membership!.business_id).in("user_id",ids):Promise.resolve({data:[]}));
  const memberMap=new Map((members??[]).map(x=>[x.user_id,x]));
  const roleNames=new Map((roles??[]).map(x=>[String(x.name).toLowerCase(),String(x.name)]));
- const visibleRoles=(roles??[]).filter(x=>x.name.toLowerCase()!=="owner"&&(x.name.toLowerCase()!=="developer"||["owner","developer"].includes(access.membership!.role.toLowerCase())));
+ const visibleRoles=roles??[];
  return Response.json({
   staff:(staff??[]).map(x=>{
    const member=memberMap.get(x.user_id)??null;
