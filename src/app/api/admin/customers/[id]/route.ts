@@ -12,7 +12,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const db=database(),businessId=a.membership!.business_id;
  const {data:customer,error}=await db.from("customers").select("*").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!customer)return jsonError("Customer not found.",404);
- const permissionKeys=["customers.manage","vehicles.view","enquiries.view","appointments.view","quotes.view","jobs.view","invoices.view","suppliers.view","documents.view","communications.manage"];
+ const permissionKeys=["customers.manage","staff.manage","vehicles.view","enquiries.view","appointments.view","quotes.view","jobs.view","invoices.view","suppliers.view","documents.view","communications.manage"];
  const permitted=await userHasPermissions(a.user!.id,permissionKeys);
  const permissions=Object.fromEntries(permissionKeys.map(key=>[key,permitted.has(key)]));
  if(!permitted.has("customers.manage"))delete customer.internal_notes;
