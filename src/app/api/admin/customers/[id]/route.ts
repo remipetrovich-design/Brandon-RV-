@@ -1,7 +1,7 @@
 import {currentUser,currentMembership,database,userHasPermission,userHasPermissions,jsonError,sameOrigin,normalizeEmail} from "@/lib/auth";
 export const runtime="nodejs";
-const PROFILE_FIELDS=["full_name","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"] as const;
-const textFields=new Set(["full_name","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"]);
+const PROFILE_FIELDS=["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"] as const;
+const textFields=new Set(["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"]);
 async function access(permission:string){const user=await currentUser();if(!user)return {user:null,membership:null,error:jsonError("Not signed in.",401)};const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,permission)))return {user,membership,error:jsonError("You do not have permission to access this customer.",403)};return {user,membership,error:null};}
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const a=await access("customers.view");if(a.error)return a.error;
@@ -13,7 +13,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const permitted=await userHasPermissions(a.user!.id,permissionKeys);
  const permissions=Object.fromEntries(permissionKeys.map(key=>[key,permitted.has(key)]));
  if(!permitted.has("customers.manage"))delete customer.internal_notes;
- const {data:account,error:accountError}=await db.from("users").select("status,email_verified_at,last_login_at").eq("id",customer.user_id??id).maybeSingle();
+ const {data:account,error:accountError}=await db.from("users").select("status,email_verified_at,last_login_at,first_name,last_name,date_of_birth,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",customer.user_id??id).maybeSingle();
  if(accountError)return jsonError("Could not load customer account status.",500);
  const query=(table:string)=>db.from(table).select("*").eq("business_id",businessId).eq("customer_id",id).order("created_at",{ascending:false}).limit(100);
  const empty={data:[],error:null};
@@ -53,16 +53,16 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   for(const field of PROFILE_FIELDS){if(body[field]===undefined)continue;if(!textFields.has(field)||typeof body[field]!=="string")return jsonError("Invalid customer field: "+field);
    let value=String(body[field]).trim();
    if(field==="status")continue;
-   if(field==="email"){value=normalizeEmail(value);if(value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
-   if(field==="full_name"&&!value)return jsonError("Customer name is required.");
+   if(field==="date_of_birth"&&value&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value)>new Date()))return jsonError("Enter a valid date of birth.");\n   if(field==="email"){value=normalizeEmail(value);if(value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
+   if(field==="full_name"&&!value)return jsonError("Customer name is required.");\n   if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
    if(field==="customer_status"&& !["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");
    if(value.length>(field==="customer_internal_notes"?10000:field==="address"?500:255))return jsonError("One or more fields exceed the allowed length.");
    update[field]=value||null;
   }
   if(body.status!==undefined&&body.customer_status===undefined){const value=String(body.status).trim();if(!["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");update.customer_status=value;}
-  if(!Object.keys(update).length)return jsonError("No customer changes supplied.");
+  if(update.first_name!==undefined||update.last_name!==undefined){const first=String(update.first_name??customer?.first_name??"").trim();const last=String(update.last_name??customer?.last_name??"").trim();if(!first)return jsonError("First name is required.");update.full_name=[first,last].filter(Boolean).join(" ");}\n  if(!Object.keys(update).length)return jsonError("No customer changes supplied.");
   const db=database(),businessId=a.membership!.business_id;
-  const {data:customer}=await db.from("customers").select("id,user_id").eq("id",id).eq("business_id",businessId).maybeSingle();
+  const {data:customer}=await db.from("customers").select("id,user_id,full_name,first_name,last_name").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(!customer)return jsonError("Customer not found.",404);
   const userId=customer.user_id??customer.id;
   if(update.email){const {data:duplicate}=await db.from("users").select("id").eq("email",update.email).neq("id",userId).maybeSingle();if(duplicate)return jsonError("That email address is already used by another account.",409);}
