@@ -12,6 +12,13 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS payroll_notes text,
   ADD COLUMN IF NOT EXISTS end_date date;
 
+-- Make employment fields nullable before converting customer-only users.
+ALTER TABLE public.users ALTER COLUMN employment_status DROP DEFAULT;
+ALTER TABLE public.users ALTER COLUMN employment_status DROP NOT NULL;
+ALTER TABLE public.users ALTER COLUMN employment_type DROP DEFAULT;
+ALTER TABLE public.users ALTER COLUMN employment_type DROP NOT NULL;
+
+
 UPDATE public.users
 SET first_name = COALESCE(first_name, NULLIF(split_part(btrim(full_name), ' ', 1), '')),
     last_name = COALESCE(last_name, NULLIF(btrim(substr(btrim(full_name), length(split_part(btrim(full_name), ' ', 1)) + 1)), ''))
@@ -284,10 +291,6 @@ ALTER TABLE public.users ADD CONSTRAINT users_account_type_customer_check CHECK 
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_secondary_group_null_check;
 ALTER TABLE public.users ADD CONSTRAINT users_secondary_group_null_check CHECK (secondary_group IS NULL);
 
-ALTER TABLE public.users ALTER COLUMN employment_status DROP DEFAULT;
-ALTER TABLE public.users ALTER COLUMN employment_status DROP NOT NULL;
-ALTER TABLE public.users ALTER COLUMN employment_type DROP DEFAULT;
-ALTER TABLE public.users ALTER COLUMN employment_type DROP NOT NULL;
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_employment_status_check;
 ALTER TABLE public.users ADD CONSTRAINT users_employment_status_check
   CHECK (employment_status IS NULL OR employment_status IN ('active','leave','suspended','terminated'));
