@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import argon2 from "argon2";
+import {hasEmployeeAccess,isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 const SESSION_COOKIE="brandon_rv_session";
 const SESSION_DAYS=14;
 export function database(){const url=process.env.SUPABASE_URL;const key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error("Server database environment is not configured.");return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});}
@@ -20,7 +21,7 @@ export async function currentUser(){
 export async function currentMembership(userId:string){
  const db=database();const {data:user}=await db.from("users").select("id,business_id,user_role,employment_status,status").eq("id",userId).eq("status","active").maybeSingle();
  if(!user?.user_role||!user.business_id)return null;
- if(!["owner","website_developer","developer"].includes(String(user.user_role))&&user.employment_status!=="active")return null;
+ if(!hasEmployeeAccess(user))return null;
  const {data:role}=await db.from("user_roles").select("name").eq("role_key",user.user_role).maybeSingle();
  return {id:user.id,business_id:user.business_id,role:role?.name??user.user_role,is_active:true};
 }
