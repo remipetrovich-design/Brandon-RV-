@@ -33,8 +33,8 @@ export async function PATCH(request:Request){
   const db=database();const {data:staff}=await db.from("staff").select("id,user_id").eq("id",staffId).eq("business_id",access.membership!.business_id).maybeSingle();if(!staff)return jsonError("Staff record not found.",404);
   if(role!==undefined){
    const {data:group}=await db.from("permission_groups").select("name").eq("business_id",access.membership!.business_id).ilike("name",role).maybeSingle();
-   if(!group||group.name.toLowerCase()==="owner")return jsonError("Select a configured staff role.");
-   if(group.name.toLowerCase()==="developer"&& !["owner","developer"].includes(access.membership!.role.toLowerCase()))return jsonError("Only the owner or an existing developer can assign developer access.",403);
+   if(!group||group.name.toLowerCase()==="owner")return jsonError("Select a configured staff usergroup.");
+   if(["developer","website developer"].includes(group.name.toLowerCase())&& !["owner","developer","website developer"].includes(access.membership!.role.toLowerCase()))return jsonError("Only the owner or an existing website developer can assign website developer access.",403);
    const {data:updated,error}=await db.from("business_members").update({role:group.name}).eq("business_id",access.membership!.business_id).eq("user_id",staff.user_id).select("id").maybeSingle();
    if(error||!updated)return jsonError("Could not update the staff role.",500);
   }
