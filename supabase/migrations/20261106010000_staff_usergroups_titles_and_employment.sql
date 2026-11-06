@@ -2,6 +2,14 @@
 ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS employment_type text NOT NULL DEFAULT 'full_time';
 
+-- Normalize legacy labels before enforcing the new status vocabulary.
+UPDATE public.users SET employment_status=CASE employment_status
+  WHEN 'on_leave' THEN 'leave'
+  WHEN 'inactive' THEN 'suspended'
+  ELSE employment_status
+END
+WHERE employment_status IN ('on_leave','inactive');
+
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_employment_status_check;
 ALTER TABLE public.users ADD CONSTRAINT users_employment_status_check
   CHECK (employment_status IN ('active','leave','suspended','terminated'));
@@ -67,11 +75,4 @@ BEGIN
   END LOOP;
 END $$;
 
--- Existing staff keep their current custom position title. Existing employment
--- statuses are normalized to the new lifecycle labels.
-UPDATE public.users SET employment_status=CASE employment_status
-  WHEN 'on_leave' THEN 'leave'
-  WHEN 'inactive' THEN 'suspended'
-  ELSE employment_status
-END
-WHERE employment_status IN ('on_leave','inactive');
+-- Existing staff keep their current custom position title.
