@@ -1,5 +1,5 @@
 -- Unified customer identity with an optional employee addon and global user roles.
--- Legacy business_members/permission_groups are retained as migration history only;
+-- Legacy business_members/permission_groups remain for compatibility only;
 -- runtime authorization moves to users.user_role and user_role_permissions.
 ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS first_name text,
@@ -115,6 +115,15 @@ WHERE secondary_group IS DISTINCT FROM 'staff'
 
 -- Normalize every legacy account into the single customer identity model.
 UPDATE public.users SET primary_group='customer', account_type='customer', secondary_group=NULL WHERE primary_group IS DISTINCT FROM 'customer' OR account_type IS DISTINCT FROM 'customer' OR secondary_group IS NOT NULL;
+
+ALTER TABLE public.users ALTER COLUMN account_type SET DEFAULT 'customer';
+ALTER TABLE public.users ALTER COLUMN account_type SET NOT NULL;
+ALTER TABLE public.users ALTER COLUMN primary_group SET DEFAULT 'customer';
+ALTER TABLE public.users ALTER COLUMN primary_group SET NOT NULL;
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_account_type_customer_check;
+ALTER TABLE public.users ADD CONSTRAINT users_account_type_customer_check CHECK (account_type='customer');
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_secondary_group_null_check;
+ALTER TABLE public.users ADD CONSTRAINT users_secondary_group_null_check CHECK (secondary_group IS NULL);
 
 ALTER TABLE public.users ALTER COLUMN employment_status DROP DEFAULT;
 ALTER TABLE public.users ALTER COLUMN employment_status DROP NOT NULL;
@@ -256,6 +265,7 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON public.user_roles,public.user_role_permissi
 CREATE INDEX IF NOT EXISTS users_business_user_role_idx ON public.users(business_id,user_role);
 CREATE INDEX IF NOT EXISTS users_employee_addon_idx ON public.users(business_id,employment_status) WHERE employment_status IS NOT NULL;
 
+COMMENT ON COLUMN public.users.secondary_group IS 'Deprecated compatibility field. Must remain NULL; employee access uses user_role and the employment addon.';
 COMMENT ON COLUMN public.users.user_role IS 'Global role assigned to this user. NULL means customer-only access.';
 COMMENT ON COLUMN public.users.employment_status IS 'NULL means no employee addon; non-NULL means employment details exist.';
 COMMENT ON TABLE public.user_roles IS 'Global user roles. Roles belong to user accounts, never to a business membership.';
