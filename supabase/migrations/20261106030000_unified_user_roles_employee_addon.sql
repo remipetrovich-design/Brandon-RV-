@@ -45,6 +45,17 @@ ON CONFLICT (role_key) DO UPDATE SET
   description=EXCLUDED.description,
   is_system=public.user_roles.is_system OR EXCLUDED.is_system;
 
+-- Include legacy member roles even if a matching permission group was not created.
+INSERT INTO public.user_roles(role_key,name,description,is_system)
+SELECT DISTINCT
+  trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),
+  initcap(bm.role), NULL, false
+FROM public.business_members bm
+JOIN public.businesses b ON b.id=bm.business_id
+WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL
+  AND trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')) <> ''
+ON CONFLICT (role_key) DO NOTHING;
+
 -- Preserve permissions assigned directly to each legacy role.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 SELECT DISTINCT
@@ -64,8 +75,6 @@ SELECT DISTINCT
   pgp.permission_key
 FROM public.business_members bm
 JOIN public.businesses b ON b.id=bm.business_id
-JOIN public.permission_groups role_group
-  ON role_group.business_id=bm.business_id AND lower(role_group.name)=lower(bm.role)
 JOIN public.member_permission_groups mpg ON mpg.member_id=bm.id
 JOIN public.permission_group_permissions pgp ON pgp.group_id=mpg.group_id
 WHERE b.slug='brandon-rv'
@@ -135,6 +144,9 @@ FROM public.users u
 WHERE u.employment_status IS NOT NULL;
 
 UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' AND accepted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS users_business_user_role_idx ON public.users(business_id,user_role);
+CREATE INDEX IF NOT EXISTS users_employee_addon_idx ON public.users(business_id,employment_status) WHERE employment_status IS NOT NULL;
 
 COMMENT ON COLUMN public.users.user_role IS 'Global role assigned to this user. NULL means customer-only access.';
 COMMENT ON COLUMN public.users.employment_status IS 'NULL means no employee addon; non-NULL means employment details exist.';
