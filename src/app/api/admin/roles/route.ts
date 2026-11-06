@@ -4,7 +4,7 @@ export const runtime="nodejs";
 const readKeys=(value:unknown):string[]=>Array.isArray(value)?[...new Set(value.map((x:unknown)=>String(x)))]:[];
 const roleKey=(name:string)=>name.trim().toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
 export async function GET(){
- const access=await authorizePermission("roles.manage");if(access.response)return access.response;const db=database();
+ const access=await authorizePermission("roles.manage");if(access.response)return access.response;if(!isGlobalAdministrator(access.user?.user_role))return jsonError("Only Owner or Website Developer can manage role definitions.",403);const db=database();
  const [{data:roles,error},{data:catalogue}]=await Promise.all([db.from("user_roles").select("role_key,name,description,is_system").order("is_system",{ascending:false}).order("name"),db.from("permissions").select("permission_key,description").order("permission_key")]);
  if(error)return jsonError("Could not load user roles.",500);
  const keys=(roles??[]).map(x=>x.role_key);const {data:mappings}=keys.length?await db.from("user_role_permissions").select("role_key,permission_key").in("role_key",keys):{data:[]};
