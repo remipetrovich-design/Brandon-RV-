@@ -16,11 +16,13 @@ The application is built with Next.js 16, React 19, TypeScript and Supabase.
 
 ## Account and database model
 
-Supabase is the central source of truth for application data and authentication-related account records.
+The \`public.users\` table is the single account identity table. Every person has one customer account, one login and \`primary_group = customer\`. The nullable \`user_role\` field defaults to \`NULL\`, which means customer-only access. Owner, Website Developer and other employee roles are assigned directly to the user account through the global user-role catalogue.
 
-The `public.users` table is the single account identity table. Every account has `primary_group = customer`. Employee and business access is additive: an active `business_members` record stores the user’s secondary business role (for example trial employee, employee, administrator, owner or developer), and permission groups determine which workspace features that role can use.
+Employment is an optional addon on the same user row. It stores employment type/status, job title, employee number, start/end dates, pay rate and frequency, payroll details, emergency contacts and employee notes. Hiring an existing customer activates these fields; it never creates another account. Terminating employment removes ordinary employee access but preserves the customer login and all customer data.
 
-There is one login per person. Customer records and employee/business permissions belong to the same user identity; do not create a second staff account or ask users to link separate customer and staff accounts. The `/admin` route is the combined, permission-filtered business workspace. `/staff` is retained only as a redirect to that workspace for existing links. Customer and staff compatibility views remain database compatibility layers, not separate account identity stores.
+Vehicles, enquiries, quotes, appointments, jobs, invoices, payments and documents remain separate operational records linked to the same user/customer ID. The customer and employee screens are different views of that one identity.
+
+Global role permissions are stored in \`user_roles\` and \`user_role_permissions\`. Owner and Website Developer have unrestricted application access. Legacy business-membership and permission-group tables are retained for migration compatibility, but runtime authentication and permission checks no longer depend on business roles or business memberships.
 
 ## Supabase migrations
 
@@ -59,6 +61,7 @@ Set the required values in `.env.local` before using application features that c
 Available scripts:
 
 - `npm run dev` — start the local development server
+- `npm test` — run the user-role access policy tests
 - `npm run typecheck` — run the TypeScript check
 - `npm run build` — create a production build
 - `npm run start` — start the production server
@@ -70,7 +73,7 @@ See `.env.example` for the supported configuration:
 - `SUPABASE_URL` — Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only Supabase service-role key; never expose it with a `NEXT_PUBLIC_` prefix
 - `BRANDON_RV_SETUP_SECRET` — optional legacy owner-bootstrap secret
-- `NEXT_PUBLIC_APP_URL` — public application origin used for account and invitation links
+- `NEXT_PUBLIC_APP_URL` — public application origin used for account links
 - `RESEND_API_KEY` and `EMAIL_FROM` — transactional email configuration
 
 ## Business scope
