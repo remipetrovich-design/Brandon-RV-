@@ -11,7 +11,7 @@ export async function GET(){
  return Response.json({groups:(roles??[]).map(role=>({id:role.role_key,name:role.name,description:role.description,is_system:role.is_system,permissions:isGlobalAdministrator(role.role_key)?(catalogue??[]).map(x=>x.permission_key):(mappings??[]).filter(x=>x.role_key===role.role_key).map(x=>x.permission_key)})),permissions:catalogue??[]});
 }
 export async function POST(request:Request){
- if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;if(!isGlobalAdministrator(access.user?.user_role))return jsonError("Only Owner or Website Developer can manage role definitions.",403);
  try{const body=await request.json();const name=String(body.name??"").trim();const description=String(body.description??"").trim().slice(0,500);const keys=readKeys(body.permissions);const key=roleKey(name);
  if(name.length<3||name.length>50||!key)return jsonError("Use a role name between 3 and 50 characters.");
  if(["owner","website_developer","customer"].includes(key))return jsonError("This role name is reserved.");
@@ -22,7 +22,7 @@ export async function POST(request:Request){
  }catch{return jsonError("Could not create user role.",500);}
 }
 export async function PATCH(request:Request){
- if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;if(!isGlobalAdministrator(access.user?.user_role))return jsonError("Only Owner or Website Developer can manage role definitions.",403);
  try{const body=await request.json();const key=String(body.groupId??"");const keys=readKeys(body.permissions);if(!/^[a-z0-9_]{2,60}$/.test(key))return jsonError("Invalid user role.");
  const db=database();const {data:role}=await db.from("user_roles").select("role_key,name,is_system").eq("role_key",key).maybeSingle();if(!role)return jsonError("User role not found.",404);
  if(["owner","website_developer"].includes(key))return jsonError("Owner and Website Developer roles always retain full access.",403);
@@ -32,7 +32,7 @@ export async function PATCH(request:Request){
  }catch{return jsonError("Could not update user role.",500);}
 }
 export async function DELETE(request:Request){
- if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;if(!isGlobalAdministrator(access.user?.user_role))return jsonError("Only Owner or Website Developer can manage role definitions.",403);
  try{const body=await request.json();const key=String(body.groupId??"");const db=database();const {data:role}=await db.from("user_roles").select("role_key,is_system").eq("role_key",key).maybeSingle();
  if(!role)return jsonError("User role not found.",404);if(role.is_system||["owner","website_developer","customer"].includes(key))return jsonError("System and reserved user roles cannot be deleted.",403);
  const {count}=await db.from("users").select("id",{count:"exact",head:true}).eq("user_role",key);if((count??0)>0)return jsonError("This role is assigned to users. Reassign those users before deleting it.",409);
