@@ -1,14 +1,14 @@
-import {authorizePermission,database,digest,jsonError,sameOrigin} from "@/lib/auth";
+import {currentUser,database,digest,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("customers.view");if(access.response)return access.response;
+ const signedInUser=await currentUser();if(!signedInUser)return jsonError("Sign in to your customer account before accepting this invitation.",401);
  try{
   const body=await request.json(),token=String(body.token??"").trim();if(token.length<32||token.length>200)return jsonError("Invalid invitation link.");
   const db=database(),now=new Date().toISOString();
   const {data:invite,error}=await db.from("staff_invitations").select("id,business_id,email,user_id,role_key,job_title,employment_type,start_date,expires_at,accepted_at,revoked_at").eq("token_hash",digest(token)).maybeSingle();
   if(error||!invite||invite.accepted_at||invite.revoked_at||invite.expires_at<=now)return jsonError("This invitation is invalid, expired or already used.",410);
-  const user=access.user!;
+  const user=signedInUser;
   if(user.email.toLowerCase()!==invite.email.toLowerCase())return jsonError("Sign in using the customer account invited at "+invite.email+".",403);
   if(user.business_id!==invite.business_id||user.primary_group!=="customer"||user.status!=="active")return jsonError("The signed-in account is not eligible for this invitation.",403);
   if(invite.user_id&&invite.user_id!==user.id)return jsonError("This invitation belongs to a different account.",403);
