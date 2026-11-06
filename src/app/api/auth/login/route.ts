@@ -14,6 +14,6 @@ export async function POST(request:Request){
   await db.from("login_attempts").insert({attempt_type:"login",email,ip_hash:ipHash,succeeded:valid});
   if(!valid||!user)return jsonError("Email or password is incorrect.",401);
   await db.from("users").update({last_login_at:new Date().toISOString(),updated_at:new Date().toISOString(),primary_group:"customer"}).eq("id",user.id);
-  await createSession(user.id,request);const {password_hash:_passwordHash,...safeUser}=user;const privileged=["owner","website_developer","developer"].includes(String(user.user_role??"").toLowerCase());const hasBusinessAccess=!!user.user_role&&(privileged||user.employment_status==="active");return Response.json({user:{...safeUser,account_type:"customer",primary_group:"customer"},hasBusinessAccess});
+  await createSession(user.id,request);const {password_hash:_passwordHash,...safeUser}=user;const privileged=["owner","website_developer"].includes(String(user.user_role??"").toLowerCase());const hasBusinessAccess=!!user.user_role&&(privileged||user.employment_status==="active");return Response.json({user:{...safeUser,account_type:"customer",primary_group:"customer"},hasBusinessAccess});
  }catch{return jsonError("Sign-in is temporarily unavailable.",500);}
 }
