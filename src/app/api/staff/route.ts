@@ -16,7 +16,7 @@ export async function GET(){
   db.from("users").select("id,first_name,last_name,full_name,email,phone").eq("business_id",businessId).eq("status","active").is("user_role",null).or("employment_status.is.null,employment_status.eq.terminated").order("full_name")
  ]);
  if(error||roleError||customerError)return jsonError("Could not load the employee directory.",500);
- return Response.json({employees:employees??[],roles:(roles??[]).filter(x=>!["customer"].includes(x.role_key)),customers:customers??[]});
+ return Response.json({employees:employees??[],roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))),customers:customers??[]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
