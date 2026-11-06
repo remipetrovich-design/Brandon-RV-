@@ -16,7 +16,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const permitted=await userHasPermissions(a.user!.id,permissionKeys);
  const permissions=Object.fromEntries(permissionKeys.map(key=>[key,permitted.has(key)]));
  if(!permitted.has("customers.manage"))delete customer.internal_notes;
- const {data:account,error:accountError}=await db.from("users").select("status,email_verified_at,last_login_at,first_name,last_name,date_of_birth,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",customer.user_id??id).maybeSingle();
+ const {data:account,error:accountError}=await db.from("users").select("id,status,email_verified_at,last_login_at,first_name,last_name,date_of_birth,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",customer.user_id??id).maybeSingle();
  if(accountError)return jsonError("Could not load customer account status.",500);
  const query=(table:string)=>db.from(table).select("*").eq("business_id",businessId).eq("customer_id",id).order("created_at",{ascending:false}).limit(100);
  const empty={data:[],error:null};
