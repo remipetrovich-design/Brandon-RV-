@@ -1,10 +1,10 @@
-import {createSession,database,digest,normalizeEmail,passwordHash,newToken,jsonError,sameOrigin} from "@/lib/auth";
+import {createSession,database,digest,normalizeEmail,passwordHash,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
   const body=await request.json();const token=String(body.token??"");const email=normalizeEmail(String(body.email??""));const fullName=String(body.fullName??"").trim();const password=String(body.password??"");
-  if(token.length<32||!/^ [^\s@]+@[^\s@]+\.[^\s@]+$/.test(" "+email)||email.length>254||fullName.length<2||fullName.length>120||password.length<12||password.length>128)return jsonError("Enter a valid name, email and password.");
+  if(token.length<32||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254||fullName.length<2||fullName.length>120||password.length<12||password.length>128)return jsonError("Enter a valid name, email and password.");
   const db=database();const {data:invite}=await db.from("user_invitations").select("*").eq("token_hash",digest(token)).is("accepted_at",null).gt("expires_at",new Date().toISOString()).maybeSingle();
   if(!invite)return jsonError("This setup link is invalid or has expired.",410);
   if(invite.account_type!=="owner")return jsonError("Staff invitations are no longer supported. Select an existing customer account and add employee details from People management.",410);
