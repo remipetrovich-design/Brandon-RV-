@@ -236,6 +236,8 @@ BEGIN
   END IF;
 END $$;
 
+UPDATE public.permissions SET description='Manage employee details and user access' WHERE permission_key='staff.manage';
+
 UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' AND accepted_at IS NULL;
 
 -- These tables are accessed only by the server-side service-role client.
