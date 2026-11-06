@@ -80,7 +80,7 @@ FROM public.business_members bm
 JOIN public.businesses b ON b.id=bm.business_id
 JOIN public.member_permission_groups mpg ON mpg.member_id=bm.id
 JOIN public.permission_group_permissions pgp ON pgp.group_id=mpg.group_id
-WHERE b.slug='brandon-rv'
+WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 -- Translate existing employee access to the user's own role field.
