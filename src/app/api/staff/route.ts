@@ -32,7 +32,7 @@ export async function POST(request:Request){
   const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",userRole).maybeSingle();
   if(!role)return jsonError("Select a valid user role.");
   if(roleKeys.includes(userRole)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can assign this role.",403);
-  const {data:customer}=await db.from("users").select("id,primary_group,status,user_role,employment_status,business_id,job_title,employee_number,employment_type,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes").eq("id",userId).eq("business_id",businessId).eq("primary_group","customer").eq("status","active").maybeSingle();
+  const {data:customer}=await db.from("users").select("id,primary_group,status,user_role,employment_status,business_id,job_title,employee_number,employment_type,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",userId).eq("business_id",businessId).eq("primary_group","customer").eq("status","active").maybeSingle();
   if(!customer)return jsonError("Customer account not found.",404);
   if(!isHireableCustomer(customer))return jsonError("This customer already has an active employee record or is not eligible to be hired.",409);
   const updates:any={user_role:userRole,employment_status:"active",employment_type:employmentType,job_title:jobTitle,start_date:startDate,end_date:null,updated_at:new Date().toISOString()};
@@ -44,7 +44,7 @@ export async function POST(request:Request){
   if(error)return jsonError("Could not activate the employee record.",500);
   if(!updated)return jsonError("This customer was changed by another request. Refresh the employee list and try again.",409);
   const wasRehire=customer.employment_status==="terminated";
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:wasRehire?"employee.rehired":"employee.activated",entity_type:"user",entity_id:userId,details:{previous_employment:wasRehire?{job_title:customer.job_title,employee_number:customer.employee_number,employment_type:customer.employment_type,start_date:customer.start_date,end_date:customer.end_date,pay_rate:customer.pay_rate,pay_frequency:customer.pay_frequency,payroll_reference:customer.payroll_reference,payroll_notes:customer.payroll_notes}:null,new_employment:{user_role:userRole,job_title:jobTitle,employment_type:employmentType,start_date:startDate}}});
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:wasRehire?"employee.rehired":"employee.activated",entity_type:"user",entity_id:userId,details:{previous_employment:wasRehire?{job_title:customer.job_title,employee_number:customer.employee_number,employment_type:customer.employment_type,start_date:customer.start_date,end_date:customer.end_date,pay_rate:customer.pay_rate,pay_frequency:customer.pay_frequency,payroll_reference:customer.payroll_reference,payroll_notes:customer.payroll_notes,emergency_contact_name:customer.emergency_contact_name,emergency_contact_phone:customer.emergency_contact_phone,employee_internal_notes:customer.employee_internal_notes}:null,new_employment:{user_role:userRole,job_title:jobTitle,employment_type:employmentType,start_date:startDate}}});
   return Response.json({success:true},{status:201});
  }catch{return jsonError("Could not activate the employee record.",500);}
 }
@@ -54,7 +54,7 @@ export async function PATCH(request:Request){
  try{
   const body=await request.json();const userId=String(body.userId??"");if(!isId(userId))return jsonError("Invalid employee record.");
   const db=database(),businessId=access.membership!.business_id;
-  const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date").eq("id",userId).eq("business_id",businessId).not("employment_status","is",null).maybeSingle();
+  const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date,updated_at").eq("id",userId).eq("business_id",businessId).not("employment_status","is",null).maybeSingle();
   if(!employee)return jsonError("Employee record not found.",404);
   if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can edit this account.",403);
   const updates:any={updated_at:new Date().toISOString()};
@@ -71,7 +71,7 @@ export async function PATCH(request:Request){
   if(updates.employment_status==="terminated"&&!updates.end_date)updates.end_date=new Date().toISOString().slice(0,10);
   const effectiveStart=updates.start_date??employee.start_date;const effectiveEnd=updates.end_date??employee.end_date;if(effectiveStart&&effectiveEnd&&effectiveEnd<effectiveStart)return jsonError("Employment end date cannot be before the start date.");
   if(Object.keys(updates).length===1)return jsonError("No employee changes supplied.");
-  const {error}=await db.from("users").update(updates).eq("id",userId);if(error)return jsonError("Could not update employee details.",500);
+  const {data:updated,error}=await db.from("users").update(updates).eq("id",userId).eq("business_id",businessId).eq("updated_at",employee.updated_at).not("employment_status","is",null).select("id").maybeSingle();if(error)return jsonError("Could not update employee details.",500);if(!updated)return jsonError("This employee record changed during the update. Refresh and try again.",409);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.updated",entity_type:"user",entity_id:userId,details:updates});
   return Response.json({success:true});
  }catch{return jsonError("Could not update employee details.",500);}
