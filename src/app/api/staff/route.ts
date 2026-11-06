@@ -1,7 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {isGlobalAdministrator,isHireableCustomer} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
-const roleKeys=["owner","website_developer","developer"];
+const roleKeys=["owner","website_developer"];
 const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
