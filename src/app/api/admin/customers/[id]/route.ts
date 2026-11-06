@@ -83,7 +83,6 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const userId=customer.user_id??customer.id;
   if(update.email){const {data:duplicate}=await db.from("users").select("id").eq("email",update.email).neq("id",userId).maybeSingle();if(duplicate)return jsonError("That email address is already used by another account.",409);}
   update.updated_at=new Date().toISOString();
-  if(update.user_role&& !["owner","website_developer"].includes(update.user_role)){update.employment_status="active";update.start_date=new Date().toISOString().slice(0,10);update.job_title="Employee";}else if(update.user_role===null){update.employment_status=null;update.start_date=null;update.job_title=null;}
   const {data:record,error}=await db.from("users").update(update).eq("id",userId).eq("primary_group","customer").select("id").maybeSingle();
   if(error||!record)return jsonError("Could not save customer details.",500);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:a.user!.id,action:"customer.profile_updated",entity_type:"customer",entity_id:id,details:update});
