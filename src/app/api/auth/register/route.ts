@@ -17,11 +17,15 @@ export async function POST(request:Request){
   const dateOfBirth=body.dateOfBirth?String(body.dateOfBirth):null;
   const email=normalizeEmail(String(body.email??""));
   const phone=String(body.phone??"").trim();
+  const address=String(body.address??"").trim();
+  const suburb=String(body.suburb??"").trim();
+  const state=String(body.state??"").trim();
+  const postcode=String(body.postcode??"").trim();
   const password=String(body.password??"");
   if(!firstName||!lastName||firstName.length>120||lastName.length>120||fullName.length<2||fullName.length>120)return jsonError("Enter a valid first and last name.");
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
   if(password.length<12||password.length>128)return jsonError("Use a password between 12 and 128 characters.");
-  if(phone.length>40)return jsonError("Enter a valid phone number.");
+  if(phone.length>40||address.length>500||suburb.length>120||state.length>80||postcode.length>12)return jsonError("One or more contact details exceed the allowed length.");
   if(dateOfBirth&&!isValidBirthDate(dateOfBirth))return jsonError("Enter a valid date of birth.");
   const db=database();
   const ip=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"unknown";
@@ -37,11 +41,11 @@ export async function POST(request:Request){
   const verificationEnabled=isEmailConfigured();
   const {data:user,error}=await db.from("users").insert({
    email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
-   date_of_birth:dateOfBirth,phone:phone||null,account_type:"customer",primary_group:"customer",
+   date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"customer",
    user_role:null,business_id:business.id,status:verificationEnabled?"pending":"active",email_verified_at:null
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
-  const {data:customer,error:customerError}=await db.from("customers").insert({business_id:business.id,user_id:user.id,full_name:fullName,email,phone:phone||null,status:"active"}).select("id").single();
+  const {data:customer,error:customerError}=await db.from("customers").insert({business_id:business.id,user_id:user.id,full_name:fullName,email,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,status:"active"}).select("id").single();
   if(customerError||!customer){await db.from("users").delete().eq("id",user.id);return jsonError("Could not finish setting up your customer profile.",500);}
   if(!verificationEnabled)return Response.json({verificationRequired:false,message:"Your customer account is ready. You can now sign in. Email verification and password recovery emails are not enabled yet; use an email address you can access."},{status:201});
   const token=newToken();const tokenHash=digest(token);
