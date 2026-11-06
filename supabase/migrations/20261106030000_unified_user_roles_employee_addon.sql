@@ -154,6 +154,11 @@ SELECT u.id,u.business_id,u.id AS user_id,u.employee_number,u.job_title,
 FROM public.users u
 WHERE u.employment_status IS NOT NULL;
 
+-- The staff view is read-only. All employee changes go through the existing
+-- customer user row and the employee addon API, never through a staff insert.
+DROP TRIGGER IF EXISTS staff_view_write ON public.staff;
+DROP FUNCTION IF EXISTS public.brandon_rv_staff_view_write();
+
 -- Keep the customer compatibility view attached to the single user identity.
 -- Removing a customer from the customer list deactivates the customer profile;
 -- it never deletes the login or an employee addon.
