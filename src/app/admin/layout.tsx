@@ -1,5 +1,5 @@
 import {redirect} from "next/navigation";
-import {currentUser,currentMembership,userHasPermission} from "@/lib/auth";
+import {currentUser,currentMembership,userHasPermissions} from "@/lib/auth";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 export const dynamic="force-dynamic";
 const navigation:AdminNavGroup[]=[
