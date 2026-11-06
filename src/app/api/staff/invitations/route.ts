@@ -4,6 +4,7 @@ import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 import {sendEmail} from "@/lib/email";
 export const runtime="nodejs";
 const validEmail=(v:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const staffRoleKeys=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
  const {data,error}=await database().from("staff_invitations").select("id,email,user_id,role_key,job_title,employment_type,start_date,expires_at,created_at").eq("business_id",access.membership!.business_id).is("accepted_at",null).is("revoked_at",null).gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false});
