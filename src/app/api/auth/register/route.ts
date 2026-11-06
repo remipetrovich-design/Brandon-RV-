@@ -7,15 +7,18 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
   const body=await request.json();
-  const fullName=String(body.fullName??"").trim();
-  const nameParts=fullName.split(/\s+/);
-  const firstName=nameParts[0]??"";
-  const lastName=nameParts.slice(1).join(" ")||null;
+  const suppliedFirstName=String(body.firstName??"").trim();
+  const suppliedLastName=String(body.lastName??"").trim();
+  const legacyName=String(body.fullName??"").trim();
+  const nameParts=legacyName.split(/\s+/);
+  const firstName=suppliedFirstName||nameParts[0]||"";
+  const lastName=suppliedFirstName?suppliedLastName:(nameParts.slice(1).join(" ")||"");
+  const fullName=[firstName,lastName].filter(Boolean).join(" ");
   const dateOfBirth=body.dateOfBirth?String(body.dateOfBirth):null;
   const email=normalizeEmail(String(body.email??""));
   const phone=String(body.phone??"").trim();
   const password=String(body.password??"");
-  if(fullName.length<2||fullName.length>120)return jsonError("Enter your full name.");
+  if(!firstName||firstName.length>120||lastName.length>120||fullName.length<2||fullName.length>120)return jsonError("Enter a valid first and last name.");
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
   if(password.length<12||password.length>128)return jsonError("Use a password between 12 and 128 characters.");
   if(phone.length>40)return jsonError("Enter a valid phone number.");
@@ -33,7 +36,7 @@ export async function POST(request:Request){
   if(businessError||!business)return jsonError("Business setup is incomplete. Please contact Brandon RV.",503);
   const verificationEnabled=isEmailConfigured();
   const {data:user,error}=await db.from("users").insert({
-   email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName,
+   email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
    date_of_birth:dateOfBirth,phone:phone||null,account_type:"customer",primary_group:"customer",
    user_role:null,business_id:business.id,status:verificationEnabled?"pending":"active",email_verified_at:null
   }).select("id").single();
