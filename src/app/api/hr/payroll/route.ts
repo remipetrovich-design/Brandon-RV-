@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 export const runtime="nodejs";
 export async function GET(){
  const a=await authorizePermission("payroll.view");if(a.response)return a.response;
@@ -8,7 +8,8 @@ export async function GET(){
  const ids=(periods??[]).map(x=>x.id);
  const result=ids.length?await db.from("payroll_items").select("id,payroll_period_id,user_id,ordinary_hours,overtime_hours,allowances,deductions,gross_amount,tax_withheld,superannuation_amount,net_amount,notes").eq("business_id",businessId).in("payroll_period_id",ids):{data:[],error:null};
  if(result.error)return jsonError("Could not load payroll entries.",500);
- return Response.json({periods:periods??[],items:result.data??[]});
+ const canManage=await userHasPermission(a.user!.id,"payroll.manage");const {data:employees}=canManage?await db.from("users").select("id,full_name,email,pay_rate,pay_frequency").eq("business_id",businessId).eq("employment_status","active").order("full_name"):{data:[]};
+ return Response.json({periods:periods??[],items:result.data??[],employees:employees??[],canManage});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
