@@ -182,15 +182,16 @@ BEGIN
     IF v_id IS NOT NULL THEN
       UPDATE public.users SET
         business_id=coalesce(new.business_id,business_id),
-        full_name=v_full_name,
+        full_name=coalesce(nullif(btrim(new.full_name),''),full_name),
         first_name=coalesce(v_first_name,first_name),
         last_name=coalesce(v_last_name,last_name),
         date_of_birth=coalesce(new.date_of_birth,date_of_birth),
-        email=coalesce(lower(btrim(new.email)),email),
+        email=coalesce(nullif(lower(btrim(new.email)),''),email),
         phone=coalesce(new.phone,phone),
-        address=new.address,suburb=new.suburb,state=new.state,postcode=new.postcode,
-        customer_internal_notes=new.internal_notes,
-        customer_status=coalesce(new.status,'active'),
+        address=coalesce(new.address,address),suburb=coalesce(new.suburb,suburb),
+        state=coalesce(new.state,state),postcode=coalesce(new.postcode,postcode),
+        customer_internal_notes=coalesce(new.internal_notes,customer_internal_notes),
+        customer_status=coalesce(new.status,customer_status,'active'),
         primary_group='customer',
         updated_at=now()
       WHERE id=v_id;
