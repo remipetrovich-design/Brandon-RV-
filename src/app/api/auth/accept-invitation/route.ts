@@ -27,7 +27,7 @@ export async function POST(request:Request){
    if(error||!newUser)return jsonError("Could not create the account. Contact Brandon RV for a new invitation.",500);
    user=newUser;created=true;
   }
-  const {error:staffError}=await db.from("staff").insert({business_id:invite.business_id,user_id:user.id,job_title:role==="owner"?"Owner":role,employment_status:"active",start_date:now.slice(0,10)});
+  const {error:staffError}=await db.from("staff").insert({business_id:invite.business_id,user_id:user.id,job_title:invite.job_title??(role==="owner"?"Owner":role),employment_type:invite.employment_type??"full_time",employment_status:"active",start_date:now.slice(0,10)});
   const {error:memberError}=await db.from("business_members").insert({business_id:invite.business_id,user_id:user.id,role,is_active:true,invited_at:invite.created_at,joined_at:now});
   if(staffError||memberError){await db.from("staff").delete().eq("user_id",user.id);await db.from("business_members").delete().eq("user_id",user.id);if(created)await db.from("users").delete().eq("id",user.id);return jsonError("Could not finish setting up account access. Contact Brandon RV for a new invitation.",500);}
   await createSession(user.id,request);const {password_hash:_passwordHash,...safeUser}=user;return Response.json({user:{...safeUser,account_type:"customer",primary_group:"customer"}},{status:201});
