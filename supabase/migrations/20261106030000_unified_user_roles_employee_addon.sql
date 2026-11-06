@@ -70,6 +70,11 @@ WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key NOT IN
 ORDER BY role_key,bm.role
 ON CONFLICT (role_key) DO NOTHING;
 
+-- Ensure both reserved global administrator roles exist independently of legacy group setup.
+INSERT INTO public.user_roles(role_key,name,description,is_system)
+VALUES ('owner','Owner','Unrestricted owner access',true)
+ON CONFLICT (role_key) DO UPDATE SET is_system=true;
+
 -- The product has one global administrator label: Website Developer.
 -- Convert the previous generic developer role before removing that alias.
 INSERT INTO public.user_roles(role_key,name,description,is_system)
