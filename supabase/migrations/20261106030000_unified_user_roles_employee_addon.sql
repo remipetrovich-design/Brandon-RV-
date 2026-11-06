@@ -80,54 +80,6 @@ ON CONFLICT (role_key) DO UPDATE SET is_system=true;
 INSERT INTO public.user_roles(role_key,name,description,is_system)
 VALUES ('website_developer','Website Developer','Unrestricted website and operations access',true)
 ON CONFLICT (role_key) DO UPDATE SET is_system=true;
--- Add the exact effective permissions for each synthetic role.
-WITH member_sets AS (
-  SELECT bm.id AS member_id,
-         NULLIF(trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),'') AS base_role_key,
-         COALESCE(NULLIF(btrim(bm.role),''),'Employee') AS base_role_name,
-         COALESCE((
-           SELECT array_agg(DISTINCT permissions.permission_key ORDER BY permissions.permission_key)
-           FROM (
-             SELECT pgp.permission_key
-             FROM public.permission_groups role_group
-             JOIN public.permission_group_permissions pgp ON pgp.group_id=role_group.id
-             WHERE role_group.business_id=bm.business_id
-               AND lower(role_group.name)=lower(bm.role)
-             UNION
-             SELECT pgp.permission_key
-             FROM public.member_permission_groups mpg
-             JOIN public.permission_groups extra_group
-               ON extra_group.id=mpg.group_id AND extra_group.business_id=bm.business_id
-             JOIN public.permission_group_permissions pgp ON pgp.group_id=extra_group.id
-             WHERE mpg.member_id=bm.id
-           ) permissions
-         ),ARRAY[]::text[]) AS effective_permissions,
-         COALESCE((
-           SELECT array_agg(DISTINCT pgp.permission_key ORDER BY pgp.permission_key)
-           FROM public.permission_groups role_group
-           JOIN public.permission_group_permissions pgp ON pgp.group_id=role_group.id
-           WHERE role_group.business_id=bm.business_id
-             AND lower(role_group.name)=lower(bm.role)
-         ),ARRAY[]::text[]) AS base_permissions
-  FROM public.business_members bm
-  JOIN public.businesses b ON b.id=bm.business_id
-  WHERE b.slug='brandon-rv'
-),
-synthetic_roles AS (
-  SELECT DISTINCT
-         'custom_'||left(COALESCE(base_role_key,'employee'),30)||'_'||
-           substr(md5(COALESCE(base_role_key,'employee')||'|'||array_to_string(effective_permissions,',')),1,12) AS role_key,
-         effective_permissions
-  FROM member_sets
-  WHERE effective_permissions IS DISTINCT FROM base_permissions
-    AND COALESCE(base_role_key,'') NOT IN ('owner','website_developer','developer','customer')
-)
-INSERT INTO public.user_role_permissions(role_key,permission_key)
-SELECT synthetic_roles.role_key,permission.permission_key
-FROM synthetic_roles
-CROSS JOIN LATERAL unnest(synthetic_roles.effective_permissions) AS permission(permission_key)
-ON CONFLICT DO NOTHING;
-
 -- Preserve the permissions attached to each named role.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 SELECT DISTINCT
@@ -190,6 +142,54 @@ INSERT INTO public.user_roles(role_key,name,description,is_system)
 SELECT role_key,role_name,'Migrated effective permission set',false
 FROM synthetic_roles
 ON CONFLICT (role_key) DO NOTHING;
+
+-- Add the exact effective permissions for each synthetic role.
+WITH member_sets AS (
+  SELECT bm.id AS member_id,
+         NULLIF(trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),'') AS base_role_key,
+         COALESCE(NULLIF(btrim(bm.role),''),'Employee') AS base_role_name,
+         COALESCE((
+           SELECT array_agg(DISTINCT permissions.permission_key ORDER BY permissions.permission_key)
+           FROM (
+             SELECT pgp.permission_key
+             FROM public.permission_groups role_group
+             JOIN public.permission_group_permissions pgp ON pgp.group_id=role_group.id
+             WHERE role_group.business_id=bm.business_id
+               AND lower(role_group.name)=lower(bm.role)
+             UNION
+             SELECT pgp.permission_key
+             FROM public.member_permission_groups mpg
+             JOIN public.permission_groups extra_group
+               ON extra_group.id=mpg.group_id AND extra_group.business_id=bm.business_id
+             JOIN public.permission_group_permissions pgp ON pgp.group_id=extra_group.id
+             WHERE mpg.member_id=bm.id
+           ) permissions
+         ),ARRAY[]::text[]) AS effective_permissions,
+         COALESCE((
+           SELECT array_agg(DISTINCT pgp.permission_key ORDER BY pgp.permission_key)
+           FROM public.permission_groups role_group
+           JOIN public.permission_group_permissions pgp ON pgp.group_id=role_group.id
+           WHERE role_group.business_id=bm.business_id
+             AND lower(role_group.name)=lower(bm.role)
+         ),ARRAY[]::text[]) AS base_permissions
+  FROM public.business_members bm
+  JOIN public.businesses b ON b.id=bm.business_id
+  WHERE b.slug='brandon-rv'
+),
+synthetic_roles AS (
+  SELECT DISTINCT
+         'custom_'||left(COALESCE(base_role_key,'employee'),30)||'_'||
+           substr(md5(COALESCE(base_role_key,'employee')||'|'||array_to_string(effective_permissions,',')),1,12) AS role_key,
+         effective_permissions
+  FROM member_sets
+  WHERE effective_permissions IS DISTINCT FROM base_permissions
+    AND COALESCE(base_role_key,'') NOT IN ('owner','website_developer','developer','customer')
+)
+INSERT INTO public.user_role_permissions(role_key,permission_key)
+SELECT synthetic_roles.role_key,permission.permission_key
+FROM synthetic_roles
+CROSS JOIN LATERAL unnest(synthetic_roles.effective_permissions) AS permission(permission_key)
+ON CONFLICT DO NOTHING;
 
 WITH member_sets AS (
   SELECT bm.id AS member_id,bm.user_id,bm.business_id,bm.is_active,
