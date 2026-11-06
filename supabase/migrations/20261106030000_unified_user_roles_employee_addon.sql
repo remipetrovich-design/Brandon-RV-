@@ -144,7 +144,7 @@ ALTER TABLE public.users ADD CONSTRAINT users_pay_rate_check CHECK (pay_rate IS 
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_user_role_fkey;
 ALTER TABLE public.users ALTER COLUMN user_role SET DEFAULT NULL;
 ALTER TABLE public.users ADD CONSTRAINT users_user_role_fkey
-  FOREIGN KEY (user_role) REFERENCES public.user_roles(role_key) ON DELETE SET NULL;
+  FOREIGN KEY (user_role) REFERENCES public.user_roles(role_key) ON DELETE RESTRICT;
 
 -- Customer remains the permanent account identity. The customer view exposes
 -- account/profile data and remains keyed by the same users.id.
@@ -170,7 +170,7 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path=public
-AS $
+AS $role_permissions$
 BEGIN
   IF p_role_key IN ('owner','website_developer','developer','customer') THEN
     RAISE EXCEPTION 'Reserved roles cannot have their permissions changed';
@@ -194,7 +194,7 @@ BEGIN
     FROM unnest(coalesce(p_permission_keys,ARRAY[]::text[])) AS keys(permission_key)
   ) requested;
 END;
-$;
+$role_permissions$;
 
 REVOKE ALL ON FUNCTION public.set_user_role_permissions(text,text[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.set_user_role_permissions(text,text[]) TO service_role;
