@@ -13,7 +13,6 @@ export default function PortalAuthGuard({children}:{children:ReactNode}){
 
  useEffect(()=>{
   if(verified){
-   if(isPublic)setVerified(false);
    setReadyPath(pathname);
    return;
   }
