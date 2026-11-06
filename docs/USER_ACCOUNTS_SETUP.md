@@ -9,7 +9,7 @@ Every person has one \`users\` row and one login. Every account permanently has 
 The \`user_role\` column is nullable:
 - \`NULL\` means customer-only access.
 - A role key such as \`apprentice\`, \`worker\`, \`manager\`, \`owner\` or \`website_developer\` is assigned to the user account itself.
-- Owner and Website Developer are global administrators with unrestricted application access.
+- Owner and Website Developer are the only global administrator roles and have unrestricted application access. The legacy Developer role is normalized to Website Developer during migration.
 
 The global role catalogue is \`user_roles\`; its permission map is \`user_role_permissions\`. Role permissions are not scoped to a business membership.
 
