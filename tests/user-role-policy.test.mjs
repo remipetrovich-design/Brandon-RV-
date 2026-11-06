@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {hasEmployeeAccess,isGlobalAdministrator} from "../src/lib/user-role-policy.mjs";
+import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer} from "../src/lib/user-role-policy.mjs";
 
 test("customer-only accounts have no employee access",()=>{
  assert.equal(hasEmployeeAccess({user_role:null,employment_status:null}),false);
@@ -26,4 +26,22 @@ test("Owner and Website Developer are global administrators",()=>{
 test("ordinary employee roles are not global administrators",()=>{
  assert.equal(isGlobalAdministrator("manager"),false);
  assert.equal(isGlobalAdministrator(null),false);
+});
+
+test("new active customer accounts can be hired",()=>{
+ assert.equal(isHireableCustomer({primary_group:"customer",status:"active",user_role:null,employment_status:null}),true);
+});
+
+test("terminated employees can be rehired without creating a new account",()=>{
+ assert.equal(isHireableCustomer({primary_group:"customer",status:"active",user_role:null,employment_status:"terminated"}),true);
+});
+
+test("active employees and accounts with a role cannot be hired twice",()=>{
+ assert.equal(isHireableCustomer({primary_group:"customer",status:"active",user_role:"technician",employment_status:"active"}),false);
+ assert.equal(isHireableCustomer({primary_group:"customer",status:"active",user_role:null,employment_status:"active"}),false);
+});
+
+test("inactive or non-customer accounts cannot be hired",()=>{
+ assert.equal(isHireableCustomer({primary_group:"customer",status:"inactive",user_role:null,employment_status:null}),false);
+ assert.equal(isHireableCustomer({primary_group:"staff",status:"active",user_role:null,employment_status:null}),false);
 });
