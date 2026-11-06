@@ -26,7 +26,7 @@ export async function POST(request:Request){
   if(["owner","website_developer"].includes(roleKey)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only a global administrator can invite this role.",403);
   const {data:user}=await db.from("users").select("id,user_role,employment_status,status,primary_group").eq("email",email).eq("business_id",businessId).maybeSingle();
   if(user&&(user.primary_group!=="customer"||user.status!=="active"))return jsonError("This account is not an active customer account.",409);
-  if(user?.user_role&&user.employment_status==="active")return jsonError("This customer already has active staff access.",409);
+  if(user?.user_role&&user.employment_status!=="terminated")return jsonError("This customer already has staff access or an existing staff restriction.",409);
   await db.from("staff_invitations").update({revoked_at:new Date().toISOString()}).eq("business_id",businessId).eq("email",email).is("accepted_at",null).is("revoked_at",null);
   const token=randomBytes(32).toString("base64url"),expiresAt=new Date(Date.now()+7*86400000).toISOString();
   const {data:invitation,error}=await db.from("staff_invitations").insert({business_id:businessId,email,user_id:user?.id??null,role_key:roleKey,job_title:jobTitle,employment_type:employmentType,start_date:startDate,invited_by:access.user!.id,token_hash:digest(token),expires_at:expiresAt}).select("id").single();
