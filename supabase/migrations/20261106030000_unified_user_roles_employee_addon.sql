@@ -106,6 +106,9 @@ WHERE secondary_group IS DISTINCT FROM 'staff'
   AND user_role IS NULL
   AND NOT EXISTS (SELECT 1 FROM public.business_members bm WHERE bm.user_id=users.id);
 
+-- Normalize every legacy account into the single customer identity model.
+UPDATE public.users SET account_type='customer', secondary_group=NULL WHERE account_type IS DISTINCT FROM 'customer' OR secondary_group IS NOT NULL;
+
 ALTER TABLE public.users ALTER COLUMN employment_status DROP DEFAULT;
 ALTER TABLE public.users ALTER COLUMN employment_status DROP NOT NULL;
 ALTER TABLE public.users ALTER COLUMN employment_type DROP DEFAULT;
