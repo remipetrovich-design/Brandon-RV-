@@ -1,5 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
+import {isGlobalAdministrator,isHireableCustomer} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const roleKeys=["owner","website_developer","developer"];
 const employmentTypes=["casual","part_time","full_time"];
@@ -13,7 +13,7 @@ export async function GET(){
  const [{data:employees,error},{data:roles, error:roleError},{data:customers,error:customerError}]=await Promise.all([
   db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,created_at").eq("business_id",businessId).not("employment_status","is",null).order("created_at",{ascending:false}),
   db.from("user_roles").select("role_key,name,description,is_system").order("name"),
-  db.from("users").select("id,first_name,last_name,full_name,email,phone").eq("business_id",businessId).eq("status","active").is("user_role",null).is("employment_status",null).order("full_name")
+  db.from("users").select("id,first_name,last_name,full_name,email,phone").eq("business_id",businessId).eq("status","active").is("user_role",null).or("employment_status.is.null,employment_status.eq.terminated").order("full_name")
  ]);
  if(error||roleError||customerError)return jsonError("Could not load the employee directory.",500);
  return Response.json({employees:employees??[],roles:(roles??[]).filter(x=>!["customer"].includes(x.role_key)),customers:customers??[]});
@@ -32,10 +32,10 @@ export async function POST(request:Request){
   const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",userRole).maybeSingle();
   if(!role)return jsonError("Select a valid user role.");
   if(roleKeys.includes(userRole)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can assign this role.",403);
-  const {data:customer}=await db.from("users").select("id,user_role,employment_status,business_id").eq("id",userId).eq("business_id",businessId).eq("primary_group","customer").eq("status","active").maybeSingle();
+  const {data:customer}=await db.from("users").select("id,primary_group,status,user_role,employment_status,business_id,job_title,employee_number,employment_type,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes").eq("id",userId).eq("business_id",businessId).eq("primary_group","customer").eq("status","active").maybeSingle();
   if(!customer)return jsonError("Customer account not found.",404);
-  if(customer.user_role||customer.employment_status)return jsonError("This customer already has an employee record.",409);
-  const updates:any={user_role:userRole,employment_status:"active",employment_type:employmentType,job_title:jobTitle,start_date:startDate,updated_at:new Date().toISOString()};
+  if(!isHireableCustomer(customer))return jsonError("This customer already has an active employee record or is not eligible to be hired.",409);
+  const updates:any={user_role:userRole,employment_status:"active",employment_type:employmentType,job_title:jobTitle,start_date:startDate,end_date:null,updated_at:new Date().toISOString()};
   if(body.employeeNumber!==undefined){const value=String(body.employeeNumber).trim();if(value.length>50)return jsonError("Employee number must be 50 characters or fewer.");updates.employee_number=value||null;}
   if(body.payRate!==undefined&&body.payRate!==""){const n=Number(body.payRate);if(!Number.isFinite(n)||n<0||n>9999999999.99)return jsonError("Enter a valid pay rate up to 9,999,999,999.99.");updates.pay_rate=n;}
   if(body.payFrequency!==undefined&&body.payFrequency!==""){if(!payFrequencies.includes(String(body.payFrequency)))return jsonError("Select a valid pay frequency.");updates.pay_frequency=String(body.payFrequency);}
