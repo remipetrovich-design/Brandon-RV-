@@ -26,8 +26,7 @@ export async function PATCH(request:Request){
  const db=database();const {data:role}=await db.from("user_roles").select("role_key,name,is_system").eq("role_key",key).maybeSingle();if(!role)return jsonError("User role not found.",404);
  if(["owner","website_developer","developer"].includes(key))return jsonError("Owner and Website Developer roles always retain full access.",403);
  const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
- const {error:delError}=await db.from("user_role_permissions").delete().eq("role_key",key);if(delError)return jsonError("Could not update role permissions.",500);
- if(keys.length){const {error}=await db.from("user_role_permissions").insert(keys.map(permission_key=>({role_key:key,permission_key})));if(error)return jsonError("Could not update role permissions.",500);}
+ const {error:saveError}=await db.rpc("set_user_role_permissions",{p_role_key:key,p_permission_keys:keys});if(saveError)return jsonError("Could not update role permissions.",500);
  return Response.json({success:true});
  }catch{return jsonError("Could not update user role.",500);}
 }
