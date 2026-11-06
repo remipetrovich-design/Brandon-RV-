@@ -35,31 +35,42 @@ CREATE TABLE IF NOT EXISTS public.user_role_permissions (
 UPDATE public.users u SET business_id=b.id FROM public.businesses b WHERE b.slug='brandon-rv' AND u.business_id IS NULL;
 
 -- Copy configured business role definitions into the global user-role catalogue.
+-- Collapse duplicate normalized names before the upsert so one role key is
+-- never targeted more than once in a single INSERT statement.
+WITH candidates AS (
+  SELECT trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) AS role_key,
+         pg.name, pg.description, pg.is_system,
+         row_number() OVER (
+           PARTITION BY trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g'))
+           ORDER BY pg.is_system DESC, pg.name
+         ) AS position
+  FROM public.permission_groups pg
+  JOIN public.businesses b ON b.id=pg.business_id
+  WHERE b.slug='brandon-rv'
+    AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) <> ''
+)
 INSERT INTO public.user_roles(role_key,name,description,is_system)
-SELECT DISTINCT
-  trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')),
-  pg.name, pg.description, pg.is_system
-FROM public.permission_groups pg
-JOIN public.businesses b ON b.id=pg.business_id
-WHERE b.slug='brandon-rv'
-  AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) <> ''
+SELECT role_key,name,description,is_system
+FROM candidates
+WHERE position=1
 ON CONFLICT (role_key) DO UPDATE SET
   name=EXCLUDED.name,
   description=EXCLUDED.description,
   is_system=public.user_roles.is_system OR EXCLUDED.is_system;
 
--- Include legacy member roles even if a matching permission group was not created.
+-- Include legacy member role labels even if a matching permission group was not created.
 INSERT INTO public.user_roles(role_key,name,description,is_system)
-SELECT DISTINCT
-  trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),
-  initcap(bm.role), NULL, false
+SELECT DISTINCT ON (role_key) role_key,initcap(bm.role),NULL,false
 FROM public.business_members bm
 JOIN public.businesses b ON b.id=bm.business_id
-WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL
-  AND trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')) <> ''
+CROSS JOIN LATERAL (
+  SELECT trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')) AS role_key
+) normalized
+WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key <> ''
+ORDER BY role_key,bm.role
 ON CONFLICT (role_key) DO NOTHING;
 
--- Preserve permissions assigned directly to each legacy role.
+-- Preserve the permissions attached to each named role.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 SELECT DISTINCT
   trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')),
@@ -68,20 +79,13 @@ FROM public.permission_groups pg
 JOIN public.businesses b ON b.id=pg.business_id
 JOIN public.permission_group_permissions pgp ON pgp.group_id=pg.id
 WHERE b.slug='brandon-rv'
+  AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) <> ''
 ON CONFLICT DO NOTHING;
 
--- Preserve any extra permission groups assigned to a member by folding them
--- into that member's effective global role.
-INSERT INTO public.user_role_permissions(role_key,permission_key)
-SELECT DISTINCT
-  trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),
-  pgp.permission_key
-FROM public.business_members bm
-JOIN public.businesses b ON b.id=bm.business_id
-JOIN public.member_permission_groups mpg ON mpg.member_id=bm.id
-JOIN public.permission_group_permissions pgp ON pgp.group_id=mpg.group_id
-WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL
-ON CONFLICT DO NOTHING;
+-- Do not merge member-specific permission groups into a shared role: that
+-- would silently grant one employee's extra permissions to every user with
+-- the same role. Their base role permissions are preserved; custom global
+-- roles can be assigned deliberately after migration.
 
 -- Translate existing employee access to the user's own role field.
 UPDATE public.users u
@@ -151,6 +155,13 @@ FROM public.users u
 WHERE u.employment_status IS NOT NULL;
 
 UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' AND accepted_at IS NULL;
+
+-- These tables are accessed only by the server-side service-role client.
+-- New public tables are not automatically exposed through the Supabase Data API.
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_role_permissions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.user_roles,public.user_role_permissions FROM anon,authenticated;
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.user_roles,public.user_role_permissions TO service_role;
 
 CREATE INDEX IF NOT EXISTS users_business_user_role_idx ON public.users(business_id,user_role);
 CREATE INDEX IF NOT EXISTS users_employee_addon_idx ON public.users(business_id,employment_status) WHERE employment_status IS NOT NULL;
