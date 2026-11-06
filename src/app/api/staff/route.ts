@@ -19,7 +19,7 @@ export async function GET(){
    const canonicalRole=member?.role?roleNames.get(String(member.role).toLowerCase())??String(member.role):null;
    return {...x,user:{id:x.user_id,email:x.email,full_name:x.full_name,phone:x.phone,status:x.account_status},membership:member?{...member,role:canonicalRole}:null};
   }),
-  roles:visibleRoles,canAssignDeveloper:["owner","developer","website developer"].includes(access.membership!.role.toLowerCase())
+  roles:visibleRoles.filter((role:any)=>!role.is_system||["apprentice","worker","senior worker","supervisor","manager","owner","website developer"].includes(String(role.name).toLowerCase())),canAssignDeveloper:["owner","developer","website developer"].includes(access.membership!.role.toLowerCase())
  });
 }
 export async function PATCH(request:Request){
