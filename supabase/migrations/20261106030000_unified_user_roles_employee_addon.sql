@@ -70,6 +70,14 @@ WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key NOT IN
 ORDER BY role_key,bm.role
 ON CONFLICT (role_key) DO NOTHING;
 
+-- The product has one global administrator label: Website Developer.
+-- Convert the previous generic developer role before removing that alias.
+INSERT INTO public.user_roles(role_key,name,description,is_system)
+VALUES ('website_developer','Website Developer','Unrestricted website and operations access',true)
+ON CONFLICT (role_key) DO UPDATE SET is_system=true;
+UPDATE public.users SET user_role='website_developer' WHERE user_role='developer';
+DELETE FROM public.user_roles WHERE role_key='developer';
+
 -- Preserve the permissions attached to each named role.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 SELECT DISTINCT
@@ -172,7 +180,7 @@ SECURITY DEFINER
 SET search_path=public
 AS $role_permissions$
 BEGIN
-  IF p_role_key IN ('owner','website_developer','developer','customer') THEN
+  IF p_role_key IN ('owner','website_developer','customer') THEN
     RAISE EXCEPTION 'Reserved roles cannot have their permissions changed';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.user_roles WHERE role_key=p_role_key) THEN
