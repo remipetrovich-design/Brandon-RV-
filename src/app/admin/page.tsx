@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {redirect} from "next/navigation";
-import {currentUser,currentMembership,database,userHasPermission} from "@/lib/auth";
+import {currentUser,currentMembership,database,userHasPermissions} from "@/lib/auth";
 import StaffTasks from "@/components/staff-tasks";
 import StaffTimeClock from "@/components/staff-time-clock";
 export const dynamic="force-dynamic";
@@ -8,7 +8,7 @@ export default async function AdminDashboard() {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
  const keys=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","suppliers.view","business.settings.manage","website.manage","settings.manage"];
- const checks=await Promise.all(keys.map(key=>userHasPermission(user.id,key)));const allowed=new Set(keys.filter((_,index)=>checks[index]));
+ const allowed=await userHasPermissions(user.id,keys);
  const db=database();const businessId=membership.business_id;
  const [enquiries,appointments,jobs,quotes,invoices,supplierOrders,businessResult,staffProfile]=await Promise.all([
   allowed.has("enquiries.view")?db.from("enquiries").select("id",{count:"exact",head:true}).eq("business_id",businessId):Promise.resolve({count:null}),
