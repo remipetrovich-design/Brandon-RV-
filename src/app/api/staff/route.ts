@@ -6,7 +6,7 @@ const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
 const isId=(value:string)=>/^[0-9a-f-]{36}$/i.test(value);
-const isDate=(value:string)=>{if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value;};
+const isDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value;};
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id;
@@ -26,7 +26,7 @@ export async function POST(request:Request){
   if(!isId(userId))return jsonError("Select an existing customer account.");
   if(!jobTitle||jobTitle.length>100)return jsonError("Enter a job title of 1 to 100 characters.");
   if(!employmentTypes.includes(employmentType))return jsonError("Select a valid employment type.");
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)||Number.isNaN(Date.parse(startDate)))return jsonError("Enter a valid employment start date.");
+  if(!isDate(startDate))return jsonError("Enter a valid employment start date.");
   if(!userRole)return jsonError("Select a user role for this employee.");
   const db=database(),businessId=access.membership!.business_id;
   const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",userRole).maybeSingle();
@@ -61,8 +61,8 @@ export async function PATCH(request:Request){
   if(body.employmentType!==undefined){const value=String(body.employmentType);if(!employmentTypes.includes(value))return jsonError("Select a valid employment type.");updates.employment_type=value;}
   if(body.jobTitle!==undefined){const value=String(body.jobTitle).trim();if(value.length>100)return jsonError("Job title must be 100 characters or fewer.");updates.job_title=value||null;}
   if(body.employeeNumber!==undefined){const value=String(body.employeeNumber).trim();if(value.length>50)return jsonError("Employee number must be 50 characters or fewer.");updates.employee_number=value||null;}
-  if(body.startDate!==undefined){const value=String(body.startDate);if(value&&!/^\d{4}-\d{2}-\d{2}$/.test(value))return jsonError("Enter a valid start date.");updates.start_date=value||null;}
-  if(body.endDate!==undefined){const value=String(body.endDate);if(value&&!/^\d{4}-\d{2}-\d{2}$/.test(value))return jsonError("Enter a valid end date.");updates.end_date=value||null;}
+  if(body.startDate!==undefined){const value=String(body.startDate);if(value&&!isDate(value))return jsonError("Enter a valid start date.");updates.start_date=value||null;}
+  if(body.endDate!==undefined){const value=String(body.endDate);if(value&&!isDate(value))return jsonError("Enter a valid end date.");updates.end_date=value||null;}
   if(body.payRate!==undefined){if(body.payRate==="")updates.pay_rate=null;else{const value=Number(body.payRate);if(!Number.isFinite(value)||value<0||value>9999999999.99)return jsonError("Enter a valid pay rate up to 9,999,999,999.99.");updates.pay_rate=value;}}
   if(body.payFrequency!==undefined){const value=String(body.payFrequency);if(value&&!payFrequencies.includes(value))return jsonError("Select a valid pay frequency.");updates.pay_frequency=value||null;}
   for(const [key,column,limit] of [["payrollReference","payroll_reference",100],["payrollNotes","payroll_notes",5000],["emergencyContactName","emergency_contact_name",120],["emergencyContactPhone","emergency_contact_phone",40],["employeeInternalNotes","employee_internal_notes",5000]] as const){if(body[key]!==undefined){const value=String(body[key]).trim();if(value.length>limit)return jsonError("One or more employee details exceed the allowed length.");updates[column]=value||null;}}
