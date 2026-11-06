@@ -21,7 +21,7 @@ export async function GET(){
  if(customerError)return jsonError("Could not match staff to their customer profiles.",500);
  const customerByUser=new Map((customers??[]).map(x=>[x.user_id,x.id]));
  const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id)}));
- return Response.json({employees:directory,roles:(roles??[]).filter(x=>staffRoleKeys.includes(x.role_key)&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key)))});
+ return Response.json({employees:directory,roles:(roles??[]).filter(x=>staffRoleKeys.includes(x.role_key)&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))).sort((a,b)=>staffRoleKeys.indexOf(a.role_key)-staffRoleKeys.indexOf(b.role_key))});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
