@@ -1,64 +1,74 @@
 # Brandon RV account system setup
 
-The application owns all customer and staff identities in the single `public.users` table. Supabase is database infrastructure only; customer and staff login do not use Supabase Auth.
+The application owns customer identities, employee details and account access in the single \`public.users\` table. Supabase is database infrastructure only; application login does not use Supabase Auth.
 
-## Unified account database
+## One user account for every person
 
-Every person has one `users` row and one login. The row stores identity, email, password hash, contact details, customer address, employee details, profile image, account status, and two account-group columns:
+Every person has one \`users\` row and one login. Every account permanently has \`primary_group = 'customer'\`. The user record contains first name, last name, date of birth, email, Argon2id password hash, phone, address, account status and profile details.
 
-- `primary_group`: `customer` or `staff`.
-- `secondary_group`: optional `customer` or `staff`, allowing one person to hold both groups with the same login.
+The \`user_role\` column is nullable:
+- \`NULL\` means customer-only access.
+- A role key such as \`apprentice\`, \`worker\`, \`manager\`, \`owner\` or \`website_developer\` is assigned to the user account itself.
+- Owner and Website Developer are the only global administrator roles and have unrestricted application access. The legacy Developer role is normalized to Website Developer during migration.
 
-Permission roles such as Owner, Administrator, Manager, Technician, Office and Accounts remain in `business_members` and the permission-group tables. They are access-control roles, not separate accounts or account groups.
+The global role catalogue is \`user_roles\`; its permission map is \`user_role_permissions\`. Role permissions are not scoped to a business membership.
 
-Customer and employee profile details are stored on `users`. The old `customers`, `staff` and `profiles` names are compatibility views over `users`, not separate identity tables. Customer and staff foreign keys now point to the same user ID. The business workflow tables remain separate records, including vehicles, enquiries, quotes, appointments, jobs, invoices, payments and documents.
+## Optional employee addon
 
-The app also uses `user_sessions`, `login_attempts`, `email_verification_tokens`, `password_reset_tokens`, `user_invitations`, `business_members`, `permissions`, `permission_groups`, `permission_group_permissions` and `member_permission_groups`.
+A person becomes an employee by activating employment details on their existing customer account. This does not create another user or login.
 
-The Owner permission role has all 34 configured permissions; the other roles have their own permission sets. Owners can create custom roles and adjust permission assignments in `/admin/roles`.
+A null \`employment_status\` means the employee addon is not active. The addon stores employee number, job title, employment type, employment status, start and end dates, pay rate, pay frequency, payroll reference and notes, emergency contact details and employee notes.
 
-The database uses RLS. The application accesses private customer and staff data through server-side Supabase service-role access only. Do not expose the service key to the browser.
+Employee access requires an assigned user role and active employment. Leave, suspended and terminated employees do not retain ordinary employee access. Ending employment does not delete or suspend the customer account; the user's vehicles, quotes, bookings, work orders, history, invoices, payments and documents remain linked to the same user ID.
+
+The \`customers\` and \`staff\` database views are compatibility views over \`users\`, not separate identity stores. Operational records remain separate records linked to the customer/user ID.
+
+## Legacy role tables
+
+Existing business_members.role values and named permission_groups are copied into the global role catalogue. Member-specific extra permission groups are converted into shared synthetic global roles keyed by each distinct effective permission set. This preserves each employee's actual permissions without granting one person's extra permissions to everyone with the same base role. Runtime authentication and permission checks use users.user_role and user_role_permissions; legacy business-role tables are retained for compatibility but are not used for runtime authorization.
 
 ## Required Vercel environment variables
 
-- `SUPABASE_URL`: the Brandon RV Supabase project URL.
-- `SUPABASE_SERVICE_ROLE_KEY`: the project service-role key. Server-side only.
-- `BRANDON_RV_SETUP_SECRET`: optional legacy bootstrap protection. The current initial-owner flow uses a single-use, hashed invitation token stored in the database.
-- `NEXT_PUBLIC_APP_URL`: the deployed public application origin used to build account links.
-- `RESEND_API_KEY` and `EMAIL_FROM`: optional transactional email delivery settings.
+- \`SUPABASE_URL\`: the Brandon RV Supabase project URL.
+- \`SUPABASE_SERVICE_ROLE_KEY\`: the project service-role key. Server-side only.
+- \`BRANDON_RV_SETUP_SECRET\`: one-time owner bootstrap protection.
+- \`NEXT_PUBLIC_APP_URL\`: the deployed public application origin used to build account links.
+- \`RESEND_API_KEY\` and \`EMAIL_FROM\`: optional transactional email delivery settings.
 
-The preview branch needs its own Preview-target versions of the Supabase URL and service-role key. Redeploy after changing environment variables.
+The preview branch needs its own Preview-target versions of the Supabase URL and service-role key. Redeploy after changing environment variables. The migration workflow pins Supabase CLI v2.122.1 so its existing remote-linking commands do not silently switch to CLI v3 semantics.
 
-## Create the first owner
+## First owner
 
-A deployment operator creates one `user_invitations` row with `account_type='owner'`, `role='owner'`, a SHA-256 token hash and a short expiry. Share the resulting private `/initial-owner-setup?token=...` link with the intended owner. The page collects the owner's name, email and password; the API consumes the invitation once, creates the owner user and business membership, and starts the owner session. The owner's primary account group is `staff`; Owner authority is assigned through the business membership role. It refuses to create a second owner.
+The first owner is created as a normal customer identity with \`user_role = 'owner'\` and the employee addon fields attached to that same user row. The one-time bootstrap endpoint requires \`BRANDON_RV_SETUP_SECRET\` and refuses to create a second owner. The legacy initial-owner token page accepts owner setup tokens only; it rejects staff invitations.
 
-The invitation token is stored as a hash, expires after seven days and must not be published or reused. If the link is lost or expires, issue a new invitation through a trusted database operation.
+Owner and Website Developer roles always receive unrestricted application permissions. Do not create a separate owner or developer account type.
 
 ## Customer account flows
 
-- Customers register at `/portal/register` and sign in at `/portal/sign-in`.
-- Customer registration creates one `users` row with primary group `customer`.
+- Customers register at \`/portal/register\` and sign in at \`/portal/sign-in\`.
+- Registration creates one \`users\` row with \`primary_group = 'customer'\` and \`user_role = NULL\`.
+- Registration collects first name, last name, date of birth, email, phone, optional street address/suburb/state/postcode and password.
+- Passwords are stored as Argon2id hashes. They cannot be decrypted or displayed.
 - With Resend configured, registration requires email verification before sign-in.
-- Without an email provider, registration activates the account immediately and clearly tells the customer that email verification and password-recovery email are unavailable. Customers should use an email address they can access.
-- Password recovery is available at `/portal/forgot-password` and `/portal/reset-password` when email delivery is configured. Without email delivery, customers must contact Brandon RV for account recovery.
-- Customer portal pages: Overview, Quotes, Bookings & Jobs, Vehicles, Documents, Invoices & Payments, and My Details.
-- Customers can submit service enquiries, request appointments, manage their vehicle records, review issued quotes and accept or decline a quote. Appointment requests are not confirmed until Brandon RV approves the time.
+- Without an email provider, registration activates the account immediately and clearly tells the customer that email verification and password-recovery email are unavailable.
+- Password recovery is available at \`/portal/forgot-password\` and \`/portal/reset-password\` when email delivery is configured.
+- Customer portal pages include Overview, Quotes, Bookings & Jobs, Vehicles, Documents, Invoices & Payments and My Details.
 
-## Staff and role flows
+## Employee and role flows
 
-- Owners and administrators invite staff from `/admin/staff`.
-- A staff invitation can be accepted against an existing customer account. It adds the `staff` group to that same `users` row; it does not create another login or replace the customer's password.
-- New staff accounts are created with primary group `staff`.
-- Staff roles are checked against the business permission groups. Custom roles can be created and assigned through `/admin/roles`.
-- With email delivery configured, invitations are emailed. Without it, the admin screen displays the invitation URL so it can be shared manually. Invitation links expire after seven days.
-- Staff activate a new account at `/staff/accept-invitation`. Existing customers keep their existing password when staff access is added.
-- Staff access is determined by the active business membership and permissions, not by the account-group columns alone. A dual-group user can access both the staff workspace and customer portal.
+- Open \`/admin/staff\` and select an existing customer account to hire.
+- Add the employee's user role, job title, employee number, employment type and start date. Payroll and emergency-contact details can also be recorded.
+- No staff invitation, staff registration or separate employee login exists.
+- Employee details can be edited from the employee directory or reviewed in the Employment section of the same customer profile. Terminated employees remain customer accounts and can be rehired from the customer selector; their previous employment details are retained in the employee activity audit event.
+- Assign global role permissions through \`/admin/roles\`. Custom roles are global user roles, not business membership roles.
+- Owner and Website Developer retain unrestricted access, including access to all user profiles and records.
+- Terminating employment removes ordinary employee permissions but preserves the customer's account and all customer records.
 
 ## Security model
 
-- Sessions use opaque random tokens stored as SHA-256 hashes in `user_sessions`, delivered in HttpOnly, SameSite=Lax cookies.
+- Sessions use opaque random tokens stored as SHA-256 hashes in \`user_sessions\`, delivered in HttpOnly, SameSite=Lax cookies.
 - Passwords use Argon2id hashes.
-- Registration and login attempts are rate-limited using `login_attempts`.
+- Registration and login attempts are rate-limited using \`login_attempts\`.
 - Password reset and email verification tokens are random, hashed at rest, single-use and time-limited.
 - Customer APIs derive ownership from the authenticated server-side session; client-supplied customer or user IDs are not trusted.
+- The application accesses private customer and employee data through server-side Supabase service-role access only. Never expose the service key to the browser.

@@ -191,10 +191,10 @@ button, input, textarea, select { font: inherit; }
 .form-section-title > span { color: var(--brv-blue); font-size: 11px; font-weight: 800; }
 .form-section-title strong { color: var(--brv-navy); font-family: var(--body); font-size: 15px; font-weight: 800; }
 .form-section-title small { color: var(--brv-muted); font-size: 10px; }
-.enquiry-form label, .auth-form label, .profile-form label { color: #4e6278; font-size: 11px; font-weight: 700; }
-.enquiry-form input:not([type="checkbox"]):not([type="file"]), .enquiry-form select, .enquiry-form textarea, .auth-form input, .profile-form input, .profile-form select, .profile-form textarea { min-height: 44px; padding: 11px 12px; border: 1px solid #cfdbe7; border-radius: 8px; background: #fbfdff; color: var(--brv-navy); font-size: 12px; }
+.enquiry-form label, .auth-form label, .profile-form label, .customer-form-grid label { color: #4e6278; font-size: 11px; font-weight: 700; }
+.enquiry-form input:not([type="checkbox"]):not([type="file"]), .enquiry-form select, .enquiry-form textarea, .auth-form input:not([type="checkbox"]):not([type="file"]), .profile-form input, .profile-form select, .profile-form textarea, .customer-form-grid input, .customer-form-grid select, .customer-form-grid textarea { min-height: 44px; padding: 11px 12px; border: 1px solid #cfdbe7; border-radius: 8px; background: #fbfdff; color: var(--brv-navy); font-size: 12px; }
 .enquiry-form textarea, .profile-form textarea { min-height: 116px; }
-.enquiry-form input:focus, .enquiry-form select:focus, .enquiry-form textarea:focus, .auth-form input:focus, .profile-form input:focus { border-color: var(--brv-blue); box-shadow: 0 0 0 3px rgba(23,104,197,.12); outline: 0; }
+.enquiry-form input:focus, .enquiry-form select:focus, .enquiry-form textarea:focus, .auth-form input:not([type="checkbox"]):not([type="file"]):focus, .profile-form input:focus, .customer-form-grid input:focus, .customer-form-grid select:focus, .customer-form-grid textarea:focus { border-color: var(--brv-blue); box-shadow: 0 0 0 3px rgba(23,104,197,.12); outline: 0; }
 .upload-field { border: 1px dashed #9bb9d8; border-radius: 10px; background: #f6faff; }
 .upload-field small { color: #71859b; }
 .consent-check { color: var(--brv-muted) !important; }

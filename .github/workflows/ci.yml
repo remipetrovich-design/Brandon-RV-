@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Test user-role access policy
+        run: npm test
+
       - name: Check TypeScript
         run: npm run typecheck
 
