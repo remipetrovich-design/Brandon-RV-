@@ -154,6 +154,87 @@ SELECT u.id,u.business_id,u.id AS user_id,u.employee_number,u.job_title,
 FROM public.users u
 WHERE u.employment_status IS NOT NULL;
 
+-- Keep the customer compatibility view attached to the single user identity.
+-- Removing a customer from the customer list deactivates the customer profile;
+-- it never deletes the login or an employee addon.
+CREATE OR REPLACE FUNCTION public.brandon_rv_customers_view_write()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $
+DECLARE
+  v_id uuid;
+  v_full_name text;
+  v_first_name text;
+  v_last_name text;
+BEGIN
+  IF tg_op='DELETE' THEN
+    UPDATE public.users
+    SET customer_status='inactive',updated_at=now()
+    WHERE id=old.id;
+    RETURN old;
+  ELSIF tg_op='INSERT' THEN
+    v_id:=new.user_id;
+    IF v_id IS NULL AND new.email IS NOT NULL THEN
+      SELECT id INTO v_id FROM public.users
+      WHERE email=lower(btrim(new.email)) LIMIT 1;
+    END IF;
+    v_full_name:=coalesce(nullif(btrim(new.full_name),''),'Customer');
+    v_first_name:=coalesce(nullif(btrim(new.first_name),''),nullif(split_part(v_full_name,' ',1),''));
+    v_last_name:=coalesce(nullif(btrim(new.last_name),''),nullif(btrim(substr(v_full_name,length(split_part(v_full_name,' ',1))+1)),''));
+    IF v_id IS NOT NULL THEN
+      UPDATE public.users SET
+        business_id=coalesce(new.business_id,business_id),
+        full_name=v_full_name,
+        first_name=coalesce(v_first_name,first_name),
+        last_name=coalesce(v_last_name,last_name),
+        date_of_birth=coalesce(new.date_of_birth,date_of_birth),
+        email=coalesce(lower(btrim(new.email)),email),
+        phone=coalesce(new.phone,phone),
+        address=new.address,suburb=new.suburb,state=new.state,postcode=new.postcode,
+        customer_internal_notes=new.internal_notes,
+        customer_status=coalesce(new.status,'active'),
+        primary_group='customer',
+        updated_at=now()
+      WHERE id=v_id;
+    ELSE
+      IF new.email IS NULL OR btrim(new.email)='' THEN
+        RAISE EXCEPTION 'A customer account requires an email address';
+      END IF;
+      INSERT INTO public.users(
+        email,password_hash,full_name,first_name,last_name,date_of_birth,phone,
+        account_type,status,business_id,primary_group,user_role,customer_status,
+        address,suburb,state,postcode,customer_internal_notes
+      ) VALUES (
+        lower(btrim(new.email)),NULL,v_full_name,v_first_name,v_last_name,new.date_of_birth,new.phone,
+        'customer','pending',new.business_id,'customer',NULL,coalesce(new.status,'active'),
+        new.address,new.suburb,new.state,new.postcode,new.internal_notes
+      ) RETURNING id INTO v_id;
+    END IF;
+    new.id:=v_id;
+    new.user_id:=v_id;
+    RETURN new;
+  ELSE
+    v_full_name:=coalesce(nullif(btrim(new.full_name),''),'Customer');
+    v_first_name:=coalesce(nullif(btrim(new.first_name),''),nullif(split_part(v_full_name,' ',1),''));
+    v_last_name:=coalesce(nullif(btrim(new.last_name),''),nullif(btrim(substr(v_full_name,length(split_part(v_full_name,' ',1))+1)),''));
+    UPDATE public.users SET
+      business_id=new.business_id,
+      full_name=v_full_name,
+      first_name=coalesce(v_first_name,first_name),
+      last_name=coalesce(v_last_name,last_name),
+      date_of_birth=new.date_of_birth,
+      email=lower(btrim(new.email)),
+      phone=new.phone,
+      address=new.address,suburb=new.suburb,state=new.state,postcode=new.postcode,
+      customer_internal_notes=new.internal_notes,
+      customer_status=coalesce(new.status,'active'),
+      primary_group='customer',
+      updated_at=now()
+    WHERE id=old.id;
+    new.id:=old.id;
+    new.user_id:=old.id;
+    RETURN new;
+  END IF;
+END $;
+
 UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' AND accepted_at IS NULL;
 
 -- These tables are accessed only by the server-side service-role client.
