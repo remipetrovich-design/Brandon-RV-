@@ -14,7 +14,7 @@ ALTER TABLE public.users
 
 UPDATE public.users
 SET first_name = COALESCE(first_name, NULLIF(split_part(btrim(full_name), ' ', 1), '')),
-    last_name = COALESCE(last_name, NULLIF(btrim(regexp_replace(btrim(full_name), '^\\S+\\s*', '')), ''))
+    last_name = COALESCE(last_name, NULLIF(btrim(substr(btrim(full_name), length(split_part(btrim(full_name), ' ', 1)) + 1)), ''))
 WHERE first_name IS NULL OR last_name IS NULL;
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
