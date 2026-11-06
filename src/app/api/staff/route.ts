@@ -40,9 +40,11 @@ export async function POST(request:Request){
   if(body.payRate!==undefined&&body.payRate!==""){const n=Number(body.payRate);if(!Number.isFinite(n)||n<0||n>9999999999.99)return jsonError("Enter a valid pay rate up to 9,999,999,999.99.");updates.pay_rate=n;}
   if(body.payFrequency!==undefined&&body.payFrequency!==""){if(!payFrequencies.includes(String(body.payFrequency)))return jsonError("Select a valid pay frequency.");updates.pay_frequency=String(body.payFrequency);}
   for(const [key,limit] of [["payrollReference",100],["payrollNotes",5000],["emergencyContactName",120],["emergencyContactPhone",40],["employeeInternalNotes",5000]] as const){if(body[key]!==undefined){const value=String(body[key]).trim();if(value.length>limit)return jsonError("One or more employee details exceed the allowed length.");updates[{payrollReference:"payroll_reference",payrollNotes:"payroll_notes",emergencyContactName:"emergency_contact_name",emergencyContactPhone:"emergency_contact_phone",employeeInternalNotes:"employee_internal_notes"}[key]]=value||null;}}
-  const {error}=await db.from("users").update(updates).eq("id",userId);
+  const {data:updated,error}=await db.from("users").update(updates).eq("id",userId).eq("business_id",businessId).eq("primary_group","customer").eq("status","active").is("user_role",null).or("employment_status.is.null,employment_status.eq.terminated").select("id").maybeSingle();
   if(error)return jsonError("Could not activate the employee record.",500);
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.activated",entity_type:"user",entity_id:userId,details:{user_role:userRole,job_title:jobTitle,employment_type:employmentType}});
+  if(!updated)return jsonError("This customer was changed by another request. Refresh the employee list and try again.",409);
+  const wasRehire=customer.employment_status==="terminated";
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:wasRehire?"employee.rehired":"employee.activated",entity_type:"user",entity_id:userId,details:{previous_employment:wasRehire?{job_title:customer.job_title,employee_number:customer.employee_number,employment_type:customer.employment_type,start_date:customer.start_date,end_date:customer.end_date,pay_rate:customer.pay_rate,pay_frequency:customer.pay_frequency,payroll_reference:customer.payroll_reference,payroll_notes:customer.payroll_notes}:null,new_employment:{user_role:userRole,job_title:jobTitle,employment_type:employmentType,start_date:startDate}}});
   return Response.json({success:true},{status:201});
  }catch{return jsonError("Could not activate the employee record.",500);}
 }
