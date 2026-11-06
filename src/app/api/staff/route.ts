@@ -31,7 +31,7 @@ export async function PATCH(request:Request){
  try{
   const body=await request.json();const userId=String(body.userId??"");if(!isId(userId))return jsonError("Invalid employee record.");
   const db=database(),businessId=access.membership!.business_id;
-  const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date,updated_at").eq("id",userId).eq("business_id",businessId).not("employment_status","is",null).maybeSingle();
+  const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date,updated_at").eq("id",userId).eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").maybeSingle();
   if(!employee)return jsonError("Employee record not found.",404);
   if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can edit this account.",403);
   const updates:any={updated_at:new Date().toISOString()};
@@ -48,7 +48,7 @@ export async function PATCH(request:Request){
   if(updates.employment_status==="terminated"&&!updates.end_date)updates.end_date=new Date().toISOString().slice(0,10);
   const effectiveStart=Object.prototype.hasOwnProperty.call(updates,"start_date")?updates.start_date:employee.start_date;const effectiveEnd=Object.prototype.hasOwnProperty.call(updates,"end_date")?updates.end_date:employee.end_date;if(effectiveStart&&effectiveEnd&&effectiveEnd<effectiveStart)return jsonError("Employment end date cannot be before the start date.");
   if(Object.keys(updates).length===1)return jsonError("No employee changes supplied.");
-  const {data:updated,error}=await db.from("users").update(updates).eq("id",userId).eq("business_id",businessId).eq("updated_at",employee.updated_at).not("employment_status","is",null).select("id").maybeSingle();if(error)return jsonError("Could not update employee details.",500);if(!updated)return jsonError("This employee record changed during the update. Refresh and try again.",409);
+  const {data:updated,error}=await db.from("users").update(updates).eq("id",userId).eq("business_id",businessId).eq("updated_at",employee.updated_at).not("user_role","is",null).neq("user_role","customer").select("id").maybeSingle();if(error)return jsonError("Could not update employee details.",500);if(!updated)return jsonError("This employee record changed during the update. Refresh and try again.",409);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.updated",entity_type:"user",entity_id:userId,details:updates});
   return Response.json({success:true});
  }catch{return jsonError("Could not update employee details.",500);}
