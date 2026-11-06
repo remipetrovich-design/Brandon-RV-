@@ -1,4 +1,4 @@
-export const GLOBAL_ADMIN_ROLES = new Set(["owner", "website_developer", "developer"]);
+export const GLOBAL_ADMIN_ROLES = new Set(["owner", "website_developer"]);
 
 export function isGlobalAdministrator(role) {
   return GLOBAL_ADMIN_ROLES.has(String(role ?? "").trim().toLowerCase());
