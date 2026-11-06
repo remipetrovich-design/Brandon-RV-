@@ -75,9 +75,6 @@ ON CONFLICT (role_key) DO NOTHING;
 INSERT INTO public.user_roles(role_key,name,description,is_system)
 VALUES ('website_developer','Website Developer','Unrestricted website and operations access',true)
 ON CONFLICT (role_key) DO UPDATE SET is_system=true;
-UPDATE public.users SET user_role='website_developer' WHERE user_role='developer';
-DELETE FROM public.user_roles WHERE role_key='developer';
-
 -- Preserve the permissions attached to each named role.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 SELECT DISTINCT
@@ -104,6 +101,9 @@ SET user_role=NULLIF(NULLIF(trim(both '_' from regexp_replace(lower(bm.role),'[^
 FROM public.business_members bm
 JOIN public.businesses b ON b.id=bm.business_id
 WHERE bm.user_id=u.id AND b.slug='brandon-rv' AND bm.role IS NOT NULL;
+
+UPDATE public.users SET user_role='website_developer' WHERE user_role='developer';
+DELETE FROM public.user_roles WHERE role_key='developer';
 
 -- Preserve employee records even where an old membership was inactive or had no role.
 UPDATE public.users
