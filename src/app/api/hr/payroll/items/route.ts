@@ -8,7 +8,7 @@ export async function POST(request:Request){
   const b=await request.json(),periodId=String(b.periodId??""),userId=String(b.userId??"");
   if(!/^[0-9a-f-]{36}$/i.test(periodId)||!/^[0-9a-f-]{36}$/i.test(userId))return jsonError("Select a payroll period and employee.");
   const ordinary=amount(b.ordinaryHours),overtime=amount(b.overtimeHours),allowances=amount(b.allowances),deductions=amount(b.deductions),gross=amount(b.grossAmount),tax=amount(b.taxWithheld),superAmount=amount(b.superannuationAmount);
-  if([ordinary,overtime,allowances,deductions,gross,tax,superAmount].some(x=>x===null))return jsonError("Enter valid non-negative payroll amounts.");
+  if(ordinary===null||overtime===null||allowances===null||deductions===null||gross===null||tax===null||superAmount===null)return jsonError("Enter valid non-negative payroll amounts.");
   if(deductions!+tax!>gross!)return jsonError("Deductions and tax cannot exceed gross pay.");
   const db=database(),businessId=a.membership!.business_id;
   const [period,user]=await Promise.all([db.from("payroll_periods").select("id,status").eq("id",periodId).eq("business_id",businessId).maybeSingle(),db.from("users").select("id").eq("id",userId).eq("business_id",businessId).eq("employment_status","active").maybeSingle()]);
