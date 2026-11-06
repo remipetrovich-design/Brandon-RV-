@@ -30,8 +30,8 @@ export async function userHasPermissions(userId:string,permissions:string[]){
  const db=database();const {data:user}=await db.from("users").select("user_role,employment_status,status").eq("id",userId).eq("status","active").maybeSingle();
  if(!user?.user_role)return new Set<string>();
  const role=String(user.user_role).toLowerCase();
- if(["owner","website_developer","developer"].includes(role))return new Set(requested);
- if(user.employment_status!=="active")return new Set<string>();
+ if(isGlobalAdministrator(role))return new Set(requested);
+ if(!hasEmployeeAccess(user))return new Set<string>();
  const {data}=await db.from("user_role_permissions").select("permission_key").eq("role_key",user.user_role).in("permission_key",requested);
  return new Set((data??[]).map((x:{permission_key:string})=>x.permission_key));
 }
