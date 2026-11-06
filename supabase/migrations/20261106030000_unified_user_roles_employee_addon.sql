@@ -280,7 +280,7 @@ BEGIN
     v_first_name:=coalesce(nullif(btrim(new.first_name),''),nullif(split_part(v_full_name,' ',1),''));
     v_last_name:=coalesce(nullif(btrim(new.last_name),''),nullif(btrim(substr(v_full_name,length(split_part(v_full_name,' ',1))+1)),''));
     UPDATE public.users SET
-      business_id=new.business_id,
+      business_id=coalesce(new.business_id,business_id),
       full_name=v_full_name,
       first_name=coalesce(v_first_name,first_name),
       last_name=coalesce(v_last_name,last_name),
