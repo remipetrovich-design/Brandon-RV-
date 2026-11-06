@@ -25,7 +25,7 @@ The \`customers\` and \`staff\` database views are compatibility views over \`us
 
 ## Legacy role tables
 
-Existing business_members.role values and named permission_groups are copied into the global role catalogue, and their role-level permissions are preserved. Member-specific extra permission-group assignments are deliberately not merged into shared roles because doing so could grant one employee's extra permissions to every employee with the same role. Review and reassign any such exceptional access using global user roles after migration. Runtime authentication and permission checks use users.user_role and user_role_permissions; legacy business-role tables are not used for runtime authorization and are retained only to avoid destructive changes to existing database dependencies.
+Existing business_members.role values and named permission_groups are copied into the global role catalogue. Member-specific extra permission groups are converted into shared synthetic global roles keyed by each distinct effective permission set. This preserves each employee's actual permissions without granting one person's extra permissions to everyone with the same base role. Runtime authentication and permission checks use users.user_role and user_role_permissions; legacy business-role tables are retained for compatibility but are not used for runtime authorization.
 
 ## Required Vercel environment variables
 
