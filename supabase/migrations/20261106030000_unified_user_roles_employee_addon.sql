@@ -75,16 +75,17 @@ ON CONFLICT DO NOTHING;
 UPDATE public.users u
 SET user_role=trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),
     business_id=COALESCE(u.business_id,bm.business_id),
+    employment_status=CASE WHEN bm.is_active THEN COALESCE(u.employment_status,'active') ELSE 'suspended' END,
     updated_at=now()
 FROM public.business_members bm
 JOIN public.businesses b ON b.id=bm.business_id
-WHERE bm.user_id=u.id AND bm.is_active=true AND b.slug='brandon-rv';
+WHERE bm.user_id=u.id AND b.slug='brandon-rv';
 
--- Employees are identified by their employment addon, not by a separate account.
-UPDATE public.users u
-SET employment_status=COALESCE(u.employment_status,'active'),
-    employment_type=COALESCE(u.employment_type,'full_time')
-WHERE u.user_role IS NOT NULL;
+-- Preserve employee records even where an old membership was inactive or had no role.
+UPDATE public.users
+SET employment_status=COALESCE(employment_status,'active'),
+    employment_type=COALESCE(employment_type,'full_time')
+WHERE secondary_group='staff' OR user_role IS NOT NULL;
 
 UPDATE public.users
 SET employment_status=NULL, employment_type=NULL, employee_number=NULL,
@@ -92,10 +93,14 @@ SET employment_status=NULL, employment_type=NULL, employee_number=NULL,
     pay_frequency=NULL, payroll_reference=NULL, payroll_notes=NULL,
     emergency_contact_name=NULL, emergency_contact_phone=NULL,
     employee_internal_notes=NULL
-WHERE user_role IS NULL;
+WHERE secondary_group IS DISTINCT FROM 'staff'
+  AND user_role IS NULL
+  AND NOT EXISTS (SELECT 1 FROM public.business_members bm WHERE bm.user_id=users.id);
 
 ALTER TABLE public.users ALTER COLUMN employment_status DROP DEFAULT;
+ALTER TABLE public.users ALTER COLUMN employment_status DROP NOT NULL;
 ALTER TABLE public.users ALTER COLUMN employment_type DROP DEFAULT;
+ALTER TABLE public.users ALTER COLUMN employment_type DROP NOT NULL;
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_employment_status_check;
 ALTER TABLE public.users ADD CONSTRAINT users_employment_status_check
   CHECK (employment_status IS NULL OR employment_status IN ('active','leave','suspended','terminated'));
@@ -115,22 +120,21 @@ ALTER TABLE public.users ADD CONSTRAINT users_user_role_fkey
 -- Customer remains the permanent account identity. The customer view exposes
 -- account/profile data and remains keyed by the same users.id.
 CREATE OR REPLACE VIEW public.customers WITH (security_invoker=true) AS
-SELECT id,business_id,id AS user_id,first_name,last_name,date_of_birth,
-       full_name,email,phone,address,suburb,state,postcode,
-       customer_internal_notes AS internal_notes,customer_status AS status,
-       user_role,created_at,updated_at
+SELECT id,business_id,id AS user_id,full_name,email,phone,address,suburb,state,postcode,
+       customer_internal_notes AS internal_notes,customer_status AS status,created_at,updated_at,
+       first_name,last_name,date_of_birth,user_role
 FROM public.users WHERE primary_group='customer';
 
 CREATE OR REPLACE VIEW public.staff WITH (security_invoker=true) AS
 SELECT u.id,u.business_id,u.id AS user_id,u.employee_number,u.job_title,
-       u.employment_type,u.employment_status,u.start_date,u.end_date,
-       u.pay_rate,u.pay_frequency,u.payroll_reference,u.payroll_notes,
-       u.emergency_contact_name,u.emergency_contact_phone,
-       u.employee_internal_notes AS internal_notes,u.user_role,
-       u.created_at,u.updated_at,u.full_name,u.email,u.phone,
-       u.status AS account_status
+       u.employment_status,u.start_date,u.emergency_contact_name,u.emergency_contact_phone,
+       u.employee_internal_notes AS internal_notes,u.created_at,u.updated_at,
+       u.full_name,u.email,u.phone,u.status AS account_status,u.employment_type,
+       u.end_date,u.pay_rate,u.pay_frequency,u.payroll_reference,u.payroll_notes,u.user_role
 FROM public.users u
 WHERE u.employment_status IS NOT NULL;
+
+UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' AND accepted_at IS NULL;
 
 COMMENT ON COLUMN public.users.user_role IS 'Global role assigned to this user. NULL means customer-only access.';
 COMMENT ON COLUMN public.users.employment_status IS 'NULL means no employee addon; non-NULL means employment details exist.';
