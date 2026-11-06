@@ -5,11 +5,11 @@ export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
-  const body=await request.json();const fullName=String(body.fullName??"").trim();const email=normalizeEmail(String(body.email??""));const phone=String(body.phone??"").trim();const password=String(body.password??"");
+  const body=await request.json();const fullName=String(body.fullName??"").trim();const nameParts=fullName.split(/\\s+/);const firstName=nameParts[0]??"";const lastName=nameParts.slice(1).join(" ")||null;const dateOfBirth=body.dateOfBirth?String(body.dateOfBirth):null;const email=normalizeEmail(String(body.email??""));const phone=String(body.phone??"").trim();const password=String(body.password??"");
   if(fullName.length<2||fullName.length>120)return jsonError("Enter your full name.");
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
   if(password.length<12||password.length>128)return jsonError("Use a password between 12 and 128 characters.");
-  if(phone.length>40)return jsonError("Enter a valid phone number.");
+  if(phone.length>40)return jsonError("Enter a valid phone number.");\n  if(dateOfBirth&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateOfBirth)||Number.isNaN(Date.parse(dateOfBirth))||new Date(dateOfBirth)>new Date()))return jsonError("Enter a valid date of birth.");
   const db=database();const ip=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"unknown";const ipHash=createHash("sha256").update(ip).digest("hex");const since=new Date(Date.now()-60*60*1000).toISOString();
   const {count}=await db.from("login_attempts").select("id",{count:"exact",head:true}).eq("attempt_type","registration").eq("email",email).eq("ip_hash",ipHash).gte("attempted_at",since);
   if((count??0)>=5)return jsonError("Too many registration attempts. Try again later.",429);
@@ -17,7 +17,7 @@ export async function POST(request:Request){
   const {data:existing}=await db.from("users").select("id").eq("email",email).maybeSingle();if(existing)return jsonError("An account with that email already exists.",409);
   const {data:business,error:businessError}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();if(businessError||!business)return jsonError("Business setup is incomplete. Please contact Brandon RV.",503);
   const verificationEnabled=isEmailConfigured();
-  const {data:user,error}=await db.from("users").insert({email,password_hash:await passwordHash(password),full_name:fullName,phone:phone||null,account_type:"customer",status:verificationEnabled?"pending":"active",email_verified_at:null}).select("id").single();
+  const {data:user,error}=await db.from("users").insert({email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName,date_of_birth:dateOfBirth,phone:phone||null,account_type:"customer",primary_group:"customer",user_role:null,business_id:business.id,status:verificationEnabled?"pending":"active",email_verified_at:null}).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
   const {data:customer,error:customerError}=await db.from("customers").insert({business_id:business.id,user_id:user.id,full_name:fullName,email,phone:phone||null,status:"active"}).select("id").single();
   if(customerError||!customer){await db.from("users").delete().eq("id",user.id);return jsonError("Could not finish setting up your customer profile.",500);}
