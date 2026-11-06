@@ -1,5 +1,6 @@
 import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
+const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
 export async function GET(){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
  const db=database();const {data:customer}=await db.from("customers").select("full_name,first_name,last_name,date_of_birth,email,phone,address,suburb,state,postcode").eq("user_id",user.id).maybeSingle();
@@ -13,7 +14,7 @@ export async function PATCH(request:Request){
   const body=await request.json();const fullName=String(body.full_name??"").trim();const phone=String(body.phone??"").trim();
   const dateOfBirth=body.date_of_birth===undefined?undefined:String(body.date_of_birth??"").trim();
   if(fullName.length<2||fullName.length>120||phone.length>40)return jsonError("Enter a valid name and phone number.");
-  if(dateOfBirth&&dateOfBirth!==""&&(!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)||Number.isNaN(Date.parse(dateOfBirth))||new Date(dateOfBirth)>new Date()))return jsonError("Enter a valid date of birth.");
+  if(dateOfBirth&&dateOfBirth!==""&&!isValidBirthDate(dateOfBirth))return jsonError("Enter a valid date of birth.");
   const parts=fullName.split(/\s+/);const firstName=parts[0]??"";const lastName=parts.slice(1).join(" ")||null;
   const values={address:String(body.address??"").trim().slice(0,200)||null,suburb:String(body.suburb??"").trim().slice(0,100)||null,state:String(body.state??"").trim().slice(0,20)||null,postcode:String(body.postcode??"").trim().slice(0,12)||null};
   const db=database();const {data:customer}=await db.from("customers").select("id").eq("user_id",user.id).maybeSingle();if(!customer)return jsonError("Customer profile not found.",404);
