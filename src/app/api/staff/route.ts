@@ -43,6 +43,8 @@ export async function PATCH(request:Request){
    const active=["active","on_leave"].includes(employmentStatus);
    const {error:memberError}=await db.from("business_members").update({is_active:active}).eq("business_id",access.membership!.business_id).eq("user_id",staff.user_id);
    if(memberError)return jsonError("Employment status was saved, but account access could not be updated.",500);
+   const {error:accountError}=await db.from("users").update({status:active?"active":"suspended",updated_at:new Date().toISOString()}).eq("id",staff.user_id);
+   if(accountError)return jsonError("Employment status was saved, but the employee account status could not be updated.",500);
    if(!active){const {error:sessionError}=await db.from("user_sessions").delete().eq("user_id",staff.user_id);if(sessionError)return jsonError("Employment status was saved, but active sessions could not be revoked.",500);}
   }
   await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:"staff.updated",entity_type:"staff",entity_id:staffId,details:{role:role??null,employment_status:employmentStatus??null}});
