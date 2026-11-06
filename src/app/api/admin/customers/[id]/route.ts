@@ -57,7 +57,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(field==="full_name"&&!value)return jsonError("Customer name is required.");
    if(field==="customer_status"&& !["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");
    if(value.length>(field==="customer_internal_notes"?10000:field==="address"?500:255))return jsonError("One or more fields exceed the allowed length.");
-   update[field==="status"?"customer_status":field]=value||null;
+   update[field]=value||null;
   }
   if(body.status!==undefined&&body.customer_status===undefined){const value=String(body.status).trim();if(!["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");update.customer_status=value;}
   if(!Object.keys(update).length)return jsonError("No customer changes supplied.");
