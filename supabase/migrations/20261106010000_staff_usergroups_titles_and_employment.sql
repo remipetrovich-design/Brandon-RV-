@@ -2,15 +2,14 @@
 ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS employment_type text NOT NULL DEFAULT 'full_time';
 
--- Normalize legacy labels before enforcing the new status vocabulary.
+-- Drop the previous vocabulary before converting existing rows.
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_employment_status_check;
 UPDATE public.users SET employment_status=CASE employment_status
   WHEN 'on_leave' THEN 'leave'
   WHEN 'inactive' THEN 'suspended'
   ELSE employment_status
 END
 WHERE employment_status IN ('on_leave','inactive');
-
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_employment_status_check;
 ALTER TABLE public.users ADD CONSTRAINT users_employment_status_check
   CHECK (employment_status IN ('active','leave','suspended','terminated'));
 
@@ -91,7 +90,7 @@ SELECT u.id,u.business_id,u.id AS user_id,u.employee_number,u.job_title,u.employ
        u.full_name,u.email,u.phone,u.status AS account_status,u.employment_type
 FROM public.users u
 WHERE u.secondary_group='staff'
-   OR EXISTS (SELECT 1 FROM public.business_members bm WHERE bm.user_id=u.id AND bm.is_active=true);
+   OR EXISTS (SELECT 1 FROM public.business_members bm WHERE bm.user_id=u.id);
 
 CREATE OR REPLACE FUNCTION public.brandon_rv_staff_view_write()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$
