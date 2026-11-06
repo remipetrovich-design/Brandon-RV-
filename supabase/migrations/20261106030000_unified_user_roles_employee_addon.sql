@@ -43,7 +43,7 @@ WITH candidates AS (
          row_number() OVER (
            PARTITION BY trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g'))
            ORDER BY pg.is_system DESC, pg.name
-         ) AS position
+         ) AS row_num
   FROM public.permission_groups pg
   JOIN public.businesses b ON b.id=pg.business_id
   WHERE b.slug='brandon-rv'
@@ -52,22 +52,27 @@ WITH candidates AS (
 INSERT INTO public.user_roles(role_key,name,description,is_system)
 SELECT role_key,name,description,is_system
 FROM candidates
-WHERE position=1
+WHERE row_num=1
 ON CONFLICT (role_key) DO UPDATE SET
   name=EXCLUDED.name,
   description=EXCLUDED.description,
   is_system=public.user_roles.is_system OR EXCLUDED.is_system;
 
 -- Include legacy member role labels even if a matching permission group was not created.
+WITH member_role_candidates AS (
+  SELECT normalized.role_key,initcap(bm.role) AS role_name,
+         row_number() OVER (PARTITION BY normalized.role_key ORDER BY bm.role) AS row_num
+  FROM public.business_members bm
+  JOIN public.businesses b ON b.id=bm.business_id
+  CROSS JOIN LATERAL (
+    SELECT trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')) AS role_key
+  ) normalized
+  WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key NOT IN ('','customer')
+)
 INSERT INTO public.user_roles(role_key,name,description,is_system)
-SELECT DISTINCT ON (role_key) role_key,initcap(bm.role),NULL,false
-FROM public.business_members bm
-JOIN public.businesses b ON b.id=bm.business_id
-CROSS JOIN LATERAL (
-  SELECT trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')) AS role_key
-) normalized
-WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key NOT IN ('','customer')
-ORDER BY role_key,bm.role
+SELECT role_key,role_name,NULL,false
+FROM member_role_candidates
+WHERE row_num=1
 ON CONFLICT (role_key) DO NOTHING;
 
 -- Ensure both reserved global administrator roles exist independently of legacy group setup.
@@ -426,11 +431,11 @@ BEGIN
       first_name=coalesce(v_first_name,first_name),
       last_name=coalesce(v_last_name,last_name),
       date_of_birth=new.date_of_birth,
-      email=lower(btrim(new.email)),
+      email=coalesce(nullif(lower(btrim(new.email)),''),email),
       phone=new.phone,
       address=new.address,suburb=new.suburb,state=new.state,postcode=new.postcode,
       customer_internal_notes=new.internal_notes,
-      customer_status=coalesce(new.status,'active'),
+      customer_status=coalesce(new.status,customer_status,'active'),
       primary_group='customer',
       updated_at=now()
     WHERE id=old.id;
