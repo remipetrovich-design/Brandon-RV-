@@ -12,7 +12,8 @@ export async function POST(request:Request){
  const a=await authorizePermission("leave.view");if(a.response)return a.response;
  try{const b=await request.json(),start=String(b.startDate??""),end=String(b.endDate??""),days=Number(b.days),reason=String(b.reason??"").slice(0,2000);
  if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||end<start||!Number.isFinite(days)||days<=0||days>366)return jsonError("Enter valid leave dates and days.");
- const {data,error}=await database().from("leave_requests").insert({business_id:a.membership!.business_id,user_id:a.user!.id,leave_type_id:String(b.leaveTypeId),start_date:start,end_date:end,days,reason:reason||null}).select("id").single();
+ const db=database();const {data:leaveType}=await db.from("leave_types").select("id").eq("id",String(b.leaveTypeId)).eq("business_id",a.membership!.business_id).eq("is_active",true).maybeSingle();if(!leaveType)return jsonError("Select a valid leave type.");
+ const {data,error}=await db.from("leave_requests").insert({business_id:a.membership!.business_id,user_id:a.user!.id,leave_type_id:leaveType.id,start_date:start,end_date:end,days,reason:reason||null}).select("id").single();
  if(error||!data)return jsonError("Could not submit leave request.",500);return Response.json({success:true,id:data.id},{status:201});
  }catch{return jsonError("Could not submit leave request.",500);}
 }
