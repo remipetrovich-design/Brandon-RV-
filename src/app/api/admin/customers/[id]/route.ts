@@ -58,7 +58,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(field==="status")continue;
    if(field==="date_of_birth"&&value&&!isValidBirthDate(value))return jsonError("Enter a valid date of birth.");
    if(field==="email"){value=normalizeEmail(value);if(value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
-   if(field==="full_name"&&!value)return jsonError("Customer name is required.");
+   if(field==="full_name"&&(!value||value.length>120))return jsonError("Customer name is required and must be 120 characters or fewer.");
    if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
    if(field==="customer_status"&& !["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");
    if(value.length>(field==="customer_internal_notes"?10000:field==="address"?500:255))return jsonError("One or more fields exceed the allowed length.");
