@@ -1,4 +1,5 @@
 import {currentUser,currentMembership,database,userHasPermission,userHasPermissions,jsonError,sameOrigin,normalizeEmail} from "@/lib/auth";
+import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const PROFILE_FIELDS=["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"] as const;
 const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
@@ -44,7 +45,8 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   supplierOrderIds.length?db.from("supplier_order_items").select("*").in("order_id",supplierOrderIds).order("sort_order"):Promise.resolve(empty),
   permitted.has("customers.manage")?db.from("audit_events").select("*").eq("business_id",businessId).in("entity_id",[id,...(vehicles.data??[]).map((x:any)=>x.id),...(enquiries.data??[]).map((x:any)=>x.id),...(appointments.data??[]).map((x:any)=>x.id),...quoteIds,...jobIds,...invoiceIds]).order("created_at",{ascending:false}).limit(200):Promise.resolve(empty)
  ]);
- return Response.json({customer,account,permissions,vehicles:vehicles.data??[],enquiries:enquiries.data??[],appointments:appointments.data??[],quotes:quotes.data??[],quoteItems:quoteItems.data??[],jobs:jobs.data??[],tasks:tasks.data??[],invoices:invoices.data??[],invoiceItems:invoiceItems.data??[],payments:payments.data??[],messages:messages.data??[],documents:documents.data??[],supplierOrders:supplierOrders.data??[],supplierOrderItems:supplierOrderItems.data??[],activity:activity.data??[]});
+ const {data:roles}=await db.from("user_roles").select("role_key,name").order("name");
+ return Response.json({customer,account,permissions,roles:roles??[],canChangeRoles:isGlobalAdministrator(a.user?.user_role),vehicles:vehicles.data??[],enquiries:enquiries.data??[],appointments:appointments.data??[],quotes:quotes.data??[],quoteItems:quoteItems.data??[],jobs:jobs.data??[],tasks:tasks.data??[],invoices:invoices.data??[],invoiceItems:invoiceItems.data??[],payments:payments.data??[],messages:messages.data??[],documents:documents.data??[],supplierOrders:supplierOrders.data??[],supplierOrderItems:supplierOrderItems.data??[],activity:activity.data??[]});
 }
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -52,13 +54,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Customer not found.",404);
  try{
   const body=await request.json(),update:Record<string,string|null>={};
+  if(body.user_role!==undefined){if(!isGlobalAdministrator(a.user?.user_role))return jsonError("Only a global administrator can change user roles.",403);const roleKey=String(body.user_role??"").trim();if(roleKey){const {data:role}=await database().from("user_roles").select("role_key").eq("role_key",roleKey).maybeSingle();if(!role)return jsonError("Select a valid user role.");update.user_role=roleKey;}else update.user_role=null;}
   for(const field of PROFILE_FIELDS){
    if(body[field]===undefined)continue;
    if(!textFields.has(field)||typeof body[field]!=="string")return jsonError("Invalid customer field: "+field);
    let value=String(body[field]).trim();
    if(field==="status")continue;
    if(field==="date_of_birth"&&value&&!isValidBirthDate(value))return jsonError("Enter a valid date of birth.");
-   if(field==="email"){value=normalizeEmail(value);if(!value||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
+   if(field==="email"){value=normalizeEmail(value);if(!value||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
    if(field==="full_name"&&(!value||value.length>120))return jsonError("Customer name is required and must be 120 characters or fewer.");
    if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
    if(field==="customer_status"&& !["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");
@@ -79,6 +82,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const userId=customer.user_id??customer.id;
   if(update.email){const {data:duplicate}=await db.from("users").select("id").eq("email",update.email).neq("id",userId).maybeSingle();if(duplicate)return jsonError("That email address is already used by another account.",409);}
   update.updated_at=new Date().toISOString();
+  if(update.user_role&& !["owner","website_developer"].includes(update.user_role)){update.employment_status="active";update.start_date=new Date().toISOString().slice(0,10);update.job_title="Employee";}else if(update.user_role===null){update.employment_status=null;update.start_date=null;update.job_title=null;}
   const {data:record,error}=await db.from("users").update(update).eq("id",userId).eq("primary_group","customer").select("id").maybeSingle();
   if(error||!record)return jsonError("Could not save customer details.",500);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:a.user!.id,action:"customer.profile_updated",entity_type:"customer",entity_id:id,details:update});

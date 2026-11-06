@@ -650,3 +650,27 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 
 .admin-customer-profile-action{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin-top:7px;padding:7px 11px;border:1px solid var(--green);border-radius:8px;color:var(--green);font-size:.78rem;font-weight:700;line-height:1.3}.admin-customer-link:focus-visible{outline:2px solid var(--green);outline-offset:4px;border-radius:6px}.customer-form-grid input:disabled,.customer-form-grid select:disabled,.customer-form-grid textarea:disabled{opacity:.78;cursor:not-allowed}
 .customer-reset-link-field{flex:1 1 280px;min-width:0;width:100%;padding:10px 12px;border:1px solid var(--brv-border);border-radius:8px;background:#f7f9fc;color:var(--brv-navy);font:inherit;font-size:12px}
+
+
+/* Customer workspace: readable records, clear actions and a consistent form rhythm. */
+.brv-admin-content .admin-customers-list{margin-top:16px}
+.brv-admin-content .admin-customers-list .admin-customer-records{display:grid;gap:10px;border:0}
+.brv-admin-content .admin-customers-list .admin-customer-records .activity-item{display:grid;grid-template-columns:minmax(105px,.22fr) minmax(0,1fr) auto;align-items:center;gap:16px;min-width:0;padding:16px;border:1px solid var(--brv-admin-border);border-radius:5px;background:#fff}
+.brv-admin-content .admin-customers-list .activity-date{font-size:9px;white-space:nowrap}
+.brv-admin-content .admin-customers-list .activity-copy{min-width:0;gap:7px}
+.brv-admin-content .admin-customers-list .activity-copy>span{line-height:1.55;overflow-wrap:anywhere}
+.brv-admin-content .admin-customers-list .admin-customer-link{gap:7px}
+.brv-admin-content .admin-customers-list .admin-customer-link strong{font-size:13px}
+.brv-admin-content .admin-customers-list .admin-customer-profile-action{width:max-content;max-width:100%;padding:6px 9px;border:1px solid #dce6dd;border-radius:4px;font-size:9px}
+.brv-admin-content .admin-customers-list .activity-item>.button{align-self:center}
+.brv-admin-content .admin-create-customer{margin:0 0 16px}
+.brv-admin-content .admin-create-customer .portal-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brv-admin-content .admin-create-customer .auth-form{display:grid;gap:14px;margin-top:14px}
+.brv-admin-content .admin-create-customer .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.brv-admin-content .admin-create-customer .panel-footnote{margin:0;line-height:1.55}
+.brv-admin-content .admin-create-customer .inline-notice{margin:0}
+@media(max-width:760px){
+ .brv-admin-content .admin-customers-list .admin-customer-records .activity-item{grid-template-columns:minmax(0,1fr);gap:9px}
+ .brv-admin-content .admin-customers-list .activity-item>*:last-child{grid-column:auto}
+ .brv-admin-content .admin-create-customer .form-grid{grid-template-columns:minmax(0,1fr)}
+}
