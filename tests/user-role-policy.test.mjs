@@ -17,10 +17,15 @@ test("leave, suspended and terminated employees have no employee access",()=>{
 });
 
 test("Owner and Website Developer are global administrators",()=>{
- for(const role of ["owner","website_developer","developer"]){
+ for(const role of ["owner","website_developer"]){
   assert.equal(isGlobalAdministrator(role),true);
   assert.equal(hasEmployeeAccess({user_role:role,employment_status:null}),true);
  }
+});
+
+test("legacy developer label is not a separate global administrator role",()=>{
+ assert.equal(isGlobalAdministrator("developer"),false);
+ assert.equal(hasEmployeeAccess({user_role:"developer",employment_status:"active"}),true);
 });
 
 test("ordinary employee roles are not global administrators",()=>{
