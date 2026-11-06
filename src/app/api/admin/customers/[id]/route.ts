@@ -3,6 +3,7 @@ export const runtime="nodejs";
 const PROFILE_FIELDS=["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"] as const;
 const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
 const textFields=new Set(["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"]);
+const fieldLimits:Record<string,number>={first_name:120,last_name:120,full_name:120,date_of_birth:10,email:254,phone:40,address:500,suburb:120,state:80,postcode:12,customer_internal_notes:10000,customer_status:8,status:8};
 async function access(permission:string){const user=await currentUser();if(!user)return {user:null,membership:null,error:jsonError("Not signed in.",401)};const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,permission)))return {user,membership,error:jsonError("You do not have permission to access this customer.",403)};return {user,membership,error:null};}
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const a=await access("customers.view");if(a.error)return a.error;
@@ -61,7 +62,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(field==="full_name"&&(!value||value.length>120))return jsonError("Customer name is required and must be 120 characters or fewer.");
    if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
    if(field==="customer_status"&& !["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");
-   if(value.length>(field==="customer_internal_notes"?10000:field==="address"?500:255))return jsonError("One or more fields exceed the allowed length.");
+   if(value.length>fieldLimits[field])return jsonError("One or more fields exceed the allowed length.");
    update[field]=value||null;
   }
   if(body.status!==undefined&&body.customer_status===undefined){const value=String(body.status).trim();if(!["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");update.customer_status=value;}
