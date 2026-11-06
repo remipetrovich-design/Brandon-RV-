@@ -6,7 +6,7 @@ export async function GET(){
  const {data:periods,error}=await db.from("payroll_periods").select("id,name,period_start,period_end,pay_date,status,notes,created_at").eq("business_id",businessId).order("period_start",{ascending:false}).limit(100);
  if(error)return jsonError("Could not load payroll periods.",500);
  const ids=(periods??[]).map(x=>x.id);
- const result=ids.length?await db.from("payroll_items").select("id,payroll_period_id,user_id,ordinary_hours,overtime_hours,allowances,deductions,gross_amount,notes").eq("business_id",businessId).in("payroll_period_id",ids):{data:[],error:null};
+ const result=ids.length?await db.from("payroll_items").select("id,payroll_period_id,user_id,ordinary_hours,overtime_hours,allowances,deductions,gross_amount,tax_withheld,superannuation_amount,net_amount,notes").eq("business_id",businessId).in("payroll_period_id",ids):{data:[],error:null};
  if(result.error)return jsonError("Could not load payroll entries.",500);
  return Response.json({periods:periods??[],items:result.data??[]});
 }
@@ -24,7 +24,7 @@ export async function PATCH(request:Request){
  const a=await authorizePermission("payroll.manage");if(a.response)return a.response;
  try{const b=await request.json(),status=String(b.status);if(!["review","approved","paid","void"].includes(status))return jsonError("Invalid payroll status.");
  const update:any={status};if(status==="approved"){update.approved_by=a.user!.id;update.approved_at=new Date().toISOString();}
- const {data,error}=await database().from("payroll_periods").update(update).eq("id",String(b.id)).eq("business_id",a.membership!.business_id).in("status",["draft","review","approved","paid"]).select("id").maybeSingle();
+ const allowedFrom:Record<string,string[]>={review:["draft"],approved:["review"],paid:["approved"],void:["draft","review"]};const {data,error}=await database().from("payroll_periods").update(update).eq("id",String(b.id)).eq("business_id",a.membership!.business_id).in("status",allowedFrom[status]).select("id").maybeSingle();
  if(error||!data)return jsonError("Payroll period could not be updated.",409);return Response.json({success:true});
  }catch{return jsonError("Could not update payroll period.",500);}
 }
