@@ -1,60 +1,71 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
+const roleKeys=["owner","website_developer","developer"];
+const employmentTypes=["casual","part_time","full_time"];
+const employmentStatuses=["active","leave","suspended","terminated"];
+const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
+const isId=(value:string)=>/^[0-9a-f-]{36}$/i.test(value);
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
- const db=database();
- const [{data:staff,error},{data:roles}]=await Promise.all([
-  db.from("staff").select("id,user_id,employee_number,job_title,employment_type,employment_status,start_date,full_name,email,phone,account_status,created_at").eq("business_id",access.membership!.business_id).order("created_at",{ascending:false}),
-  db.from("permission_groups").select("id,name,description,is_system").eq("business_id",access.membership!.business_id).order("name")
+ const db=database(),businessId=access.membership!.business_id;
+ const [{data:employees,error},{data:roles, error:roleError},{data:customers,error:customerError}]=await Promise.all([
+  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,created_at").eq("business_id",businessId).not("employment_status","is",null).order("created_at",{ascending:false}),
+  db.from("user_roles").select("role_key,name,description,is_system").order("name"),
+  db.from("users").select("id,first_name,last_name,full_name,email,phone").eq("business_id",businessId).is("user_role",null).is("employment_status",null).order("full_name")
  ]);
- if(error)return jsonError("Could not load staff records.",500);
- const ids=(staff??[]).map(x=>x.user_id);
- const {data:members}=await (ids.length?db.from("business_members").select("user_id,role,is_active").eq("business_id",access.membership!.business_id).in("user_id",ids):Promise.resolve({data:[]}));
- const memberMap=new Map((members??[]).map(x=>[x.user_id,x]));
- const roleNames=new Map((roles??[]).map(x=>[String(x.name).toLowerCase(),String(x.name)]));
- const visibleRoles=roles??[];
- return Response.json({
-  staff:(staff??[]).map(x=>{
-   const member=memberMap.get(x.user_id)??null;
-   const canonicalRole=member?.role?roleNames.get(String(member.role).toLowerCase())??String(member.role):null;
-   return {...x,user:{id:x.user_id,email:x.email,full_name:x.full_name,phone:x.phone,status:x.account_status},membership:member?{...member,role:canonicalRole}:null};
-  }),
-  roles:visibleRoles.filter((role:any)=>!role.is_system||["apprentice","worker","senior worker","supervisor","manager","owner","website developer"].includes(String(role.name).toLowerCase())),canAssignDeveloper:["owner","developer","website developer"].includes(access.membership!.role.toLowerCase())
- });
+ if(error||roleError||customerError)return jsonError("Could not load the employee directory.",500);
+ return Response.json({employees:employees??[],roles:(roles??[]).filter(x=>!["customer"].includes(x.role_key)),customers:customers??[]});
+}
+export async function POST(request:Request){
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
+ const access=await authorizePermission("staff.manage");if(access.response)return access.response;
+ try{
+  const body=await request.json();const userId=String(body.userId??"");const userRole=String(body.userRole??"");const jobTitle=String(body.jobTitle??"").trim();const employmentType=String(body.employmentType??"full_time");const startDate=body.startDate?String(body.startDate):new Date().toISOString().slice(0,10);
+  if(!isId(userId))return jsonError("Select an existing customer account.");
+  if(!jobTitle||jobTitle.length>100)return jsonError("Enter a job title of 1 to 100 characters.");
+  if(!employmentTypes.includes(employmentType))return jsonError("Select a valid employment type.");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)||Number.isNaN(Date.parse(startDate)))return jsonError("Enter a valid employment start date.");
+  if(!userRole)return jsonError("Select a user role for this employee.");
+  const db=database(),businessId=access.membership!.business_id;
+  const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",userRole).maybeSingle();
+  if(!role)return jsonError("Select a valid user role.");
+  if(roleKeys.includes(userRole)&&!roleKeys.includes(String(access.membership!.role).toLowerCase().replaceAll(" ","_")))return jsonError("Only an Owner or Website Developer can assign this role.",403);
+  const {data:customer}=await db.from("users").select("id,user_role,employment_status,business_id").eq("id",userId).eq("business_id",businessId).eq("primary_group","customer").maybeSingle();
+  if(!customer)return jsonError("Customer account not found.",404);
+  if(customer.user_role||customer.employment_status)return jsonError("This customer already has an employee record.",409);
+  const updates:any={user_role:userRole,employment_status:"active",employment_type:employmentType,job_title:jobTitle,start_date:startDate,updated_at:new Date().toISOString()};
+  if(body.employeeNumber!==undefined)updates.employee_number=String(body.employeeNumber).trim()||null;
+  if(body.payRate!==undefined&&body.payRate!==""){const n=Number(body.payRate);if(!Number.isFinite(n)||n<0)return jsonError("Enter a valid non-negative pay rate.");updates.pay_rate=n;}
+  if(body.payFrequency!==undefined&&body.payFrequency!==""){if(!payFrequencies.includes(String(body.payFrequency)))return jsonError("Select a valid pay frequency.");updates.pay_frequency=String(body.payFrequency);}
+  for(const [key,limit] of [["payrollReference",100],["payrollNotes",5000],["emergencyContactName",120],["emergencyContactPhone",40],["employeeInternalNotes",5000]] as const){if(body[key]!==undefined){const value=String(body[key]).trim();if(value.length>limit)return jsonError("One or more employee details exceed the allowed length.");updates[{payrollReference:"payroll_reference",payrollNotes:"payroll_notes",emergencyContactName:"emergency_contact_name",emergencyContactPhone:"emergency_contact_phone",employeeInternalNotes:"employee_internal_notes"}[key]]=value||null;}}
+  const {error}=await db.from("users").update(updates).eq("id",userId);
+  if(error)return jsonError("Could not activate the employee record.",500);
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.activated",entity_type:"user",entity_id:userId,details:{user_role:userRole,job_title:jobTitle,employment_type:employmentType}});
+  return Response.json({success:true},{status:201});
+ }catch{return jsonError("Could not activate the employee record.",500);}
 }
 export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("staff.manage");if(access.response)return access.response;
  try{
-  const body=await request.json();const staffId=String(body.staffId??"");const role=body.role===undefined?undefined:String(body.role);const employmentStatus=body.employmentStatus===undefined?undefined:String(body.employmentStatus);const employmentType=body.employmentType===undefined?undefined:String(body.employmentType);const jobTitle=body.jobTitle===undefined?undefined:String(body.jobTitle).trim();
-  if(!/^[0-9a-f-]{36}$/i.test(staffId))return jsonError("Invalid staff record.");
-  const statuses=["active","leave","suspended","terminated"];const employmentTypes=["casual","part_time","full_time"];if(employmentStatus!==undefined&&!statuses.includes(employmentStatus))return jsonError("Invalid employment status.");if(employmentType!==undefined&&!employmentTypes.includes(employmentType))return jsonError("Invalid employment type.");if(jobTitle!==undefined&&jobTitle.length>100)return jsonError("Staff title must be 100 characters or fewer.");
-  if(role===undefined&&employmentStatus===undefined&&employmentType===undefined&&jobTitle===undefined)return jsonError("No changes supplied.");
-  const db=database();const {data:staff}=await db.from("staff").select("id,user_id").eq("id",staffId).eq("business_id",access.membership!.business_id).maybeSingle();if(!staff)return jsonError("Staff record not found.",404);
-  if(role!==undefined){
-   const {data:group}=await db.from("permission_groups").select("name").eq("business_id",access.membership!.business_id).ilike("name",role).maybeSingle();
-   if(!group||group.name.toLowerCase()==="owner")return jsonError("Select a configured staff usergroup.");
-   if(["developer","website developer"].includes(group.name.toLowerCase())&& !["owner","developer","website developer"].includes(access.membership!.role.toLowerCase()))return jsonError("Only the owner or an existing website developer can assign website developer access.",403);
-   const {data:updated,error}=await db.from("business_members").update({role:group.name}).eq("business_id",access.membership!.business_id).eq("user_id",staff.user_id).select("id").maybeSingle();
-   if(error||!updated)return jsonError("Could not update the staff role.",500);
-  }
-  if(employmentStatus!==undefined||employmentType!==undefined||jobTitle!==undefined){
-   const updates:any={updated_at:new Date().toISOString()};
-   if(employmentStatus!==undefined)updates.employment_status=employmentStatus;
-   if(employmentType!==undefined)updates.employment_type=employmentType;
-   if(jobTitle!==undefined)updates.job_title=jobTitle||null;
-   if(employmentStatus!==undefined)updates.secondary_group=employmentStatus==="terminated"?null:"staff";
-   const {error:profileError}=await db.from("users").update(updates).eq("id",staff.user_id);
-   if(profileError)return jsonError("Could not update staff profile.",500);
-   if(employmentStatus!==undefined){
-    const active=employmentStatus==="active";
-    const {error:memberError}=await db.from("business_members").update({is_active:active}).eq("business_id",access.membership!.business_id).eq("user_id",staff.user_id);
-    if(memberError)return jsonError("Staff status was saved, but business access could not be updated.",500);
-    // Every account remains a customer. Termination removes only business access;
-    // it must not suspend the user's customer login.
-   }
-  }
-  await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:"staff.updated",entity_type:"staff",entity_id:staffId,details:{role:role??null,job_title:jobTitle??null,employment_type:employmentType??null,employment_status:employmentStatus??null}});
+  const body=await request.json();const userId=String(body.userId??"");if(!isId(userId))return jsonError("Invalid employee record.");
+  const db=database(),businessId=access.membership!.business_id;
+  const {data:employee}=await db.from("users").select("id,user_role,employment_status").eq("id",userId).eq("business_id",businessId).not("employment_status","is",null).maybeSingle();
+  if(!employee)return jsonError("Employee record not found.",404);
+  const updates:any={updated_at:new Date().toISOString()};
+  if(body.userRole!==undefined){const roleKey=String(body.userRole);if(roleKey){const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",roleKey).maybeSingle();if(!role)return jsonError("Select a valid user role.");if(roleKeys.includes(roleKey)&&!roleKeys.includes(String(access.membership!.role).toLowerCase().replaceAll(" ","_")))return jsonError("Only an Owner or Website Developer can assign this role.",403);updates.user_role=roleKey;}else updates.user_role=null;}
+  if(body.employmentStatus!==undefined){const value=String(body.employmentStatus);if(!employmentStatuses.includes(value))return jsonError("Select a valid employment status.");if(roleKeys.includes(String(employee.user_role))&&value==="terminated")return jsonError("Owner and Website Developer access cannot be terminated here.",403);updates.employment_status=value;if(value==="terminated")updates.user_role=null;}
+  if(body.employmentType!==undefined){const value=String(body.employmentType);if(!employmentTypes.includes(value))return jsonError("Select a valid employment type.");updates.employment_type=value;}
+  if(body.jobTitle!==undefined){const value=String(body.jobTitle).trim();if(value.length>100)return jsonError("Job title must be 100 characters or fewer.");updates.job_title=value||null;}
+  if(body.employeeNumber!==undefined){const value=String(body.employeeNumber).trim();if(value.length>50)return jsonError("Employee number must be 50 characters or fewer.");updates.employee_number=value||null;}
+  if(body.startDate!==undefined){const value=String(body.startDate);if(value&&!/^\d{4}-\d{2}-\d{2}$/.test(value))return jsonError("Enter a valid start date.");updates.start_date=value||null;}
+  if(body.endDate!==undefined){const value=String(body.endDate);if(value&&!/^\d{4}-\d{2}-\d{2}$/.test(value))return jsonError("Enter a valid end date.");updates.end_date=value||null;}
+  if(body.payRate!==undefined){if(body.payRate==="")updates.pay_rate=null;else{const value=Number(body.payRate);if(!Number.isFinite(value)||value<0)return jsonError("Enter a valid non-negative pay rate.");updates.pay_rate=value;}}
+  if(body.payFrequency!==undefined){const value=String(body.payFrequency);if(value&&!payFrequencies.includes(value))return jsonError("Select a valid pay frequency.");updates.pay_frequency=value||null;}
+  for(const [key,column,limit] of [["payrollReference","payroll_reference",100],["payrollNotes","payroll_notes",5000],["emergencyContactName","emergency_contact_name",120],["emergencyContactPhone","emergency_contact_phone",40],["employeeInternalNotes","employee_internal_notes",5000]] as const){if(body[key]!==undefined){const value=String(body[key]).trim();if(value.length>limit)return jsonError("One or more employee details exceed the allowed length.");updates[column]=value||null;}}
+  if(Object.keys(updates).length===1)return jsonError("No employee changes supplied.");
+  const {error}=await db.from("users").update(updates).eq("id",userId);if(error)return jsonError("Could not update employee details.",500);
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.updated",entity_type:"user",entity_id:userId,details:updates});
   return Response.json({success:true});
- }catch{return jsonError("Could not update staff record.",500);}
+ }catch{return jsonError("Could not update employee details.",500);}
 }
