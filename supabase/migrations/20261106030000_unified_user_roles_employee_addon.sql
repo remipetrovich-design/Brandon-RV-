@@ -465,6 +465,8 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON public.user_roles,public.user_role_permissi
 CREATE INDEX IF NOT EXISTS users_business_user_role_idx ON public.users(business_id,user_role);
 CREATE INDEX IF NOT EXISTS users_employee_addon_idx ON public.users(business_id,employment_status) WHERE employment_status IS NOT NULL;
 
+COMMENT ON COLUMN public.users.primary_group IS 'Permanent identity group. Always customer; employee access is represented by user_role and the employment addon.';
+COMMENT ON COLUMN public.users.account_type IS 'Legacy compatibility field. Always customer.';
 COMMENT ON COLUMN public.users.secondary_group IS 'Deprecated compatibility field. Must remain NULL; employee access uses user_role and the employment addon.';
 COMMENT ON COLUMN public.users.user_role IS 'Global role assigned to this user. NULL means customer-only access.';
 COMMENT ON COLUMN public.users.employment_status IS 'NULL means no employee addon; non-NULL means employment details exist.';
