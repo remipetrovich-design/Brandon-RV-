@@ -50,20 +50,30 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Customer not found.",404);
  try{
   const body=await request.json(),update:Record<string,string|null>={};
-  for(const field of PROFILE_FIELDS){if(body[field]===undefined)continue;if(!textFields.has(field)||typeof body[field]!=="string")return jsonError("Invalid customer field: "+field);
+  for(const field of PROFILE_FIELDS){
+   if(body[field]===undefined)continue;
+   if(!textFields.has(field)||typeof body[field]!=="string")return jsonError("Invalid customer field: "+field);
    let value=String(body[field]).trim();
    if(field==="status")continue;
-   if(field==="date_of_birth"&&value&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value)>new Date()))return jsonError("Enter a valid date of birth.");\n   if(field==="email"){value=normalizeEmail(value);if(value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
-   if(field==="full_name"&&!value)return jsonError("Customer name is required.");\n   if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
+   if(field==="date_of_birth"&&value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value)>new Date()))return jsonError("Enter a valid date of birth.");
+   if(field==="email"){value=normalizeEmail(value);if(value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
+   if(field==="full_name"&&!value)return jsonError("Customer name is required.");
+   if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
    if(field==="customer_status"&& !["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");
    if(value.length>(field==="customer_internal_notes"?10000:field==="address"?500:255))return jsonError("One or more fields exceed the allowed length.");
    update[field]=value||null;
   }
   if(body.status!==undefined&&body.customer_status===undefined){const value=String(body.status).trim();if(!["active","inactive"].includes(value))return jsonError("Customer status must be active or inactive.");update.customer_status=value;}
-  if(update.first_name!==undefined||update.last_name!==undefined){const first=String(update.first_name??customer?.first_name??"").trim();const last=String(update.last_name??customer?.last_name??"").trim();if(!first)return jsonError("First name is required.");update.full_name=[first,last].filter(Boolean).join(" ");}\n  if(!Object.keys(update).length)return jsonError("No customer changes supplied.");
+  if(!Object.keys(update).length)return jsonError("No customer changes supplied.");
   const db=database(),businessId=a.membership!.business_id;
   const {data:customer}=await db.from("customers").select("id,user_id,full_name,first_name,last_name").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(!customer)return jsonError("Customer not found.",404);
+  if(update.first_name!==undefined||update.last_name!==undefined){
+   const first=String(update.first_name??customer.first_name??"").trim();
+   const last=String(update.last_name??customer.last_name??"").trim();
+   if(!first)return jsonError("First name is required.");
+   update.full_name=[first,last].filter(Boolean).join(" ");
+  }
   const userId=customer.user_id??customer.id;
   if(update.email){const {data:duplicate}=await db.from("users").select("id").eq("email",update.email).neq("id",userId).maybeSingle();if(duplicate)return jsonError("That email address is already used by another account.",409);}
   update.updated_at=new Date().toISOString();
