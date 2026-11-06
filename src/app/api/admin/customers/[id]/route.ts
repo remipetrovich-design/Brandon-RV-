@@ -11,8 +11,8 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {data:customer,error}=await db.from("customers").select("*").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!customer)return jsonError("Customer not found.",404);
  const query=(table:string)=>db.from(table).select("*").eq("business_id",businessId).eq("customer_id",id).order("created_at",{ascending:false}).limit(100);
- const [vehicles,enquiries,appointments,quotes,jobs,invoices,payments,messages,documents,activity]=await Promise.all([
-  query("vehicles"),query("enquiries"),query("appointments"),query("quotes"),query("jobs"),query("invoices"),query("payments"),query("customer_messages"),db.from("documents").select("*").eq("business_id",businessId).or("customer_id.eq."+id+",user_id.eq."+id).order("created_at",{ascending:false}).limit(100),db.from("audit_events").select("*").eq("business_id",businessId).eq("entity_type","customer").eq("entity_id",id).order("created_at",{ascending:false}).limit(100)
+ const [vehicles,enquiries,appointments,quotes,jobs,invoices,payments,messages,documents]=await Promise.all([
+  query("vehicles"),query("enquiries"),query("appointments"),query("quotes"),query("jobs"),query("invoices"),query("payments"),query("customer_messages"),db.from("documents").select("*").eq("business_id",businessId).or("customer_id.eq."+id+",user_id.eq."+id).order("created_at",{ascending:false}).limit(100)
  ]);
  const quoteIds=(quotes.data??[]).map((x:any)=>x.id),invoiceIds=(invoices.data??[]).map((x:any)=>x.id),jobIds=(jobs.data??[]).map((x:any)=>x.id);
  const [quoteItems,invoiceItems,tasks,supplierOrders]=await Promise.all([
@@ -21,9 +21,14 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   jobIds.length?db.from("job_tasks").select("*").in("job_id",jobIds).order("sort_order"):Promise.resolve({data:[]}),
   jobIds.length?db.from("supplier_orders").select("*").eq("business_id",businessId).in("job_id",jobIds).order("created_at",{ascending:false}):Promise.resolve({data:[]})
  ]);
- const errors=[vehicles,enquiries,appointments,quotes,jobs,invoices,payments,messages,documents,activity].filter((x:any)=>x.error);
+ const errors=[vehicles,enquiries,appointments,quotes,jobs,invoices,payments,messages,documents].filter((x:any)=>x.error);
  if(errors.length)return jsonError("Could not load the complete customer history.",500);
- return Response.json({customer,vehicles:vehicles.data??[],enquiries:enquiries.data??[],appointments:appointments.data??[],quotes:quotes.data??[],quoteItems:quoteItems.data??[],jobs:jobs.data??[],tasks:tasks.data??[],invoices:invoices.data??[],invoiceItems:invoiceItems.data??[],payments:payments.data??[],messages:messages.data??[],documents:documents.data??[],supplierOrders:supplierOrders.data??[],activity:activity.data??[]});
+ const supplierOrderIds=(supplierOrders.data??[]).map((x:any)=>x.id);
+ const [supplierOrderItems,activity]=await Promise.all([
+  supplierOrderIds.length?db.from("supplier_order_items").select("*").in("order_id",supplierOrderIds).order("sort_order"):Promise.resolve({data:[]}),
+  db.from("audit_events").select("*").eq("business_id",businessId).in("entity_id",[id,...(vehicles.data??[]).map((x:any)=>x.id),...(enquiries.data??[]).map((x:any)=>x.id),...(appointments.data??[]).map((x:any)=>x.id),...quoteIds,...jobIds,...invoiceIds]).order("created_at",{ascending:false}).limit(200)
+ ]);
+ return Response.json({customer,vehicles:vehicles.data??[],enquiries:enquiries.data??[],appointments:appointments.data??[],quotes:quotes.data??[],quoteItems:quoteItems.data??[],jobs:jobs.data??[],tasks:tasks.data??[],invoices:invoices.data??[],invoiceItems:invoiceItems.data??[],payments:payments.data??[],messages:messages.data??[],documents:documents.data??[],supplierOrders:supplierOrders.data??[],supplierOrderItems:supplierOrderItems.data??[],activity:activity.data??[]});
 }
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
