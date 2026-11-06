@@ -79,7 +79,7 @@ FROM public.permission_groups pg
 JOIN public.businesses b ON b.id=pg.business_id
 JOIN public.permission_group_permissions pgp ON pgp.group_id=pg.id
 WHERE b.slug='brandon-rv'
-  AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) <> ''
+  AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) NOT IN ('','customer')
 ON CONFLICT DO NOTHING;
 
 -- Do not merge member-specific permission groups into a shared role: that
@@ -89,7 +89,7 @@ ON CONFLICT DO NOTHING;
 
 -- Translate existing employee access to the user's own role field.
 UPDATE public.users u
-SET user_role=NULLIF(trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),'customer'),
+SET user_role=NULLIF(NULLIF(trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),''),'customer'),
     business_id=COALESCE(u.business_id,bm.business_id),
     employment_status=CASE WHEN bm.is_active THEN COALESCE(u.employment_status,'active') ELSE 'suspended' END,
     updated_at=now()
