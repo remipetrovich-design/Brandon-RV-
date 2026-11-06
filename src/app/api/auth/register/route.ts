@@ -18,7 +18,7 @@ export async function POST(request:Request){
   const email=normalizeEmail(String(body.email??""));
   const phone=String(body.phone??"").trim();
   const password=String(body.password??"");
-  if(!firstName||firstName.length>120||lastName.length>120||fullName.length<2||fullName.length>120)return jsonError("Enter a valid first and last name.");
+  if(!firstName||!lastName||firstName.length>120||lastName.length>120||fullName.length<2||fullName.length>120)return jsonError("Enter a valid first and last name.");
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
   if(password.length<12||password.length>128)return jsonError("Use a password between 12 and 128 characters.");
   if(phone.length>40)return jsonError("Enter a valid phone number.");
