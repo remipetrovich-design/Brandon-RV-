@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS public.user_role_permissions (
   PRIMARY KEY (role_key, permission_key)
 );
 
+-- Ensure every customer identity is attached to the single Brandon RV workspace.
+UPDATE public.users u SET business_id=b.id FROM public.businesses b WHERE b.slug='brandon-rv' AND u.business_id IS NULL;
+
 -- Copy configured business role definitions into the global user-role catalogue.
 INSERT INTO public.user_roles(role_key,name,description,is_system)
 SELECT DISTINCT
