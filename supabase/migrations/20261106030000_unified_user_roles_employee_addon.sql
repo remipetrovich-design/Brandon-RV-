@@ -286,6 +286,8 @@ ALTER TABLE public.users ALTER COLUMN account_type SET DEFAULT 'customer';
 ALTER TABLE public.users ALTER COLUMN account_type SET NOT NULL;
 ALTER TABLE public.users ALTER COLUMN primary_group SET DEFAULT 'customer';
 ALTER TABLE public.users ALTER COLUMN primary_group SET NOT NULL;
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_primary_group_check;
+ALTER TABLE public.users ADD CONSTRAINT users_primary_group_customer_check CHECK (primary_group='customer');
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_account_type_customer_check;
 ALTER TABLE public.users ADD CONSTRAINT users_account_type_customer_check CHECK (account_type='customer');
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_secondary_group_null_check;
