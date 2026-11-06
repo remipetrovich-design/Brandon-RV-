@@ -35,7 +35,7 @@ Existing business_members.role values and named permission_groups are copied int
 - \`NEXT_PUBLIC_APP_URL\`: the deployed public application origin used to build account links.
 - \`RESEND_API_KEY\` and \`EMAIL_FROM\`: optional transactional email delivery settings.
 
-The preview branch needs its own Preview-target versions of the Supabase URL and service-role key. Redeploy after changing environment variables.
+The preview branch needs its own Preview-target versions of the Supabase URL and service-role key. Redeploy after changing environment variables. The migration workflow pins Supabase CLI v2.122.1 so its existing remote-linking commands do not silently switch to CLI v3 semantics.
 
 ## First owner
 
@@ -47,7 +47,7 @@ Owner and Website Developer roles always receive unrestricted application permis
 
 - Customers register at \`/portal/register\` and sign in at \`/portal/sign-in\`.
 - Registration creates one \`users\` row with \`primary_group = 'customer'\` and \`user_role = NULL\`.
-- Registration collects name, date of birth, email, phone and password.
+- Registration collects first name, last name, date of birth, email, phone, optional street address/suburb/state/postcode and password.
 - Passwords are stored as Argon2id hashes. They cannot be decrypted or displayed.
 - With Resend configured, registration requires email verification before sign-in.
 - Without an email provider, registration activates the account immediately and clearly tells the customer that email verification and password-recovery email are unavailable.
@@ -59,7 +59,7 @@ Owner and Website Developer roles always receive unrestricted application permis
 - Open \`/admin/staff\` and select an existing customer account to hire.
 - Add the employee's user role, job title, employee number, employment type and start date. Payroll and emergency-contact details can also be recorded.
 - No staff invitation, staff registration or separate employee login exists.
-- Employee details can be edited from the employee directory or the Employment section of the same customer profile.
+- Employee details can be edited from the employee directory or reviewed in the Employment section of the same customer profile. Terminated employees remain customer accounts and can be rehired from the customer selector; their previous employment details are retained in the employee activity audit event.
 - Assign global role permissions through \`/admin/roles\`. Custom roles are global user roles, not business membership roles.
 - Owner and Website Developer retain unrestricted access, including access to all user profiles and records.
 - Terminating employment removes ordinary employee permissions but preserves the customer's account and all customer records.
