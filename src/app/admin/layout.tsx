@@ -1,5 +1,5 @@
 import {redirect} from "next/navigation";
-import {currentUser,currentMembership,userHasPermission} from "@/lib/auth";
+import {currentUser,currentMembership,userHasPermissions} from "@/lib/auth";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 export const dynamic="force-dynamic";
 const navigation:AdminNavGroup[]=[
@@ -12,12 +12,11 @@ const navigation:AdminNavGroup[]=[
 export default async function AdminLayout({children}:{children:React.ReactNode}) {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
- const permissionKeys=[...new Set(navigation.flatMap(group=>group.items.map(item=>item.permission)))];
- const checks=await Promise.all(permissionKeys.map(permission=>userHasPermission(user.id,permission)));
- const permitted=new Set(permissionKeys.filter((_,index)=>checks[index]));
+ const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"jobs.complete","time.view","time.manage","customers.view","vehicles.view"])];
+ const permitted=await userHasPermissions(user.id,permissionKeys);
  const groups=navigation.map(group=>({...group,items:group.items.filter(item=>permitted.has(item.permission))})).filter(group=>group.items.length>0);
  const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
- const employeeTools=await Promise.all(["jobs.complete","time.view","time.manage"].map(permission=>userHasPermission(user.id,permission)));
- if(!canSeeOverview&&!groups.length&&!employeeTools.some(Boolean))redirect("/portal");
+ const employeeTools=["jobs.complete","time.view","time.manage"].some(permission=>permitted.has(permission));
+ if(!canSeeOverview&&!groups.length&&!employeeTools)redirect("/portal");
  return <AdminShell userName={user.full_name||user.email} role={membership.role} groups={groups}>{children}</AdminShell>;
 }

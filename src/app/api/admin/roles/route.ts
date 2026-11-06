@@ -5,7 +5,7 @@ export async function GET(){
  const access=await authorizePermission("roles.manage");if(access.response)return access.response;const db=database();
  const [{data:groups,error},{data:catalogue}]=await Promise.all([db.from("permission_groups").select("id,name,description,is_system").eq("business_id",access.membership!.business_id).order("is_system",{ascending:false}).order("name"),db.from("permissions").select("permission_key,description").order("permission_key")]);
  if(error)return jsonError("Could not load roles.",500);const ids=(groups??[]).map(g=>g.id);const {data:mappings}=ids.length?await db.from("permission_group_permissions").select("group_id,permission_key").in("group_id",ids):{data:[]};
- return Response.json({groups:(groups??[]).map(g=>({...g,permissions:(mappings??[]).filter(m=>m.group_id===g.id).map(m=>m.permission_key)})),permissions:catalogue??[]});
+ return Response.json({groups:(groups??[]).filter(g=>!g.is_system||["apprentice","worker","senior worker","supervisor","manager","owner","website developer"].includes(String(g.name).toLowerCase())).map(g=>({...g,permissions:(mappings??[]).filter(m=>m.group_id===g.id).map(m=>m.permission_key)})),permissions:catalogue??[]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
@@ -20,7 +20,7 @@ export async function POST(request:Request){
 export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
  try{const body=await request.json();const groupId=String(body.groupId??"");const keys=readKeys(body.permissions);if(!/^[0-9a-f-]{36}$/i.test(groupId))return jsonError("Invalid role.");
- const db=database();const {data:group}=await db.from("permission_groups").select("id").eq("id",groupId).eq("business_id",access.membership!.business_id).maybeSingle();if(!group)return jsonError("Role not found.",404);
+ const db=database();const {data:group}=await db.from("permission_groups").select("id,name,is_system").eq("id",groupId).eq("business_id",access.membership!.business_id).maybeSingle();if(!group)return jsonError("Role not found.",404);if(["owner","website developer"].includes(group.name.toLowerCase()))return jsonError("The Owner and Website Developer usergroups are protected and retain complete permissions.",403);
  const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some((k:string)=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
  const {error:deleteError}=await db.from("permission_group_permissions").delete().eq("group_id",groupId);if(deleteError)return jsonError("Could not update role permissions.",500);
  if(keys.length){const {error}=await db.from("permission_group_permissions").insert(keys.map((permission_key:string)=>({group_id:groupId,permission_key})));if(error)return jsonError("Could not update role permissions.",500);}

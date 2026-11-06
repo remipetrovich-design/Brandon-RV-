@@ -596,3 +596,14 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
   .brv-admin-section-heading{align-items:flex-start;flex-direction:column}
 }
 @media(prefers-reduced-motion:reduce){.brv-admin-sidebar,.brv-admin-overview,.brv-admin-nav-link,.brv-admin-stat,.brv-admin-quicklinks a{transition:none}}
+
+
+/* Admin pages use the full workspace width, not the customer portal's two-column shell. */
+.brv-admin-content .portal-shell{display:block;min-width:0}
+.brv-admin-content .portal-panel,.brv-admin-content .portal-page-heading{min-width:0}
+.brv-admin-content .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+.brv-admin-content .form-grid>*{min-width:0}
+.brv-admin-content input,.brv-admin-content select,.brv-admin-content textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%}
+.brv-admin-content .activity-item:has(.form-grid){grid-template-columns:minmax(0,1fr);align-items:stretch}
+.brv-admin-content .activity-item:has(.form-grid) .activity-copy{width:100%;min-width:0}
+@media(max-width:560px){.brv-admin-content .form-grid{grid-template-columns:minmax(0,1fr)}}
