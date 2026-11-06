@@ -163,6 +163,42 @@ SELECT u.id,u.business_id,u.id AS user_id,u.employee_number,u.job_title,
 FROM public.users u
 WHERE u.employment_status IS NOT NULL;
 
+-- Update a role's permission set atomically; the API cannot leave a role
+-- half-cleared if a permission insert fails.
+CREATE OR REPLACE FUNCTION public.set_user_role_permissions(p_role_key text,p_permission_keys text[])
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path=public
+AS $
+BEGIN
+  IF p_role_key IN ('owner','website_developer','developer','customer') THEN
+    RAISE EXCEPTION 'Reserved roles cannot have their permissions changed';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.user_roles WHERE role_key=p_role_key) THEN
+    RAISE EXCEPTION 'User role not found';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM unnest(coalesce(p_permission_keys,ARRAY[]::text[])) AS requested(permission_key)
+    LEFT JOIN public.permissions p ON p.permission_key=requested.permission_key
+    WHERE p.permission_key IS NULL
+  ) THEN
+    RAISE EXCEPTION 'One or more permissions are invalid';
+  END IF;
+  DELETE FROM public.user_role_permissions WHERE role_key=p_role_key;
+  INSERT INTO public.user_role_permissions(role_key,permission_key)
+  SELECT p_role_key,requested.permission_key
+  FROM (
+    SELECT DISTINCT permission_key
+    FROM unnest(coalesce(p_permission_keys,ARRAY[]::text[])) AS keys(permission_key)
+  ) requested;
+END;
+$;
+
+REVOKE ALL ON FUNCTION public.set_user_role_permissions(text,text[]) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.set_user_role_permissions(text,text[]) TO service_role;
+
 -- The staff view is read-only. All employee changes go through the existing
 -- customer user row and the employee addon API, never through a staff insert.
 DROP TRIGGER IF EXISTS staff_view_write ON public.staff;
