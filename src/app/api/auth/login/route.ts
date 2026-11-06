@@ -9,7 +9,7 @@ export async function POST(request:Request){
   const db=database();const ip=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"unknown";const ipHash=createHash("sha256").update(ip).digest("hex");const since=new Date(Date.now()-15*60*1000).toISOString();
   const {count}=await db.from("login_attempts").select("id",{count:"exact",head:true}).eq("attempt_type","login").eq("email",email).eq("ip_hash",ipHash).eq("succeeded",false).gte("attempted_at",since);
   if((count??0)>=8)return jsonError("Too many attempts. Try again in 15 minutes.",429);
-  const {data:user}=await db.from("users").select("id,email,full_name,phone,account_type,status,password_hash,email_verified_at,force_password_change,primary_group,secondary_group,business_id,user_role,employment_status").eq("email",email).maybeSingle();
+  const {data:user}=await db.from("users").select("id,email,full_name,phone,account_type,status,password_hash,email_verified_at,force_password_change,primary_group,business_id,user_role,employment_status").eq("email",email).maybeSingle();
   const valid=!!user&&user.status==="active"&&await passwordMatches(password,user.password_hash);
   await db.from("login_attempts").insert({attempt_type:"login",email,ip_hash:ipHash,succeeded:valid});
   if(!valid||!user)return jsonError("Email or password is incorrect.",401);
