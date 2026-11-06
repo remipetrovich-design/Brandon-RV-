@@ -611,7 +611,7 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 /* Customer profile workspace: uses the existing admin theme and panel language. */
 .brv-admin-content .customer-profile-page{width:100%;max-width:1440px;margin:0 auto;padding:28px clamp(16px,3vw,40px) 56px;box-sizing:border-box}
 .customer-profile-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:0 0 24px}
-.customer-profile-heading h1{margin:8px 0;color:var(--brv-navy);font-family:var(--body);font-size:clamp(2rem,4vw,3.2rem);font-weight:850;line-height:1.05;letter-spacing:-.045em}
+.customer-profile-heading h1{margin:8px 0;color:var(--brv-navy);font-family:var(--display);font-size:clamp(28px,3vw,38px);font-weight:850;line-height:1.1;letter-spacing:-.04em}
 .customer-profile-heading>div>p:last-child{color:var(--muted,#87908b);margin:0}
 .customer-back-link,.customer-inline-link{color:var(--brv-blue);text-decoration:none;font-weight:700}
 .customer-back-link{display:inline-block;margin-bottom:18px}
