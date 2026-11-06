@@ -160,6 +160,7 @@ UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' A
 -- New public tables are not automatically exposed through the Supabase Data API.
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_role_permissions ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA public TO service_role;
 REVOKE ALL ON public.user_roles,public.user_role_permissions FROM anon,authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.user_roles,public.user_role_permissions TO service_role;
 
