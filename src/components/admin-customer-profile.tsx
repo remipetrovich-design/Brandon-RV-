@@ -3,7 +3,7 @@ import Link from "next/link";
 import AdminCustomerResetLink from "@/components/admin-customer-reset-link";
 import {useEffect,useMemo,useState} from "react";
 type Row=Record<string,any>;
-type Profile={customer:Row;account:Row;permissions:Record<string,boolean>;roles:{role_key:string;name:string}[];vehicles:Row[];enquiries:Row[];appointments:Row[];quotes:Row[];quoteItems:Row[];jobs:Row[];tasks:Row[];invoices:Row[];invoiceItems:Row[];payments:Row[];messages:Row[];documents:Row[];supplierOrders:Row[];supplierOrderItems:Row[];activity:Row[]};
+type Profile={customer:Row;account:Row;permissions:Record<string,boolean>;canChangeRoles:boolean;roles:{role_key:string;name:string}[];vehicles:Row[];enquiries:Row[];appointments:Row[];quotes:Row[];quoteItems:Row[];jobs:Row[];tasks:Row[];invoices:Row[];invoiceItems:Row[];payments:Row[];messages:Row[];documents:Row[];supplierOrders:Row[];supplierOrderItems:Row[];activity:Row[]};
 const tabs=["Overview","Vehicles","Enquiries","Appointments","Quotes","Jobs","Invoices & payments","Messages & documents","Employment","Activity"];
 const money=(v:any)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v??0));
 const date=(v:any)=>v?new Date(v).toLocaleString("en-AU",{dateStyle:"medium",timeStyle:String(v).includes(":")?"short":undefined}):"—";
