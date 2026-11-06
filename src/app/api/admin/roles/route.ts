@@ -33,7 +33,7 @@ export async function PATCH(request:Request){
 export async function DELETE(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
  try{const body=await request.json();const key=String(body.groupId??"");const db=database();const {data:role}=await db.from("user_roles").select("role_key,is_system").eq("role_key",key).maybeSingle();
- if(!role)return jsonError("User role not found.",404);if(role.is_system||["owner","website_developer","developer","customer"].includes(key))return jsonError("System and reserved user roles cannot be deleted.",403);
+ if(!role)return jsonError("User role not found.",404);if(role.is_system||["owner","website_developer","customer"].includes(key))return jsonError("System and reserved user roles cannot be deleted.",403);
  const {count}=await db.from("users").select("id",{count:"exact",head:true}).eq("user_role",key);if((count??0)>0)return jsonError("This role is assigned to users. Reassign those users before deleting it.",409);
  const {error}=await db.from("user_roles").delete().eq("role_key",key);if(error)return jsonError("Could not delete user role.",500);return Response.json({success:true});
  }catch{return jsonError("Could not delete user role.",500);}
