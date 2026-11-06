@@ -47,7 +47,7 @@ WITH candidates AS (
   FROM public.permission_groups pg
   JOIN public.businesses b ON b.id=pg.business_id
   WHERE b.slug='brandon-rv'
-    AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) <> ''
+    AND trim(both '_' from regexp_replace(lower(pg.name),'[^a-z0-9]+','_','g')) NOT IN ('','customer')
 )
 INSERT INTO public.user_roles(role_key,name,description,is_system)
 SELECT role_key,name,description,is_system
@@ -66,7 +66,7 @@ JOIN public.businesses b ON b.id=bm.business_id
 CROSS JOIN LATERAL (
   SELECT trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')) AS role_key
 ) normalized
-WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key <> ''
+WHERE b.slug='brandon-rv' AND bm.role IS NOT NULL AND normalized.role_key NOT IN ('','customer')
 ORDER BY role_key,bm.role
 ON CONFLICT (role_key) DO NOTHING;
 
@@ -89,13 +89,13 @@ ON CONFLICT DO NOTHING;
 
 -- Translate existing employee access to the user's own role field.
 UPDATE public.users u
-SET user_role=trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),
+SET user_role=NULLIF(trim(both '_' from regexp_replace(lower(bm.role),'[^a-z0-9]+','_','g')),'customer'),
     business_id=COALESCE(u.business_id,bm.business_id),
     employment_status=CASE WHEN bm.is_active THEN COALESCE(u.employment_status,'active') ELSE 'suspended' END,
     updated_at=now()
 FROM public.business_members bm
 JOIN public.businesses b ON b.id=bm.business_id
-WHERE bm.user_id=u.id AND b.slug='brandon-rv';
+WHERE bm.user_id=u.id AND b.slug='brandon-rv' AND bm.role IS NOT NULL;
 
 -- Preserve employee records even where an old membership was inactive or had no role.
 UPDATE public.users
