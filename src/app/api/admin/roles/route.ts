@@ -13,7 +13,7 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
  try{const body=await request.json();const name=String(body.name??"").trim();const description=String(body.description??"").trim().slice(0,500);const keys=readKeys(body.permissions);const key=roleKey(name);
  if(name.length<3||name.length>50||!key)return jsonError("Use a role name between 3 and 50 characters.");
- if(["owner","website_developer","developer","customer"].includes(key))return jsonError("This role name is reserved.");
+ if(["owner","website_developer","customer"].includes(key))return jsonError("This role name is reserved.");
  const db=database();const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
  const {data:role,error}=await db.from("user_roles").insert({role_key:key,name,description:description||null,is_system:false}).select("role_key,name,description,is_system").single();if(error||!role)return jsonError("Could not create user role.",500);
  if(keys.length){const {error:mapError}=await db.from("user_role_permissions").insert(keys.map(permission_key=>({role_key:key,permission_key})));if(mapError){await db.from("user_roles").delete().eq("role_key",key);return jsonError("Could not save role permissions.",500);}}
@@ -24,7 +24,7 @@ export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
  try{const body=await request.json();const key=String(body.groupId??"");const keys=readKeys(body.permissions);if(!/^[a-z0-9_]{2,60}$/.test(key))return jsonError("Invalid user role.");
  const db=database();const {data:role}=await db.from("user_roles").select("role_key,name,is_system").eq("role_key",key).maybeSingle();if(!role)return jsonError("User role not found.",404);
- if(["owner","website_developer","developer"].includes(key))return jsonError("Owner and Website Developer roles always retain full access.",403);
+ if(["owner","website_developer"].includes(key))return jsonError("Owner and Website Developer roles always retain full access.",403);
  const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
  const {error:saveError}=await db.rpc("set_user_role_permissions",{p_role_key:key,p_permission_keys:keys});if(saveError)return jsonError("Could not update role permissions.",500);
  return Response.json({success:true});
