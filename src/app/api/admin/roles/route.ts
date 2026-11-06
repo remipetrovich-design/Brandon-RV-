@@ -5,7 +5,7 @@ export async function GET(){
  const access=await authorizePermission("roles.manage");if(access.response)return access.response;const db=database();
  const [{data:groups,error},{data:catalogue}]=await Promise.all([db.from("permission_groups").select("id,name,description,is_system").eq("business_id",access.membership!.business_id).order("is_system",{ascending:false}).order("name"),db.from("permissions").select("permission_key,description").order("permission_key")]);
  if(error)return jsonError("Could not load roles.",500);const ids=(groups??[]).map(g=>g.id);const {data:mappings}=ids.length?await db.from("permission_group_permissions").select("group_id,permission_key").in("group_id",ids):{data:[]};
- return Response.json({groups:(groups??[]).map(g=>({...g,permissions:(mappings??[]).filter(m=>m.group_id===g.id).map(m=>m.permission_key)})),permissions:catalogue??[]});
+ return Response.json({groups:(groups??[]).filter(g=>!g.is_system||["apprentice","worker","senior worker","supervisor","manager","owner","website developer"].includes(String(g.name).toLowerCase())).map(g=>({...g,permissions:(mappings??[]).filter(m=>m.group_id===g.id).map(m=>m.permission_key)})),permissions:catalogue??[]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
