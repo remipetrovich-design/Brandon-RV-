@@ -20,7 +20,7 @@ export async function POST(request:Request){
 export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
  try{const body=await request.json();const groupId=String(body.groupId??"");const keys=readKeys(body.permissions);if(!/^[0-9a-f-]{36}$/i.test(groupId))return jsonError("Invalid role.");
- const db=database();const {data:group}=await db.from("permission_groups").select("id").eq("id",groupId).eq("business_id",access.membership!.business_id).maybeSingle();if(!group)return jsonError("Role not found.",404);
+ const db=database();const {data:group}=await db.from("permission_groups").select("id,name,is_system").eq("id",groupId).eq("business_id",access.membership!.business_id).maybeSingle();if(!group)return jsonError("Role not found.",404);if(["owner","website developer"].includes(group.name.toLowerCase()))return jsonError("The Owner and Website Developer usergroups are protected and retain complete permissions.",403);
  const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some((k:string)=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
  const {error:deleteError}=await db.from("permission_group_permissions").delete().eq("group_id",groupId);if(deleteError)return jsonError("Could not update role permissions.",500);
  if(keys.length){const {error}=await db.from("permission_group_permissions").insert(keys.map((permission_key:string)=>({group_id:groupId,permission_key})));if(error)return jsonError("Could not update role permissions.",500);}
