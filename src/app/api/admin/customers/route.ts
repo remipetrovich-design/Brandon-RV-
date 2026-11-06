@@ -9,7 +9,7 @@ export async function POST(request:Request){
   const email=normalizeEmail(String(body.email??""));
   const phone=String(body.phone??"").trim(),address=String(body.address??"").trim(),suburb=String(body.suburb??"").trim(),state=String(body.state??"").trim(),postcode=String(body.postcode??"").trim();
   if(!firstName||!lastName||firstName.length>120||lastName.length>120)return jsonError("Enter the customer's first and last name.");
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
   if(phone.length>40||address.length>500||suburb.length>120||state.length>80||postcode.length>12)return jsonError("One or more contact details exceed the allowed length.");
   const db=database(),businessId=access.membership!.business_id;
   const {data:existing}=await db.from("users").select("id").eq("email",email).maybeSingle();
