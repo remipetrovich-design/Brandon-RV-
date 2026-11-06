@@ -1,6 +1,7 @@
 import {currentUser,currentMembership,database,userHasPermission,userHasPermissions,jsonError,sameOrigin,normalizeEmail} from "@/lib/auth";
 export const runtime="nodejs";
 const PROFILE_FIELDS=["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"] as const;
+const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
 const textFields=new Set(["first_name","last_name","full_name","date_of_birth","email","phone","address","suburb","state","postcode","customer_internal_notes","customer_status","status"]);
 async function access(permission:string){const user=await currentUser();if(!user)return {user:null,membership:null,error:jsonError("Not signed in.",401)};const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,permission)))return {user,membership,error:jsonError("You do not have permission to access this customer.",403)};return {user,membership,error:null};}
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
@@ -55,7 +56,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(!textFields.has(field)||typeof body[field]!=="string")return jsonError("Invalid customer field: "+field);
    let value=String(body[field]).trim();
    if(field==="status")continue;
-   if(field==="date_of_birth"&&value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value)>new Date()))return jsonError("Enter a valid date of birth.");
+   if(field==="date_of_birth"&&value&&!isValidBirthDate(value))return jsonError("Enter a valid date of birth.");
    if(field==="email"){value=normalizeEmail(value);if(value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return jsonError("Enter a valid email address.");}
    if(field==="full_name"&&!value)return jsonError("Customer name is required.");
    if((field==="first_name"||field==="last_name")&&value.length>120)return jsonError("Names must be 120 characters or fewer.");
