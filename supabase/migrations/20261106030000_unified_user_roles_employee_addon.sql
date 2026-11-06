@@ -158,7 +158,7 @@ WHERE u.employment_status IS NOT NULL;
 -- Removing a customer from the customer list deactivates the customer profile;
 -- it never deletes the login or an employee addon.
 CREATE OR REPLACE FUNCTION public.brandon_rv_customers_view_write()
-RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$
 DECLARE
   v_id uuid;
   v_full_name text;
@@ -233,7 +233,7 @@ BEGIN
     new.user_id:=old.id;
     RETURN new;
   END IF;
-END $;
+END $$;
 
 UPDATE public.user_invitations SET expires_at=now() WHERE account_type='staff' AND accepted_at IS NULL;
 
