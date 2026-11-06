@@ -22,7 +22,7 @@ Employment is an optional addon on the same user row. It stores employment type/
 
 Vehicles, enquiries, quotes, appointments, jobs, invoices, payments and documents remain separate operational records linked to the same user/customer ID. The customer and employee screens are different views of that one identity.
 
-Global role permissions are stored in \`user_roles\` and \`user_role_permissions\`. Owner and Website Developer have unrestricted application access. Legacy business-membership and permission-group tables are retained for migration compatibility, but runtime authentication and permission checks no longer depend on business roles or business memberships. Role-level permissions are migrated; member-specific extra permission groups are not merged into shared roles, avoiding accidental permission escalation.
+Global role permissions are stored in \`user_roles\` and \`user_role_permissions\`. Owner and Website Developer have unrestricted application access. Legacy business-membership and permission-group tables are retained for migration compatibility, but runtime authentication and permission checks no longer depend on business roles or business memberships. Role-level and member-specific permissions are migrated into global roles; distinct effective permission sets receive separate shared synthetic roles so one employee's extra permissions are not granted to everyone with the same base role.
 
 ## Supabase migrations
 
