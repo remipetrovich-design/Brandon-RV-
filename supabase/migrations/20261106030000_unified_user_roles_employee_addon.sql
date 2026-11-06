@@ -107,7 +107,7 @@ WHERE secondary_group IS DISTINCT FROM 'staff'
   AND NOT EXISTS (SELECT 1 FROM public.business_members bm WHERE bm.user_id=users.id);
 
 -- Normalize every legacy account into the single customer identity model.
-UPDATE public.users SET account_type='customer', secondary_group=NULL WHERE account_type IS DISTINCT FROM 'customer' OR secondary_group IS NOT NULL;
+UPDATE public.users SET primary_group='customer', account_type='customer', secondary_group=NULL WHERE primary_group IS DISTINCT FROM 'customer' OR account_type IS DISTINCT FROM 'customer' OR secondary_group IS NOT NULL;
 
 ALTER TABLE public.users ALTER COLUMN employment_status DROP DEFAULT;
 ALTER TABLE public.users ALTER COLUMN employment_status DROP NOT NULL;
@@ -126,6 +126,7 @@ ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_pay_rate_check;
 ALTER TABLE public.users ADD CONSTRAINT users_pay_rate_check CHECK (pay_rate IS NULL OR pay_rate >= 0);
 
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_user_role_fkey;
+ALTER TABLE public.users ALTER COLUMN user_role SET DEFAULT NULL;
 ALTER TABLE public.users ADD CONSTRAINT users_user_role_fkey
   FOREIGN KEY (user_role) REFERENCES public.user_roles(role_key) ON DELETE SET NULL;
 
