@@ -16,7 +16,7 @@ export async function POST(request:Request){
  if(["owner","website_developer","customer"].includes(key))return jsonError("This role name is reserved.");
  const db=database();const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
  const {data:role,error}=await db.from("user_roles").insert({role_key:key,name,description:description||null,is_system:false}).select("role_key,name,description,is_system").single();if(error||!role)return jsonError("Could not create user role.",500);
- if(keys.length){const {error:mapError}=await db.from("user_role_permissions").insert(keys.map(permission_key=>({role_key:key,permission_key})));if(mapError){await db.from("user_roles").delete().eq("role_key",key);return jsonError("Could not save role permissions.",500);}}
+ if(keys.length){const {error:mapError}=await db.rpc("set_user_role_permissions",{p_role_key:key,p_permission_keys:keys});if(mapError){await db.from("user_roles").delete().eq("role_key",key);return jsonError("Could not save role permissions.",500);}}
  return Response.json({group:{id:role.role_key,name:role.name,description:role.description,is_system:role.is_system,permissions:keys}},{status:201});
  }catch{return jsonError("Could not create user role.",500);}
 }
