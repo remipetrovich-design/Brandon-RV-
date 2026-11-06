@@ -2,6 +2,7 @@ import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const roleKeys=["owner","website_developer"];
+const staffRoleKeys=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
 const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
@@ -11,7 +12,7 @@ export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id;
  const [{data:employees,error},{data:roles,error:roleError}]=await Promise.all([
-  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").neq("employment_status","terminated").order("full_name"),
+  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").order("full_name"),
   db.from("user_roles").select("role_key,name,description,is_system").order("name")
  ]);
  if(error||roleError)return jsonError("Could not load the employee directory.",500);
@@ -20,7 +21,7 @@ export async function GET(){
  if(customerError)return jsonError("Could not match staff to their customer profiles.",500);
  const customerByUser=new Map((customers??[]).map(x=>[x.user_id,x.id]));
  const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id)}));
- return Response.json({employees:directory,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key)))});
+ return Response.json({employees:directory,roles:(roles??[]).filter(x=>staffRoleKeys.includes(x.role_key)&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key)))});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
@@ -34,7 +35,7 @@ export async function PATCH(request:Request){
   if(!employee)return jsonError("Employee record not found.",404);
   if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can edit this account.",403);
   const updates:any={updated_at:new Date().toISOString()};
-  if(body.userRole!==undefined){const roleKey=String(body.userRole);if(roleKey){const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",roleKey).maybeSingle();if(!role)return jsonError("Select a valid user role.");if(roleKeys.includes(roleKey)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can assign this role.",403);updates.user_role=roleKey;}else updates.user_role=null;}
+  if(body.userRole!==undefined){const roleKey=String(body.userRole);if(roleKey){if(!staffRoleKeys.includes(roleKey))return jsonError("Select one of the available Brandon RV staff titles.");const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",roleKey).maybeSingle();if(!role)return jsonError("Select a valid user role.");if(roleKeys.includes(roleKey)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can assign this role.",403);updates.user_role=roleKey;}else updates.user_role=null;}
   if(body.employmentStatus!==undefined){const value=String(body.employmentStatus);if(!employmentStatuses.includes(value))return jsonError("Select a valid employment status.");updates.employment_status=value;if(value==="terminated")updates.user_role=null;}
   if(body.employmentType!==undefined){const value=String(body.employmentType);if(!employmentTypes.includes(value))return jsonError("Select a valid employment type.");updates.employment_type=value;}
   if(body.jobTitle!==undefined){const value=String(body.jobTitle).trim();if(value.length>100)return jsonError("Job title must be 100 characters or fewer.");updates.job_title=value||null;}
