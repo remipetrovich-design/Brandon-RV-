@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,existsSync} from "node:fs";
 
 const read=(path)=>readFileSync(new URL(path,import.meta.url),"utf8");
 const profile=read("../src/components/admin-customer-profile.tsx");
@@ -20,6 +20,10 @@ test("changing User Role does not write employment status, start date or staff t
 
 test("employment updates cannot change or clear User Role",()=>{
   assert.doesNotMatch(staffApi,/body\.userRole|updates\.user_role\s*=/);
+});
+
+test("the duplicate root app directory cannot shadow the real src app",()=>{
+  assert.equal(existsSync(new URL("../app/api/admin/customers/[id]/route.ts",import.meta.url)),false);
 });
 
 test("People and Access has one Workforce destination rather than anchor links to the same page",()=>{
