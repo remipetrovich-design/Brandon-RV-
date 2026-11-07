@@ -15,7 +15,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  if(error)return jsonError("Could not create a password reset link.",500);
  const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;const resetUrl=base+"/portal/reset-password?token="+encodeURIComponent(token);
  const safeName=String(user.full_name??customer.full_name??"Customer").replace(/[&<>"]/g,"");
- const emailSent=isEmailConfigured()?await sendEmail({to:user.email,subject:"Your Brandon RV password reset link",html:"<p>Hi "+safeName+",</p><p>An authorised Brandon RV team member requested a password reset link for your account.</p><p><a href=\""+resetUrl+"\">Choose a new password</a></p><p>This link expires in one hour. If you did not request this, contact Brandon RV.</p>"}):false;
+ const emailSent=isEmailConfigured()?await sendEmail({sender:"noreply",to:user.email,subject:"Your Brandon RV password reset link",html:"<p>Hi "+safeName+",</p><p>An authorised Brandon RV team member requested a password reset link for your account.</p><p><a href=\\""+resetUrl+"\\">Choose a new password</a></p><p>This link expires in one hour. If you did not request this, contact Brandon RV.</p>"}):false;
  await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:"customer.password_reset_link_created",entity_type:"customer",entity_id:customer.id,details:{email_sent:emailSent,expires_at:expiresAt}});
  return Response.json({resetUrl,emailSent,expiresAt});
 }
