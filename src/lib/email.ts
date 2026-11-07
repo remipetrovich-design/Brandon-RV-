@@ -1,14 +1,26 @@
 import "server-only";
 
-type EmailInput = { to: string; subject: string; html: string };
+export type EmailSender = "noreply" | "system" | "brandonrv";
+
+type EmailInput = {
+  sender: EmailSender;
+  to: string;
+  subject: string;
+  html: string;
+};
+
+const SENDER_ADDRESSES: Record<EmailSender, string> = {
+  noreply: "noreply@incendiarynetworks.cc",
+  system: "system@incendiarynetworks.cc",
+  brandonrv: "brandonrv@incendiarynetworks.cc",
+};
 
 function mailConfig() {
   const baseUrl = process.env.ORBITFS_MAIL_URL?.trim().replace(/\/+$/, "");
   const apiKey = process.env.BRANDONSRV_MAIL_API_KEY?.trim();
-  const fromAddress = process.env.BRANDON_RV_MAIL_FROM?.trim();
 
-  if (!baseUrl || !apiKey || !fromAddress) return null;
-  return { baseUrl, apiKey, fromAddress };
+  if (!baseUrl || !apiKey) return null;
+  return { baseUrl, apiKey };
 }
 
 function plainTextFromHtml(html: string) {
@@ -32,8 +44,8 @@ export function isEmailConfigured() {
 }
 
 /**
- * Brandon RV owns and renders its email templates. This adapter forwards the
- * finished content to OrbitFS Mail, which owns mailbox validation and delivery.
+ * Brandon RV owns the templates and chooses the sender identity.
+ * OrbitFS Mail validates the selected mailbox and performs delivery.
  */
 export async function sendEmail(input: EmailInput) {
   const config = mailConfig();
@@ -47,7 +59,7 @@ export async function sendEmail(input: EmailInput) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from_address: config.fromAddress,
+        from_address: SENDER_ADDRESSES[input.sender],
         to: input.to,
         subject: input.subject,
         html: input.html,
