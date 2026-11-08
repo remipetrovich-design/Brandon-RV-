@@ -72,6 +72,7 @@ const EVENT_ALIASES:Record<string,string>={
   password_changed:"customer.password_changed",
   welcome:"customer.account_activated",
   enquiry_received:"customer.enquiry_received",
+  staff_invitation:"staff.invitation_sent",
 };
 
 /** Render and send every enabled template attached to the matching system event. */
