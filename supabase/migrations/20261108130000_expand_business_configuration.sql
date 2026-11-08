@@ -10,3 +10,15 @@ alter table public.service_areas
 
 comment on column public.services.price_from is 'Optional starting price in AUD; null means quote on request.';
 comment on column public.services.pricing_label is 'Optional customer-facing pricing note, e.g. From $120 or Quote required.';
+
+-- The old business-plan seed rows were only proposed examples. Start the live
+-- catalogue empty so Chris can enter the services Brandon RV actually offers.
+delete from public.services
+where slug in (
+  'minor-cabinetry-interior-hardware',
+  'living-area-accessories-fittings',
+  '12v-24v-accessories',
+  'water-systems',
+  'awnings-insurance-work'
+)
+and is_published = false;
