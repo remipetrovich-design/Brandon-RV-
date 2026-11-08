@@ -1,5 +1,12 @@
 import {currentUser,database,digest,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
+export async function GET(request:Request){
+ const token=new URL(request.url).searchParams.get("token")??"";
+ if(token.length<32||token.length>200)return jsonError("Invalid invitation link.");
+ const {data:invite}=await database().from("staff_invitations").select("email,role_key,job_title,expires_at,accepted_at,revoked_at").eq("token_hash",digest(token)).maybeSingle();
+ if(!invite||invite.accepted_at||invite.revoked_at||invite.expires_at<=new Date().toISOString())return jsonError("This invitation is invalid, expired or already used.",410);
+ return Response.json({email:invite.email,role:invite.role_key,jobTitle:invite.job_title,expiresAt:invite.expires_at});
+}
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const signedInUser=await currentUser();if(!signedInUser)return jsonError("Sign in to your customer account before accepting this invitation.",401);
