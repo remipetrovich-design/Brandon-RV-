@@ -35,17 +35,14 @@ jobs:
           test -n "$SUPABASE_DB_PASSWORD" || (echo "::error::Missing SUPABASE_DB_PASSWORD repository secret" && exit 1)
           test -n "$SUPABASE_PROJECT_ID" || (echo "::error::Missing SUPABASE_PROJECT_ID repository secret" && exit 1)
 
-      - name: Install Supabase CLI
-        shell: bash
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Supabase CLI from npm
         run: |
-          archive="$RUNNER_TEMP/supabase-cli.tar.gz"
-          install_dir="$RUNNER_TEMP/supabase-cli"
-          mkdir -p "$install_dir"
-          curl --fail --location --retry 6 --retry-all-errors --retry-delay 5 \
-            "https://github.com/supabase/cli/releases/download/v2.122.1/supabase_2.122.1_linux_amd64.tar.gz" \
-            --output "$archive"
-          tar -xzf "$archive" -C "$install_dir"
-          sudo install -m 0755 "$install_dir/supabase" /usr/local/bin/supabase
+          npm install --global --no-audit --no-fund supabase@2.122.1
           supabase --version
 
       - name: Link production project
