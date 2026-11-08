@@ -62,7 +62,7 @@ export async function POST(request:Request){
   const token=newToken();const tokenHash=digest(token);
   const {error:tokenError}=await db.from("email_verification_tokens").insert({user_id:user.id,token_hash:tokenHash,expires_at:new Date(Date.now()+86400000).toISOString()});
   if(tokenError){await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Could not start email verification.",500);}
-  const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
+  const base=process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\\/+$/,"")||"https://brandon-rv.vercel.app";
   const link=base+"/portal/verify-email?token="+encodeURIComponent(token)+(staffInvitation?"&invitation_token="+encodeURIComponent(invitationToken):"");
   const sent=await sendBrandonRvTemplateEmail({templateId:"verify_account",sender:"noreply",to:email,variables:{firstname:firstName,lastname:lastName,verification_url:link,expiry_time:"24 hours"}});
   if(!sent){await db.from("email_verification_tokens").delete().eq("token_hash",tokenHash);await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Email delivery failed. Please try again later or contact Brandon RV.",503);}
