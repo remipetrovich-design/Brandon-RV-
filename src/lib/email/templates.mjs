@@ -414,7 +414,8 @@ export function renderBrandonRvEmail(templateId, variables = {}, overrides = {})
   const phone = text(vars.business_phone);
   const email = text(vars.business_email);
   const siteName = text(vars.site_name);
-  const noreplyNotice = vars.sender_type === "noreply" ? `<div style="margin:0 0 22px;padding:12px 15px;background:#fff8e8;border:1px solid #f2e3bd;color:#70551b;font-size:12px;line-height:1.6;"><strong>Unmonitored email address:</strong> This mailbox is not monitored. Replies to this email or messages sent to this address will not be read. Please contact Brandon RV using the details in the footer.</div>` : "";\n  const content = [
+  const noreplyNotice = vars.sender_type === "noreply" ? `<div style="margin:0 0 22px;padding:12px 15px;background:#fff8e8;border:1px solid #f2e3bd;color:#70551b;font-size:12px;line-height:1.6;"><strong>Unmonitored email address:</strong> This mailbox is not monitored. Replies to this email or messages sent to this address will not be read. Please contact Brandon RV using the details in the footer.</div>` : "";
+  const content = [
     `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.75;">${intro}</p>`,
     `<p style="margin:0 0 18px;color:#334155;font-size:15px;line-height:1.75;">${body}</p>`,
     detailsHtml, bulletsHtml, messageHtml, extra, cta, noteHtml,
