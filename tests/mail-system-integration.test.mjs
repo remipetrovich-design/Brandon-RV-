@@ -8,31 +8,33 @@ const productionSetup = await readFile(new URL("../docs/PRODUCTION_SETUP.md", im
 const registrationRoute = await readFile(new URL("../src/app/api/auth/register/route.ts", import.meta.url), "utf8");
 const passwordRoute = await readFile(new URL("../src/app/api/auth/forgot-password/route.ts", import.meta.url), "utf8");
 
-test("Brandon RV selects an authorised sender identity for each email", () => {
+test("Brandon RV resolves its sender from the existing External System before every send", () => {
   assert.match(emailClient, /ORBITFS_MAIL_URL/);
   assert.match(emailClient, /BRANDONSRV_MAIL_API_KEY/);
-  assert.match(emailClient, /noreply@incendiarynetworks\.cc/);
-  assert.match(emailClient, /system@incendiarynetworks\.cc/);
-  assert.match(emailClient, /brandonrv@incendiarynetworks\.cc/);
-  assert.match(emailClient, /from_address/);
+  assert.match(emailClient, /\\/api\\/mail\\/senders/);
+  assert.match(emailClient, /from_address:\\s*fromAddress/);
   assert.match(emailClient, /Authorization.*Bearer/);
+  assert.doesNotMatch(emailClient, /noreply@incendiarynetworks\\.cc/);
+  assert.doesNotMatch(emailClient, /system@incendiarynetworks\\.cc/);
+  assert.doesNotMatch(emailClient, /brandonrv@incendiarynetworks\\.cc/);
   assert.doesNotMatch(emailClient, /BRANDON_RV_MAIL_FROM/);
-  assert.doesNotMatch(emailClient, /api\.resend\.com/);
+  assert.doesNotMatch(emailClient, /api\\.resend\\.com/);
   assert.doesNotMatch(emailClient, /RESEND_API_KEY/);
   assert.match(registrationRoute, /sender:"noreply"/);
   assert.match(passwordRoute, /sender:"noreply"/);
 });
 
-test("Brandon RV documents the central mail integration and mailbox responsibilities", () => {
+test("Brandon RV documents the central mail integration without duplicating sender addresses", () => {
   assert.match(envExample, /ORBITFS_MAIL_URL=/);
   assert.match(envExample, /BRANDONSRV_MAIL_API_KEY=/);
   assert.doesNotMatch(envExample, /BRANDON_RV_MAIL_FROM=/);
   assert.doesNotMatch(envExample, /RESEND_API_KEY=/);
-  assert.match(productionSetup, /noreply@incendiarynetworks\.cc/);
-  assert.match(productionSetup, /system@incendiarynetworks\.cc/);
-  assert.match(productionSetup, /brandonrv@incendiarynetworks\.cc/);
   assert.match(productionSetup, /External systems/);
   assert.match(productionSetup, /send-only/);
+  assert.match(productionSetup, /sender address/);
+  assert.doesNotMatch(productionSetup, /noreply@incendiarynetworks\\.cc/);
+  assert.doesNotMatch(productionSetup, /system@incendiarynetworks\\.cc/);
+  assert.doesNotMatch(productionSetup, /brandonrv@incendiarynetworks\\.cc/);
 });
 
 const verificationRoute = await readFile(new URL("../src/app/api/auth/verify-email/route.ts", import.meta.url), "utf8");
@@ -40,24 +42,24 @@ const resetCompletionRoute = await readFile(new URL("../src/app/api/auth/reset-p
 const templates = await readFile(new URL("../src/lib/email/templates.mjs", import.meta.url), "utf8");
 
 test("registration sends the branded mandatory email verification template", () => {
-  assert.match(registrationRoute, /renderBrandonRvEmail\("verify_account"/);
+  assert.match(registrationRoute, /renderBrandonRvEmail\\("verify_account"/);
   assert.match(registrationRoute, /verification_url:link/);
   assert.match(registrationRoute, /sender:"noreply"/);
-  assert.match(registrationRoute, /status:verificationEnabled\?"pending":"active"/);
+  assert.match(registrationRoute, /status:verificationEnabled\\?"pending":"active"/);
   assert.match(templates, /verify_account:/);
 });
 
 test("password recovery sends the branded reset template and security confirmation", () => {
-  assert.match(passwordRoute, /renderBrandonRvEmail\("forgot_password"/);
+  assert.match(passwordRoute, /renderBrandonRvEmail\\("forgot_password"/);
   assert.match(passwordRoute, /reset_url:link/);
-  assert.match(resetCompletionRoute, /renderBrandonRvEmail\("password_changed"/);
+  assert.match(resetCompletionRoute, /renderBrandonRvEmail\\("password_changed"/);
   assert.match(resetCompletionRoute, /sender:"noreply"/);
   assert.match(templates, /forgot_password:/);
   assert.match(templates, /password_changed:/);
 });
 
 test("verified customers automatically receive the welcome email", () => {
-  assert.match(verificationRoute, /renderBrandonRvEmail\("welcome"/);
+  assert.match(verificationRoute, /renderBrandonRvEmail\\("welcome"/);
   assert.match(verificationRoute, /sender:"noreply"/);
   assert.match(verificationRoute, /await createSession/);
   assert.match(templates, /welcome:/);
