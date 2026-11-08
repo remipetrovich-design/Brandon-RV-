@@ -8,11 +8,13 @@ const productionSetup = await readFile(new URL("../docs/PRODUCTION_SETUP.md", im
 const registrationRoute = await readFile(new URL("../src/app/api/auth/register/route.ts", import.meta.url), "utf8");
 const passwordRoute = await readFile(new URL("../src/app/api/auth/forgot-password/route.ts", import.meta.url), "utf8");
 
-test("Brandon RV resolves its sender from the existing External System before every send", () => {
+test("Brandon RV resolves assigned sender addresses from the existing External System", () => {
   assert.match(emailClient, /ORBITFS_MAIL_URL/);
   assert.match(emailClient, /BRANDONSRV_MAIL_API_KEY/);
   assert.match(emailClient, /\/api\/mail\/senders/);
   assert.match(emailClient, /from_address:\s*fromAddress/);
+  assert.match(emailClient, /address\.split\("@"\)\[0\] === input\.sender/);
+  assert.match(emailClient, /senderData\.sender/);
   assert.match(emailClient, /Authorization.*Bearer/);
   assert.doesNotMatch(emailClient, /noreply@incendiarynetworks\.cc/);
   assert.doesNotMatch(emailClient, /system@incendiarynetworks\.cc/);
