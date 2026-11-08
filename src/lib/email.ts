@@ -35,7 +35,7 @@ export async function getAvailableEmailSenders():Promise<EmailSenderMailbox[]> {
     return (data?.senders??[]).flatMap((item)=>{
       const id=typeof item.id==="string"?item.id:"";
       const address=typeof item.address==="string"?item.address.trim().toLowerCase():"";
-      return id&&/^[^\s@]+@incendiarynetworks\.cc$/i.test(address)?[{id,address}]:[];
+      return id&&/^[^\s@]+@[^\\s@]+\\.\.cc$/i.test(address)?[{id,address}]:[];
     });
   } catch {return [];}
 }
@@ -49,7 +49,7 @@ export async function sendEmail(input:EmailInput) {
     const available=(data.senders??[]).flatMap((item)=>{
       const id=typeof item.id==="string"?item.id:"";
       const address=typeof item.address==="string"?item.address.trim().toLowerCase():"";
-      return id&&/^[^\s@]+@incendiarynetworks\.cc$/i.test(address)?[{id,address}]:[];
+      return id&&/^[^\s@]+@[^\\s@]+\\.\.cc$/i.test(address)?[{id,address}]:[];
     });
     let fromAddress="";
     if(input.senderMailboxId) {
@@ -60,7 +60,7 @@ export async function sendEmail(input:EmailInput) {
       const defaultSender=typeof data.sender==="string"?data.sender.trim().toLowerCase():"";
       fromAddress=roleSender||defaultSender;
     }
-    if(!/^[^\s@]+@incendiarynetworks\.cc$/i.test(fromAddress))return false;
+    if(!/^[^\s@]+@[^\\s@]+\\.\.cc$/i.test(fromAddress))return false;
     const response=await fetch(config.baseUrl+"/api/mail",{method:"POST",headers:{Authorization:"Bearer "+config.apiKey,"Content-Type":"application/json"},body:JSON.stringify({from_address:fromAddress,to:input.to,subject:input.subject,html:input.html,text:plainTextFromHtml(input.html)}),cache:"no-store"});
     return response.ok;
   } catch {return false;}
