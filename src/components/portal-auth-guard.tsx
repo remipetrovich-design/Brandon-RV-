@@ -2,7 +2,7 @@
 import {usePathname,useRouter} from "next/navigation";
 import {ReactNode,useEffect,useState} from "react";
 
-const publicPages=["/portal/sign-in","/portal/register","/portal/verify-email","/portal/forgot-password","/portal/reset-password"];
+const publicPages=["/portal/sign-in","/portal/register","/portal/verify-email","/portal/forgot-password","/portal/reset-password","/portal/accept-staff-invitation"];
 
 export default function PortalAuthGuard({children}:{children:ReactNode}){
  const pathname=usePathname();
