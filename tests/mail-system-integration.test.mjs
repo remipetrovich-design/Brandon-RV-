@@ -19,8 +19,10 @@ test("Brandon RV selects an authorised sender identity for each email", () => {
   assert.doesNotMatch(emailClient, /BRANDON_RV_MAIL_FROM/);
   assert.doesNotMatch(emailClient, /api\.resend\.com/);
   assert.doesNotMatch(emailClient, /RESEND_API_KEY/);
-  assert.match(registrationRoute, /sender:"noreply"/);
-  assert.match(passwordRoute, /sender:"noreply"/);
+  assert.match(registrationRoute, /sendTemplateEmail/);
+  assert.match(registrationRoute, /key:"account_verification"/);
+  assert.match(passwordRoute, /sendTemplateEmail/);
+  assert.match(passwordRoute, /key:"password_reset"/);
 });
 
 test("Brandon RV documents the central mail integration and mailbox responsibilities", () => {
