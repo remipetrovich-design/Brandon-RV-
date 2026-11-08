@@ -1,4 +1,6 @@
 import "server-only";
+import {database} from "@/lib/auth";
+import {renderBrandonRvEmail} from "@/lib/email/templates.mjs";
 
 export type EmailSender = "noreply" | "system" | "brandonrv";
 
@@ -72,4 +74,41 @@ export async function sendEmail(input: EmailInput) {
   } catch {
     return false;
   }
+}
+
+
+/**
+ * Render and send a branded transactional email, applying business-managed
+ * wording overrides when configured. Security notifications always send.
+ */
+export async function sendBrandonRvTemplateEmail(input:{
+  templateId:string;
+  sender:EmailSender;
+  to:string;
+  variables:Record<string,unknown>;
+}) {
+  let overrides:Record<string,string>={};
+  try {
+    const db=database();
+    const {data:business}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();
+    if(business) {
+      const {data:template}=await db.from("email_templates")
+        .select("subject,title,intro,body,button_label,enabled,is_security")
+        .eq("business_id",business.id).eq("template_key",input.templateId).maybeSingle();
+      if(template) {
+        if(!template.enabled&&!template.is_security)return true;
+        overrides={
+          subject:template.subject,
+          title:template.title,
+          intro:template.intro,
+          body:template.body,
+          cta:template.button_label,
+        };
+      }
+    }
+  } catch {
+    // Fall back to the bundled branded template if the optional overrides are unavailable.
+  }
+  const message=renderBrandonRvEmail(input.templateId,input.variables,overrides);
+  return sendEmail({sender:input.sender,to:input.to,subject:message.subject,html:message.html});
 }
