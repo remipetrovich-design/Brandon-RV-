@@ -24,7 +24,8 @@ ALTER TABLE public.email_templates
     'customer.password_reset_requested',
     'customer.password_changed',
     'customer.account_activated',
-    'customer.enquiry_received'
+    'customer.enquiry_received',
+    'staff.invitation_sent'
   )),
   ADD CONSTRAINT email_templates_security_event_check CHECK (
     event_key NOT IN (
@@ -41,3 +42,14 @@ COMMENT ON COLUMN public.email_templates.event_key IS
   'Registered system event/function that automatically sends this template.';
 COMMENT ON COLUMN public.email_templates.sender_mailbox_id IS
   'Mailbox ID assigned to the Brandon RV external system in OrbitFS Mail. NULL uses the system default sender.';
+
+INSERT INTO public.email_templates (business_id,template_key,event_key,subject,title,intro,body,button_label,enabled,is_security)
+SELECT b.id,'staff_invitation','staff.invitation_sent',
+  '{inviter_name} invited you to join {site_name}',
+  'You''re invited to join the Brandon RV team',
+  'Hi {firstname},',
+  '{inviter_name} has invited you to join Brandon RV as {staff_role}. Position: {job_title}. Follow the invitation link to sign in to your existing customer account or create a customer account with this email address, then accept your staff access.',
+  'Accept staff invitation',true,false
+FROM public.businesses b
+WHERE b.slug='brandon-rv'
+ON CONFLICT (business_id,template_key) DO NOTHING;
