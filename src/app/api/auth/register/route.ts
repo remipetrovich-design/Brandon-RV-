@@ -53,8 +53,7 @@ export async function POST(request:Request){
   if(tokenError){await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Could not start email verification.",500);}
   const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
   const link=base+"/portal/verify-email?token="+encodeURIComponent(token);
-  const safeName=fullName.replace(/[&<>"]/g,"");
-  const sent=await sendEmail({sender:"noreply",to:email,subject:"Verify your Brandon RV account",html:"<p>Hi "+safeName+",</p><p>Confirm your email address to activate your Brandon RV customer account.</p><p><a href=\""+link+"\">Verify email address</a></p><p>This link expires in 24 hours. If you did not create this account, ignore this email.</p>"});
+  const sent=await sendTemplateEmail({key:"account_verification",to:email,name:fullName,buttonUrl:link});
   if(!sent){await db.from("email_verification_tokens").delete().eq("token_hash",tokenHash);await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Email delivery failed. Please try again later or contact Brandon RV.",503);}
   return Response.json({verificationRequired:true,message:"Check your email for a verification link."},{status:201});
  }catch{return jsonError("Registration is temporarily unavailable.",500);}
