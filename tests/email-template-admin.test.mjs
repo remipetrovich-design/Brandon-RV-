@@ -22,7 +22,7 @@ test("transactional email overrides are business-scoped and server-only",()=>{
  assert.match(migration,/ENABLE ROW LEVEL SECURITY/);
  assert.match(migration,/REVOKE ALL ON public\.email_templates FROM anon, authenticated/);
  assert.match(email,/from\("email_templates"\)/);
- assert.match(email,/!template\.enabled&&!template\.is_security/);
+ assert.match(email,/template\.enabled\|\|template\.is_security/);
 });
 test("account security notifications cannot be disabled",()=>{
  assert.match(eventMigration,/customer\.registration_verification/);
@@ -40,7 +40,7 @@ test("templates can be created, edited, deleted and linked to registered system 
  assert.match(api,/export async function PATCH/);
  assert.match(api,/export async function DELETE/);
  assert.match(api,/event_key/);
- assert.match(migration,/event_key text/);
+ assert.match(eventMigration,/event_key text/);
  assert.match(eventMigration,/registered system event\/function/);
 });
 test("custom templates can use the branded renderer without a bundled template definition",()=>{
