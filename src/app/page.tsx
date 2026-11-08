@@ -67,7 +67,7 @@ export default async function HomePage() {
     </div></section>
 
     <section className="section services-section"><div className="shell">
-      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> OUR SERVICES</p><h2>Small repairs.<br/><em>More time on the road.</em></h2></div><p className="section-lead">These are the services Brandon RV currently offers. Contact Chris to discuss your requirements or ask about something not listed.</p></div>
+      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> OUR SERVICES</p><h2>Services that keep you<br/><em>more time on the road.</em></h2></div><p className="section-lead">These are the services Brandon RV currently offers. Contact Chris to discuss your requirements or ask about something not listed.</p></div>
       {services.length?<div className="service-grid">{services.map((service,index)=><article className="service-card" key={service.title}><span className="service-number">{String(index+1).padStart(2,"0")}</span><span className="service-arrow" aria-hidden="true">↗</span><h3>{service.title}</h3><p>{service.description}</p></article>)}</div>:<p>Our service list is being updated. Contact Chris to discuss what you need.</p>}
       <div className="section-link-row"><Link href="/services" className="text-link">Explore service information <span aria-hidden="true">→</span></Link></div>
     </div></section>
@@ -87,13 +87,13 @@ export default async function HomePage() {
       <div className="home-value-grid">
         <article className="home-value-card"><span>01</span><h3>Understand the issue</h3><p>Vehicle details, photos and a clear description help identify the right next step.</p></article>
         <article className="home-value-card"><span>02</span><h3>Agree before work</h3><p>Scope, costs, parts and any changes are discussed and approved before work proceeds.</p></article>
-        <article className="home-value-card"><span>03</span><h3>Know the limits</h3><p>If a job needs a different approach, Chris will explain the options.</p></article>
+        <article className="home-value-card"><span>03</span><h3>Straightforward updates</h3><p>Chris keeps you informed about the job, timing and next steps.</p></article>
       </div>
     </div></section>
 
     <section className="home-final-cta"><div className="shell home-final-cta-inner">
       <div><p className="eyebrow"><span className="eyebrow-line"/> HAVE A JOB IN MIND?</p><h2>Start with the details. We’ll help work out the next step.</h2><p>Share your vehicle, location and what needs attention.</p></div>
-      <div className="home-final-cta-actions"><Link className="button button-primary" href="/request-quote">Request a quote <span aria-hidden="true">→</span></Link><Link className="button button-secondary" href="/faq">Read the FAQs</Link></div>
+      <div className="home-final-cta-actions">{businessSettings.accepting_enquiries?<Link className="button button-primary" href="/request-quote">Request a quote <span aria-hidden="true">→</span></Link>:<span className="button button-secondary" aria-disabled="true">Enquiries temporarily unavailable</span>}<Link className="button button-secondary" href="/faq">Read the FAQs</Link></div>
     </div></section>
   </main>;
 }
