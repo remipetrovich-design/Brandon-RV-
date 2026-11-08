@@ -88,9 +88,11 @@ export async function sendBrandonRvTemplateEmail(input:{
         .select("template_key,event_key,subject,title,intro,body,button_label,enabled,is_security,sender_mailbox_id")
         .eq("business_id",business.id).eq("event_key",eventKey);
       if(!error&&templates?.length) {
-        const active=templates.filter((template)=>template.enabled||template.is_security);\n        const mailboxes=await getAvailableEmailSenders();
+        const active=templates.filter((template)=>template.enabled||template.is_security);
+        const mailboxes=await getAvailableEmailSenders();
         const results=await Promise.all(active.map(async(template)=>{
-          const selectedSender=mailboxes.find((mailbox)=>mailbox.id===template.sender_mailbox_id)?.address.split("@")[0];\n          const message=renderBrandonRvEmail(template.template_key,{...input.variables,sender_type:selectedSender??input.sender},{
+          const selectedSender=mailboxes.find((mailbox)=>mailbox.id===template.sender_mailbox_id)?.address.split("@")[0];
+          const message=renderBrandonRvEmail(template.template_key,{...input.variables,sender_type:selectedSender??input.sender},{
             subject:template.subject,title:template.title,intro:template.intro,body:template.body,cta:template.button_label,
           });
           return sendEmail({sender:input.sender,senderMailboxId:template.sender_mailbox_id,to:input.to,subject:message.subject,html:message.html});
