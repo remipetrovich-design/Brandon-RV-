@@ -9,7 +9,7 @@ const EVENTS=[
  {key:"customer.enquiry_received",label:"Website enquiry submitted",security:false,template:"enquiry_received"},
  {key:"staff.invitation_sent",label:"Staff invitation created",security:false,template:"staff_invitation"},
 ] as const;
-const SECURITY_EVENTS=new Set(EVENTS.filter(event=>event.security).map(event=>event.key));
+const SECURITY_EVENTS=new Set<string>(EVENTS.filter(event=>event.security).map(event=>event.key));
 const clean=(value:unknown,max:number)=>String(value??"").trim().slice(0,max);
 const slug=(value:string)=>value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,64);
 async function validate(body:any){
@@ -43,7 +43,7 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("business.settings.manage");if(access.response)return access.response;
  try{
-  const body=await request.json();const checked=await validate(body);if(checked.error)return jsonError(checked.error);
+  const body=await request.json();const checked=await validate(body);if(!checked.value)return jsonError(checked.error??"Invalid email template.");
   const db=database();
   const {data:template,error}=await db.from("email_templates").insert({...checked.value,business_id:access.membership!.business_id})
     .select("id,template_key,event_key,subject,title,intro,body,button_label,enabled,is_security,sender_mailbox_id,updated_at").single();
