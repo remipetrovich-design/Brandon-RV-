@@ -74,8 +74,11 @@ test("does not allow unsafe action URL protocols", () => {
   assert.doesNotMatch(email.html, /href="javascript:/);
 });
 
-test("rejects unknown template identifiers", () => {
-  assert.throws(() => renderBrandonRvEmail("not_a_template"), /Unknown Brandon RV email template/);
+test("supports custom template identifiers using managed content overrides", () => {
+  const email = renderBrandonRvEmail("not_a_template", {}, {subject:"Custom subject",title:"Custom heading",body:"Custom message"});
+  assert.equal(email.subject,"Custom subject");
+  assert.match(email.html,/Custom heading/);
+  assert.match(email.html,/Custom message/);
 });
 
 test("keeps quote replies in the common shell with the message body", () => {
