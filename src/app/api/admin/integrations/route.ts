@@ -1,4 +1,4 @@
-import {authorizePermission,jsonError} from "@/lib/auth";
+import {authorizePermission} from "@/lib/auth";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("business.settings.manage");if(access.response)return access.response;
