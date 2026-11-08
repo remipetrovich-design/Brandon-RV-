@@ -7,6 +7,7 @@ const EVENTS=[
  {key:"customer.password_changed",label:"Customer password changed",security:true,template:"password_changed"},
  {key:"customer.account_activated",label:"Customer account activated → welcome",security:false,template:"welcome"},
  {key:"customer.enquiry_received",label:"Website enquiry submitted",security:false,template:"enquiry_received"},
+ {key:"staff.invitation_sent",label:"Staff invitation created",security:false,template:"staff_invitation"},
 ] as const;
 const SECURITY_EVENTS=new Set(EVENTS.filter(event=>event.security).map(event=>event.key));
 const clean=(value:unknown,max:number)=>String(value??"").trim().slice(0,max);
