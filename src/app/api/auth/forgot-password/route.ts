@@ -6,7 +6,7 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  if(!isEmailConfigured())return jsonError("Password recovery email is not configured. Contact Brandon RV to reset your account password.",503);
  try{
-  const body=await request.json();const email=normalizeEmail(String(body.email??""));if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return jsonError("Enter a valid email address.");
+  const body=await request.json();const email=normalizeEmail(String(body.email??""));if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return jsonError("Enter a valid email address.");
   const db=database();const ip=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"unknown";const ipHash=createHash("sha256").update(ip).digest("hex");const since=new Date(Date.now()-15*60*1000).toISOString();
   const {count}=await db.from("login_attempts").select("id",{count:"exact",head:true}).eq("attempt_type","password_reset").eq("email",email).eq("ip_hash",ipHash).gte("attempted_at",since);
   if((count??0)>=5)return Response.json({message:"If an active account exists for that email, a reset link has been sent."});
