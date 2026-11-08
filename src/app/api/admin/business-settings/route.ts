@@ -18,7 +18,7 @@ export async function PATCH(request:Request){
   const customerMessage=String(input.customer_message??"").trim().slice(0,2000);
   const acceptingEnquiries=input.accepting_enquiries!==false;
   const notice=Number(input.booking_notice_hours??24);
-  if(!Number.isInteger(notice)||notice<0||notice>8760)return jsonError("Booking notice must be between 0 and 8760 hours.");
+  if(!Number.isInteger(notice)||notice<1||notice>8760)return jsonError("Booking notice must be between 1 and 8760 hours.");
   const db=database();const {data:existing}=await db.from("business_settings").select("settings").eq("business_id",access.membership!.business_id).maybeSingle();
   const previous=existing?.settings&&typeof existing.settings==="object"&&!Array.isArray(existing.settings)?existing.settings:{};
   const settings={...defaults,...previous,operating_hours:operatingHours,accepting_enquiries:acceptingEnquiries,booking_notice_hours:notice,customer_message:customerMessage};
