@@ -4,7 +4,7 @@ import AdminBusinessProfile from "@/components/admin-business-profile";
 import AdminGeneralSettings from "@/components/admin-general-settings";
 import Link from "next/link";
 export const dynamic="force-dynamic";
-const links=[{title:"Website editor",description:"Edit public website pages and preview draft content.",href:"/admin/website"},{title:"Services",description:"Manage the services shown on the public website and customer enquiry forms.",href:"/admin/services"},{title:"Service areas",description:"Manage towns, suburbs, postcodes and travel fees.",href:"/admin/service-areas"},{title:"Email templates",description:"Manage automated and customer email templates.",href:"/admin/email-templates"}];
+const links=[{title:"Website editor",description:"Edit public website pages and preview draft content.",href:"/admin/website"},{title:"Services",description:"Manage the services shown on the public website and customer enquiry forms.",href:"/admin/services"},{title:"Service areas",description:"Manage towns, suburbs, postcodes and travel fees.",href:"/admin/service-areas"},{title:"Email templates",description:"Manage automated and customer email templates.",href:"/admin/email-templates"},{title:"Integrations",description:"View connected services and configuration status.",href:"/admin/integrations"}];
 export default async function AdminSettingsPage(){
  const user=await currentUser();if(!user)redirect("/portal/sign-in");const membership=await currentMembership(user.id);if(!membership)redirect("/staff");
  if(!(await userHasPermission(user.id,"business.settings.manage")))redirect("/admin");
