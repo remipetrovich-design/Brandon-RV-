@@ -14,7 +14,7 @@ export async function POST(request:Request){
  await db.from("email_verification_tokens").delete().eq("user_id",record.user_id).neq("id",record.id);
  await createSession(record.user_id,request);
  if(user?.email){
-  const base=process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\\/+$/,"")||"https://brandon-rv.vercel.app";
+  const base= (process.env.NEXT_PUBLIC_APP_URL?.trim()||"https://brandon-rv.vercel.app").replace(/\/+$/g,"");
   await sendBrandonRvTemplateEmail({templateId:"welcome",sender:"noreply",to:user.email,variables:{firstname:user.first_name||user.full_name,portal_url:base+"/portal"}});
  }
  return Response.redirect(new URL(invitationToken?"/portal/accept-staff-invitation?token="+encodeURIComponent(invitationToken):"/portal",request.url),303);
