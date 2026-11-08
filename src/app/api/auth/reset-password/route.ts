@@ -1,6 +1,5 @@
 import { database,digest,passwordHash,jsonError,sameOrigin } from "@/lib/auth";
-import {sendEmail} from "@/lib/email";
-import {renderBrandonRvEmail} from "@/lib/email/templates.mjs";
+import {sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request)) return jsonError("Invalid request origin.",403);
@@ -15,8 +14,7 @@ export async function POST(request:Request){
   await db.from("password_reset_tokens").update({used_at:now}).eq("id",record.id);
   await db.from("user_sessions").delete().eq("user_id",record.user_id);
   if(user?.email){
-   const message=renderBrandonRvEmail("password_changed",{firstname:user.first_name||user.full_name});
-   await sendEmail({sender:"noreply",to:user.email,subject:message.subject,html:message.html});
+   await sendBrandonRvTemplateEmail({templateId:"password_changed",sender:"noreply",to:user.email,variables:{firstname:user.first_name||user.full_name}});
   }
   return Response.json({success:true,message:"Password updated. Sign in with your new password."});
  }catch{return jsonError("Password reset is temporarily unavailable.",500);}
