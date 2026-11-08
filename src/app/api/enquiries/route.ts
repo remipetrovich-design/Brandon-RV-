@@ -1,5 +1,6 @@
 import {randomUUID} from "node:crypto";
 import {currentUser,database,normalizeEmail,jsonError,sameOrigin} from "@/lib/auth";
+import {sendTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 const allowedTypes=new Set(["image/jpeg","image/png","image/webp","application/pdf"]);
 export async function POST(request:Request){
@@ -37,6 +38,7 @@ export async function POST(request:Request){
    const {error:attachmentError}=await db.from("enquiry_attachments").insert({business_id:business.id,enquiry_id:enquiry.id,uploaded_by:userId,storage_path:path,file_name:file.name.slice(0,255),mime_type:file.type,size_bytes:file.size});
    if(attachmentError){await db.storage.from("brandon-rv-private").remove(uploaded);await db.from("enquiries").delete().eq("id",enquiry.id);return jsonError("Could not save enquiry attachments.",500);}
   }
+  await sendTemplateEmail({key:"enquiry_received",to:email,name,buttonUrl:(process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin)+"/portal"});
   return Response.json({success:true,message:"Your enquiry has been sent. Brandon RV will review the details and contact you."},{status:201});
  }catch{return jsonError("Could not submit your enquiry.",500);}
 }
