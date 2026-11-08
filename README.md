@@ -73,8 +73,27 @@ See `.env.example` for the supported configuration:
 - `SUPABASE_URL` — Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only Supabase service-role key; never expose it with a `NEXT_PUBLIC_` prefix
 - `BRANDON_RV_SETUP_SECRET` — optional legacy owner-bootstrap secret
-- `NEXT_PUBLIC_APP_URL` — public application origin used for account links
-- `RESEND_API_KEY` and `EMAIL_FROM` — transactional email configuration
+- `NEXT_PUBLIC_APP_URL` — public application origin used for account and invitation links; production is `https://brandon-rv.vercel.app`
+- `ORBITFS_MAIL_URL` — base URL of the connected OrbitFS Mail service
+- `BRANDONSRV_MAIL_API_KEY` — Brandon RV Mail System API key; keep server-side only
+
+## Transactional email and staff invitations
+
+The production website origin is **https://brandon-rv.vercel.app**. Set `NEXT_PUBLIC_APP_URL` to this exact origin in the Vercel production environment. Account verification, password reset and staff invitation links use this configured origin, with the production URL as the safe fallback; they must not be generated from an API request host or preview deployment.
+
+Transactional mail is sent through the existing OrbitFS Mail integration. Configure `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` in the Vercel environment. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
+
+Administrators can create, edit and delete custom templates, attach templates to registered application events/functions, enable or disable eligible templates, and select a sender mailbox from the live sender assignments returned by OrbitFS Mail. Sender mailbox IDs are checked against the current Mail System directory before sending. Required account-security templates cannot be disabled, moved to another event or deleted.
+
+The shared email renderer applies Brandon RV branding to automated and manually-triggered template emails: branded header with the business logo and tagline, message content, and footer with logo, website, phone and email contact details, privacy/sensitive-information handling notice and copyright. Messages sent from a `noreply` mailbox display an additional notice at the top stating that the mailbox is unmonitored and replies or messages sent to it will not be read. The current shared logo asset is `public/brv-mark.webp`.
+
+### Staff invitation flow
+
+Staff invitations are created by authorised staff administrators from People/Staff management. Each invitation is single-use, expires after seven days and is tied to the invited email address and selected staff role. The invitation email uses the managed `staff_invitation` template and links to:
+
+`https://brandon-rv.vercel.app/portal/accept-staff-invitation?token=...`
+
+If the invitee already has an active customer account, they sign in with that account and accept the invitation; staff access is added to the existing identity without replacing customer records or history. If they do not have an account, they register as a customer using the invited email address. Email verification, when enabled, carries the invitation token forward; after verification they return to the invitation acceptance page. The invitation is validated again at acceptance, including email match, expiry, revocation and single-use status. The new account remains a customer account with staff access added as an employment/role extension.
 
 ## Business scope
 
