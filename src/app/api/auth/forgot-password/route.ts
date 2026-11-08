@@ -1,6 +1,6 @@
 import {createHash} from "node:crypto";
 import {database,normalizeEmail,digest,newToken,jsonError,sameOrigin} from "@/lib/auth";
-import {isEmailConfigured,sendEmail} from "@/lib/email";
+import {isEmailConfigured,sendTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
