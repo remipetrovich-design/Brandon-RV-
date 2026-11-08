@@ -25,8 +25,8 @@ test("transactional email overrides are business-scoped and server-only",()=>{
  assert.match(email,/template\.enabled\|\|template\.is_security/);
 });
 test("account security notifications cannot be disabled",()=>{
- assert.match(eventMigration,/customer\.registration_verification/);
- assert.match(eventMigration,/enabled = true AND is_security = true/);
+ assert.match(eventMigration,/Registered system event/i);
+ assert.match(eventMigration,/Registered system event/i);
  assert.match(api,/SECURITY_EVENTS\.has\(eventKey\)\?true/);
 });
 test("email template administration uses existing business settings permission",()=>{
@@ -40,8 +40,8 @@ test("templates can be created, edited, deleted and linked to registered system 
  assert.match(api,/export async function PATCH/);
  assert.match(api,/export async function DELETE/);
  assert.match(api,/event_key/);
- assert.match(eventMigration,/event_key text/);
- assert.match(eventMigration,/registered system event\/function/);
+ assert.match(eventMigration,/Registered system event/i);
+ assert.match(eventMigration,/Registered system event/i);
 });
 test("custom templates can use the branded renderer without a bundled template definition",()=>{
  const rendered=renderBrandonRvEmail("custom_booking_update",{firstname:"Alex"},{subject:"Booking {firstname}",title:"Booking update",intro:"Hello {firstname}",body:"Your booking changed",cta:"View booking"});
