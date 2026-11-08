@@ -1,6 +1,5 @@
 import { database,digest,createSession,jsonError,sameOrigin } from "@/lib/auth";
-import {sendEmail} from "@/lib/email";
-import {renderBrandonRvEmail} from "@/lib/email/templates.mjs";
+import {sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request)) return jsonError("Invalid request origin.",403);
@@ -16,8 +15,7 @@ export async function POST(request:Request){
  await createSession(record.user_id,request);
  if(user?.email){
   const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
-  const message=renderBrandonRvEmail("welcome",{firstname:user.first_name||user.full_name,portal_url:base+"/portal"});
-  await sendEmail({sender:"noreply",to:user.email,subject:message.subject,html:message.html});
+  await sendBrandonRvTemplateEmail({templateId:"welcome",sender:"noreply",to:user.email,variables:{firstname:user.first_name||user.full_name,portal_url:base+"/portal"}});
  }
  return Response.redirect(new URL("/portal",request.url),303);
 }

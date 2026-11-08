@@ -1,7 +1,6 @@
 import {createHash} from "node:crypto";
 import {database,normalizeEmail,digest,newToken,jsonError,sameOrigin} from "@/lib/auth";
-import {isEmailConfigured,sendEmail} from "@/lib/email";
-import {renderBrandonRvEmail} from "@/lib/email/templates.mjs";
+import {isEmailConfigured,sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -18,8 +17,7 @@ export async function POST(request:Request){
    const {error}=await db.from("password_reset_tokens").insert({user_id:user.id,token_hash:digest(token),expires_at:new Date(Date.now()+3600000).toISOString()});
    if(!error){
     const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;const link=base+"/portal/reset-password?token="+encodeURIComponent(token);
-    const message=renderBrandonRvEmail("forgot_password",{firstname:user.first_name||user.full_name,lastname:user.last_name,reset_url:link,expiry_time:"one hour"});
-    await sendEmail({sender:"noreply",to:user.email,subject:message.subject,html:message.html});
+    await sendBrandonRvTemplateEmail({templateId:"forgot_password",sender:"noreply",to:user.email,variables:{firstname:user.first_name||user.full_name,lastname:user.last_name,reset_url:link,expiry_time:"one hour"}});
    }
   }
   return Response.json({message:"If an active account exists for that email, a reset link has been sent."});

@@ -44,7 +44,7 @@ const resetCompletionRoute = await readFile(new URL("../src/app/api/auth/reset-p
 const templates = await readFile(new URL("../src/lib/email/templates.mjs", import.meta.url), "utf8");
 
 test("registration sends the branded mandatory email verification template", () => {
-  assert.match(registrationRoute, /renderBrandonRvEmail\("verify_account"/);
+  assert.match(registrationRoute, /sendBrandonRvTemplateEmail/);
   assert.match(registrationRoute, /verification_url:link/);
   assert.match(registrationRoute, /sender:"noreply"/);
   assert.match(registrationRoute, /status:verificationEnabled\?"pending":"active"/);
@@ -52,16 +52,16 @@ test("registration sends the branded mandatory email verification template", () 
 });
 
 test("password recovery sends the branded reset template and security confirmation", () => {
-  assert.match(passwordRoute, /renderBrandonRvEmail\("forgot_password"/);
+  assert.match(passwordRoute, /sendBrandonRvTemplateEmail/);
   assert.match(passwordRoute, /reset_url:link/);
-  assert.match(resetCompletionRoute, /renderBrandonRvEmail\("password_changed"/);
+  assert.match(resetCompletionRoute, /sendBrandonRvTemplateEmail/);
   assert.match(resetCompletionRoute, /sender:"noreply"/);
   assert.match(templates, /forgot_password:/);
   assert.match(templates, /password_changed:/);
 });
 
 test("verified customers automatically receive the welcome email", () => {
-  assert.match(verificationRoute, /renderBrandonRvEmail\("welcome"/);
+  assert.match(verificationRoute, /sendBrandonRvTemplateEmail/);
   assert.match(verificationRoute, /sender:"noreply"/);
   assert.match(verificationRoute, /await createSession/);
   assert.match(templates, /welcome:/);

@@ -388,9 +388,10 @@ export const BRANDON_RV_EMAIL_TEMPLATE_IDS = Object.freeze(Object.keys(definitio
  * @param {Record<string, unknown>} variables
  * @returns {{templateId:string, subject:string, html:string, text:string, category:string}}
  */
-export function renderBrandonRvEmail(templateId, variables = {}) {
-  const definition = definitions[templateId];
-  if (!definition) throw new Error(`Unknown Brandon RV email template: ${templateId}`);
+export function renderBrandonRvEmail(templateId, variables = {}, overrides = {}) {
+  const baseDefinition = definitions[templateId];
+  if (!baseDefinition) throw new Error(`Unknown Brandon RV email template: ${templateId}`);
+  const definition = { ...baseDefinition, ...overrides };
 
   const vars = { ...DEFAULTS, ...variables };
   const subject = interpolate(definition.subject, vars);

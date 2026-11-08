@@ -1,7 +1,6 @@
 import {createHash} from "node:crypto";
 import {database,normalizeEmail,passwordHash,digest,newToken,jsonError,sameOrigin} from "@/lib/auth";
-import {isEmailConfigured,sendEmail} from "@/lib/email";
-import {renderBrandonRvEmail} from "@/lib/email/templates.mjs";
+import {isEmailConfigured,sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 const isValidBirthDate=(value:string)=>{if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
 export async function POST(request:Request){
@@ -54,8 +53,7 @@ export async function POST(request:Request){
   if(tokenError){await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Could not start email verification.",500);}
   const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
   const link=base+"/portal/verify-email?token="+encodeURIComponent(token);
-  const message=renderBrandonRvEmail("verify_account",{firstname:firstName,lastname:lastName,verification_url:link,expiry_time:"24 hours"});
-  const sent=await sendEmail({sender:"noreply",to:email,subject:message.subject,html:message.html});
+  const sent=await sendBrandonRvTemplateEmail({templateId:"verify_account",sender:"noreply",to:email,variables:{firstname:firstName,lastname:lastName,verification_url:link,expiry_time:"24 hours"}});
   if(!sent){await db.from("email_verification_tokens").delete().eq("token_hash",tokenHash);await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Email delivery failed. Please try again later or contact Brandon RV.",503);}
   return Response.json({verificationRequired:true,message:"Check your email for a verification link."},{status:201});
  }catch{return jsonError("Registration is temporarily unavailable.",500);}
