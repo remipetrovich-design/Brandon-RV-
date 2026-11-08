@@ -11,7 +11,8 @@ export async function GET(){
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("business.settings.manage");if(access.response)return access.response;
  try{const body=await request.json();const name=clean(body.name,120);const description=clean(body.description,1000);const radius=body.radius_km===""||body.radius_km===null?null:Number(body.radius_km);const fee=body.travel_fee===""||body.travel_fee===null?null:Number(body.travel_fee);if(name.length<2||radius!==null&&(!Number.isFinite(radius)||radius<0||radius>1000)||fee!==null&&(!Number.isFinite(fee)||fee<0||fee>100000))return jsonError("Enter a valid service area and travel setting.");
- const {data,error}=await database().from("service_areas").insert({business_id:access.membership!.business_id,name,description:description||null,radius_km:radius,travel_fee:fee,suburbs:list(body.suburbs,80),postcodes:list(body.postcodes,10),is_published:false,sort_order:100}).select(columns).single();if(error||!data)return jsonError("Could not create service area.",500);return Response.json({area:data},{status:201});
+ const suburbs=list(body.suburbs,80);const postcodes=list(body.postcodes,10);if(postcodes.some(v=>!/^\\d{4}$/.test(v)))return jsonError("Postcodes must be four digits.");
+ const {data,error}=await database().from("service_areas").insert({business_id:access.membership!.business_id,name,description:description||null,radius_km:radius,travel_fee:fee,suburbs,postcodes,is_published:false,sort_order:100}).select(columns).single();if(error||!data)return jsonError("Could not create service area.",500);return Response.json({area:data},{status:201});
  }catch{return jsonError("Could not create service area.");}
 }
 export async function PATCH(request:Request){
