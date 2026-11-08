@@ -13,6 +13,7 @@ The admin navigation groups these tools under **Business Configuration**:
 - Service areas
 - Settings
 - Email templates
+- Integrations
 
 ## Phase 1 — Website editor
 
@@ -54,9 +55,9 @@ Bring Business Profile and Business Settings into one Settings page.
 - Enquiry availability.
 - Minimum appointment notice.
 - Operating hours and customer-facing business message.
-- Shortcuts to Website Editor, Services, Service Areas and Email Templates.
+- Shortcuts to Website Editor, Services, Service Areas, Email Templates and Integrations.
 
-The enquiry availability switch is enforced by the enquiry API. The appointment notice value is enforced when customers request an appointment. Existing email templates and integrations remain separate working features; this phase does not duplicate them.
+The enquiry availability switch is enforced by the enquiry API. The appointment notice value is enforced when customers request an appointment. Email templates and integrations remain separate working features; this phase does not duplicate them. The Integrations page reports whether the existing OrbitFS Mail URL and API key are configured without exposing either value.
 
 ## Data and rollout
 
