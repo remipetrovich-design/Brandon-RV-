@@ -11,7 +11,7 @@ const EVENTS=[
 const SECURITY_EVENTS=new Set(EVENTS.filter(event=>event.security).map(event=>event.key));
 const clean=(value:unknown,max:number)=>String(value??"").trim().slice(0,max);
 const slug=(value:string)=>value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,64);
-async function validate(request:Request,body:any,businessId:string){
+async function validate(body:any){
  const templateKey=slug(clean(body.template_key,64));
  const eventKey=clean(body.event_key,100);
  const event=EVENTS.find(item=>item.key===eventKey);
@@ -42,7 +42,7 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("business.settings.manage");if(access.response)return access.response;
  try{
-  const body=await request.json();const checked=await validate(request,body,access.membership!.business_id);if(checked.error)return jsonError(checked.error);
+  const body=await request.json();const checked=await validate(body);if(checked.error)return jsonError(checked.error);
   const db=database();
   const {data:template,error}=await db.from("email_templates").insert({...checked.value,business_id:access.membership!.business_id})
     .select("id,template_key,event_key,subject,title,intro,body,button_label,enabled,is_security,sender_mailbox_id,updated_at").single();
@@ -60,7 +60,7 @@ export async function PATCH(request:Request){
   const db=database();
   const {data:existing}=await db.from("email_templates").select("id,event_key,is_security").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
   if(!existing)return jsonError("Email template not found.",404);
-  const checked=await validate(request,body,access.membership!.business_id);if(checked.error)return jsonError(checked.error);
+  const checked=await validate(body);if(checked.error)return jsonError(checked.error);
   if(existing.is_security&&checked.value.event_key!==existing.event_key)return jsonError("Security templates cannot be reassigned to another function.");
   const {data:template,error}=await db.from("email_templates").update({...checked.value,updated_at:new Date().toISOString()})
     .eq("id",id).eq("business_id",access.membership!.business_id)
