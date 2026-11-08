@@ -1,7 +1,7 @@
 import {randomBytes} from "node:crypto";
 import {authorizePermission,database,digest,jsonError,normalizeEmail,sameOrigin} from "@/lib/auth";
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
-import {sendEmail} from "@/lib/email";
+import {sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
 const validEmail=(v:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const staffRoleKeys=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
@@ -34,7 +34,7 @@ export async function POST(request:Request){
   if(error||!invitation)return jsonError("Could not create the staff invitation.",500);
   const origin=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
   const link=origin+"/portal/accept-staff-invitation?token="+encodeURIComponent(token);
-  const sent=await sendEmail({sender:"brandonrv",to:email,subject:"You're invited to join Brandon RV",html:`<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#172b3d"><h2>Staff invitation</h2><p>You have been invited to join Brandon RV as <strong>${role.name}</strong>.</p><p>Position: ${jobTitle}</p><p>Sign in to your existing customer account, or create a customer account with this email address, then accept the invitation.</p><p><a href="${link}" style="display:inline-block;padding:12px 20px;background:#1762a8;color:#fff;text-decoration:none;border-radius:4px">Accept invitation</a></p><p>This invitation expires in seven days. Your customer account and history remain unchanged.</p></div>`});
+  const sent=await sendBrandonRvTemplateEmail({templateId:"staff_invitation",sender:"brandonrv",to:email,variables:{firstname:email.split("@")[0],email,inviter_name:access.user?.full_name??"Brandon RV",staff_role:role.name,job_title:jobTitle,invitation_url:link,expiry_time:"7 days"}});
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"staff.invitation.created",entity_type:"staff_invitation",entity_id:invitation.id,details:{email,role_key:roleKey,email_sent:sent}});
   return Response.json({success:true,emailSent:sent,inviteUrl:sent?null:link},{status:201});
  }catch{return jsonError("Could not create the staff invitation.",500);}
