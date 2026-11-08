@@ -9,8 +9,8 @@
  */
 const DEFAULTS = Object.freeze({
   site_name: "Brandon RV",
-  site_url: "https://brandonrv.com.au",
-  logo_url: "https://brandonrv.com.au/brv-logo.webp",
+  site_url: "https://brandon-rv.vercel.app",
+  logo_url: "https://brandon-rv.vercel.app/brv-mark.webp",
   business_phone: "0407 189 087",
   business_email: "enquires@brandonrv.com.au",
   tagline: "From Factory Experience to Repairs On The Go",
@@ -389,8 +389,10 @@ export const BRANDON_RV_EMAIL_TEMPLATE_IDS = Object.freeze(Object.keys(definitio
  * @returns {{templateId:string, subject:string, html:string, text:string, category:string}}
  */
 export function renderBrandonRvEmail(templateId, variables = {}, overrides = {}) {
-  const baseDefinition = definitions[templateId];
-  if (!baseDefinition) throw new Error(`Unknown Brandon RV email template: ${templateId}`);
+  const baseDefinition = definitions[templateId] || {
+    category: "AUTOMATED MESSAGE", subject: "{site_name}", title: "", intro: "", body: "",
+    cta: "", url: "", note: "",
+  };
   const definition = { ...baseDefinition, ...overrides };
 
   const vars = { ...DEFAULTS, ...variables };
@@ -412,6 +414,7 @@ export function renderBrandonRvEmail(templateId, variables = {}, overrides = {})
   const phone = text(vars.business_phone);
   const email = text(vars.business_email);
   const siteName = text(vars.site_name);
+  const noreplyNotice = vars.sender_type === "noreply" ? `<div style="margin:0 0 22px;padding:12px 15px;background:#fff8e8;border:1px solid #f2e3bd;color:#70551b;font-size:12px;line-height:1.6;"><strong>Unmonitored email address:</strong> This mailbox is not monitored. Replies to this email or messages sent to this address will not be read. Please contact Brandon RV using the details in the footer.</div>` : "";
   const content = [
     `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.75;">${intro}</p>`,
     `<p style="margin:0 0 18px;color:#334155;font-size:15px;line-height:1.75;">${body}</p>`,
@@ -435,10 +438,10 @@ ${content}
 <p style="margin:24px 0 0;color:#334155;font-size:15px;line-height:1.7;">Regards,<br><strong>${siteName}</strong></p>
 </td></tr>
 <tr><td align="center" style="padding:23px 26px;background:#f5f7fa;border-top:1px solid #e6ebf0;">
-<div style="font-size:13px;font-weight:700;color:#173451;">${siteName}</div>
+<a href="${escapeHtml(website)}" style="text-decoration:none;"><img src="${escapeHtml(logo)}" width="125" alt="${siteName}" style="display:block;width:125px;max-width:55%;height:auto;border:0;margin:0 auto 12px;"></a>\n<div style="font-size:13px;font-weight:700;color:#173451;">${siteName}</div>
 <div style="margin-top:7px;font-size:12px;color:#64748b;">${phone} &nbsp;|&nbsp; <a href="mailto:${email}" style="color:#1672ad;text-decoration:none;">${email}</a></div>
 <div style="margin-top:8px;font-size:12px;"><a href="${escapeHtml(website)}" style="color:#1672ad;text-decoration:none;">${escapeHtml(String(vars.site_url).replace(/^https?:\/\//, ""))}</a></div>
-<div style="margin:15px auto 0;max-width:470px;font-size:11px;line-height:1.6;color:#8a96a5;">This message may be an automated notification or a personal reply from the Brandon RV team. If you need assistance, contact us using the details above.</div>
+<div style="margin:15px auto 0;max-width:470px;font-size:11px;line-height:1.6;color:#8a96a5;">This email and any attachments may contain private or sensitive customer, vehicle or business information. It is intended only for the addressed recipient. If you received it by mistake, do not forward, copy or use its contents; please notify Brandon RV and delete it. Please use the contact details above for assistance.</div>
 <div style="margin-top:9px;font-size:10px;color:#a0aab6;">© ${text(vars.current_year)} ${siteName}. All rights reserved.</div>
 </td></tr></table></td></tr></table></body></html>`;
 
@@ -449,7 +452,7 @@ ${content}
     definition.cta && ctaUrl && ctaUrl !== "#" ? `\n${definition.cta}: ${ctaUrl}` : "",
     note ? `\n${note}` : "",
     "", "Regards,", vars.site_name, vars.business_phone, vars.business_email, vars.site_url,
-    "", "This message may be an automated notification or a personal reply from the Brandon RV team.",
+    "", "This email may contain private or sensitive information. It is intended only for the addressed recipient. If received in error, notify Brandon RV and delete it.",
   ].filter(Boolean).join("\n");
 
   return { templateId, subject, html, text: plain, category: definition.category };

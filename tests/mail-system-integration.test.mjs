@@ -13,8 +13,8 @@ test("Brandon RV resolves assigned sender addresses from the existing External S
   assert.match(emailClient, /BRANDONSRV_MAIL_API_KEY/);
   assert.match(emailClient, /\/api\/mail\/senders/);
   assert.match(emailClient, /from_address:\s*fromAddress/);
-  assert.match(emailClient, /address\.split\("@"\)\[0\] === input\.sender/);
-  assert.match(emailClient, /senderData\.sender/);
+  assert.match(emailClient, /item\.address\.split\("@"\)\[0\]===input\.sender/);
+  assert.match(emailClient, /data\.sender/);
   assert.match(emailClient, /Authorization.*Bearer/);
   assert.doesNotMatch(emailClient, /noreply@incendiarynetworks\.cc/);
   assert.doesNotMatch(emailClient, /system@incendiarynetworks\.cc/);

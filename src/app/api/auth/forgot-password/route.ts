@@ -16,7 +16,7 @@ export async function POST(request:Request){
    const token=newToken();await db.from("password_reset_tokens").delete().eq("user_id",user.id);
    const {error}=await db.from("password_reset_tokens").insert({user_id:user.id,token_hash:digest(token),expires_at:new Date(Date.now()+3600000).toISOString()});
    if(!error){
-    const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;const link=base+"/portal/reset-password?token="+encodeURIComponent(token);
+  const base= (process.env.NEXT_PUBLIC_APP_URL?.trim()||"https://brandon-rv.vercel.app").replace(/\/+$/g,"");
     await sendBrandonRvTemplateEmail({templateId:"forgot_password",sender:"noreply",to:user.email,variables:{firstname:user.first_name||user.full_name,lastname:user.last_name,reset_url:link,expiry_time:"one hour"}});
    }
   }

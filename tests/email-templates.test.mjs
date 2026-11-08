@@ -4,24 +4,24 @@ import { BRANDON_RV_EMAIL_TEMPLATE_IDS, renderBrandonRvEmail } from "../src/lib/
 
 const sample = {
   firstname: "Alex", lastname: "Taylor", email: "alex@example.com",
-  site_url: "https://brandonrv.com.au", portal_url: "https://brandonrv.com.au/portal",
-  verification_url: "https://brandonrv.com.au/verify?token=abc",
-  reset_url: "https://brandonrv.com.au/reset?token=abc",
-  invitation_url: "https://brandonrv.com.au/invite/abc",
-  staff_portal_url: "https://brandonrv.com.au/staff",
-  quote_url: "https://brandonrv.com.au/quotes/Q-1001",
-  booking_url: "https://brandonrv.com.au/bookings/B-1001",
-  job_url: "https://brandonrv.com.au/jobs/J-1001",
-  invoice_url: "https://brandonrv.com.au/invoices/I-1001",
-  task_url: "https://brandonrv.com.au/tasks/T-1001",
-  admin_enquiry_url: "https://brandonrv.com.au/admin/enquiries/E-1001",
-  admin_booking_url: "https://brandonrv.com.au/admin/bookings/B-1001",
-  admin_quote_url: "https://brandonrv.com.au/admin/quotes/Q-1001",
-  quote_conversation_url: "https://brandonrv.com.au/quotes/Q-1001/messages",
-  admin_quote_conversation_url: "https://brandonrv.com.au/admin/quotes/Q-1001",
-  onboarding_url: "https://brandonrv.com.au/staff/onboarding",
-  feedback_url: "https://brandonrv.com.au/feedback",
-  receipt_url: "https://brandonrv.com.au/receipts/R-1001",
+  site_url: "https://brandon-rv.vercel.app", portal_url: "https://brandon-rv.vercel.app/portal",
+  verification_url: "https://brandon-rv.vercel.app/verify?token=abc",
+  reset_url: "https://brandon-rv.vercel.app/reset?token=abc",
+  invitation_url: "https://brandon-rv.vercel.app/invite/abc",
+  staff_portal_url: "https://brandon-rv.vercel.app/staff",
+  quote_url: "https://brandon-rv.vercel.app/quotes/Q-1001",
+  booking_url: "https://brandon-rv.vercel.app/bookings/B-1001",
+  job_url: "https://brandon-rv.vercel.app/jobs/J-1001",
+  invoice_url: "https://brandon-rv.vercel.app/invoices/I-1001",
+  task_url: "https://brandon-rv.vercel.app/tasks/T-1001",
+  admin_enquiry_url: "https://brandon-rv.vercel.app/admin/enquiries/E-1001",
+  admin_booking_url: "https://brandon-rv.vercel.app/admin/bookings/B-1001",
+  admin_quote_url: "https://brandon-rv.vercel.app/admin/quotes/Q-1001",
+  quote_conversation_url: "https://brandon-rv.vercel.app/quotes/Q-1001/messages",
+  admin_quote_conversation_url: "https://brandon-rv.vercel.app/admin/quotes/Q-1001",
+  onboarding_url: "https://brandon-rv.vercel.app/staff/onboarding",
+  feedback_url: "https://brandon-rv.vercel.app/feedback",
+  receipt_url: "https://brandon-rv.vercel.app/receipts/R-1001",
   task_title: "Check awning latch", task_due_date: "2026-11-20", priority: "Normal",
   job_number: "J-1001", quote_number: "Q-1001", invoice_number: "I-1001",
   booking_reference: "B-1001", enquiry_number: "E-1001",
@@ -41,7 +41,7 @@ test("every registered email renders in the shared branded layout", () => {
     assert.ok(email.subject, id + " subject");
     assert.match(email.html, /Brandon RV/);
     assert.match(email.html, /From Factory Experience to Repairs On The Go/);
-    assert.match(email.html, /brv-logo\.webp/);
+    assert.match(email.html, /brv-mark\.webp/);
     assert.match(email.text, /Brandon RV/);
     assert.ok(email.category, id + " category");
   }
@@ -59,7 +59,7 @@ test("escapes user-supplied HTML in variables", () => {
     email_subject: "Test",
     email_heading: "Hello",
     message_body: "<script>alert(1)</script>",
-    portal_url: "https://brandonrv.com.au/portal",
+    portal_url: "https://brandon-rv.vercel.app/portal",
   });
   assert.doesNotMatch(email.html, /<img src=x/);
   assert.doesNotMatch(email.html, /<script>/);
@@ -74,15 +74,18 @@ test("does not allow unsafe action URL protocols", () => {
   assert.doesNotMatch(email.html, /href="javascript:/);
 });
 
-test("rejects unknown template identifiers", () => {
-  assert.throws(() => renderBrandonRvEmail("not_a_template"), /Unknown Brandon RV email template/);
+test("supports custom template identifiers using managed content overrides", () => {
+  const email = renderBrandonRvEmail("not_a_template", {}, {subject:"Custom subject",title:"Custom heading",body:"Custom message"});
+  assert.equal(email.subject,"Custom subject");
+  assert.match(email.html,/Custom heading/);
+  assert.match(email.html,/Custom message/);
 });
 
 test("keeps quote replies in the common shell with the message body", () => {
   const email = renderBrandonRvEmail("quote_reply_customer", {
     firstname: "Alex", sender_name: "Chris", quote_number: "Q-42",
     message_body: "Can you confirm the parts cost?",
-    quote_conversation_url: "https://brandonrv.com.au/quotes/Q-42",
+    quote_conversation_url: "https://brandon-rv.vercel.app/quotes/Q-42",
   });
   assert.match(email.html, /Can you confirm the parts cost\?/);
   assert.match(email.html, /Q-42/);

@@ -3,143 +3,106 @@ import {database} from "@/lib/auth";
 import {renderBrandonRvEmail} from "@/lib/email/templates.mjs";
 
 export type EmailSender = "noreply" | "system" | "brandonrv";
-
-type EmailInput = {
-  /** Selects a matching assigned mailbox when available; never supplies an address. */
-  sender: EmailSender;
-  to: string;
-  subject: string;
-  html: string;
-};
-
-type SenderMailbox = { address?: unknown };
+export type EmailSenderMailbox = {id:string;address:string};
+type EmailInput = {sender:EmailSender;senderMailboxId?:string|null;to:string;subject:string;html:string};
+type SenderResponse = {sender?:unknown;senders?:Array<{id?:unknown;address?:unknown}>};
 
 function mailConfig() {
-  const baseUrl = process.env.ORBITFS_MAIL_URL?.trim().replace(/\/+$/, "");
-  const apiKey = process.env.BRANDONSRV_MAIL_API_KEY?.trim();
-
-  if (!baseUrl || !apiKey) return null;
-  return { baseUrl, apiKey };
+  const baseUrl=process.env.ORBITFS_MAIL_URL?.trim().replace(/\/+$/,"");
+  const apiKey=process.env.BRANDONSRV_MAIL_API_KEY?.trim();
+  if(!baseUrl||!apiKey)return null;
+  return {baseUrl,apiKey};
 }
 
-function plainTextFromHtml(html: string) {
-  return html
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|h[1-6]|li)>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+function plainTextFromHtml(html:string) {
+  return html.replace(/<\s*br\s*\/?>/gi,"\n").replace(/<\/(p|div|h[1-6]|li)>/gi,"\n")
+    .replace(/<[^>]*>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&")
+    .replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&quot;/gi,'"')
+    .replace(/&#39;/gi,"'").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 
-export function isEmailConfigured() {
-  return mailConfig() !== null;
+async function senderDirectory() {
+  const config=mailConfig();if(!config)return null;
+  const response=await fetch(config.baseUrl+"/api/mail/senders",{method:"GET",headers:{Authorization:"Bearer "+config.apiKey,"Content-Type":"application/json"},cache:"no-store"});
+  if(!response.ok)throw new Error("Could not load assigned Mail System senders.");
+  return await response.json() as SenderResponse;
 }
 
-/**
- * Brandon RV owns and renders the email templates. OrbitFS Mail supplies the
- * active sender addresses assigned to this external system. A matching
- * notification mailbox is selected when available; otherwise the system's
- * default assigned sender is used.
- */
-export async function sendEmail(input: EmailInput) {
-  const config = mailConfig();
-  if (!config) return false;
-
+/** Live mailbox assignments supplied by the Brandon RV external system in OrbitFS Mail. */
+export async function getAvailableEmailSenders():Promise<EmailSenderMailbox[]> {
   try {
-    const authHeaders = {
-      Authorization: "Bearer " + config.apiKey,
-      "Content-Type": "application/json",
-    };
-
-    // Resolve assignments for every send so Mail Admin changes apply immediately.
-    const senderResponse = await fetch(config.baseUrl + "/api/mail/senders", {
-      method: "GET",
-      headers: authHeaders,
-      cache: "no-store",
+    const data=await senderDirectory();
+    return (data?.senders??[]).flatMap((item)=>{
+      const id=typeof item.id==="string"?item.id:"";
+      const address=typeof item.address==="string"?item.address.trim().toLowerCase():"";
+      return id&&address.includes("@")&&address.includes(".")?[{id,address}]:[];
     });
-    if (!senderResponse.ok) return false;
-
-    const senderData = await senderResponse.json() as {
-      sender?: unknown;
-      senders?: SenderMailbox[];
-    };
-    const availableSenders = Array.isArray(senderData.senders)
-      ? senderData.senders
-          .map((mailbox) => typeof mailbox.address === "string"
-            ? mailbox.address.trim().toLowerCase()
-            : "")
-          .filter((address) => /^[^\s@]+@incendiarynetworks\.cc$/i.test(address))
-      : [];
-
-    const roleSender = availableSenders.find((address) =>
-      address.split("@")[0] === input.sender,
-    );
-    const defaultSender = typeof senderData.sender === "string"
-      ? senderData.sender.trim().toLowerCase()
-      : "";
-    const fromAddress = roleSender || defaultSender;
-
-    if (!/^[^\s@]+@incendiarynetworks\.cc$/i.test(fromAddress)) return false;
-
-    const response = await fetch(config.baseUrl + "/api/mail", {
-      method: "POST",
-      headers: authHeaders,
-      body: JSON.stringify({
-        from_address: fromAddress,
-        to: input.to,
-        subject: input.subject,
-        html: input.html,
-        text: plainTextFromHtml(input.html),
-      }),
-      cache: "no-store",
-    });
-
-    return response.ok;
-  } catch {
-    return false;
-  }
+  } catch {return [];}
 }
 
+export function isEmailConfigured(){return mailConfig()!==null;}
 
-/**
- * Render and send a branded transactional email, applying business-managed
- * wording overrides when configured. Security notifications always send.
- */
+export async function sendEmail(input:EmailInput) {
+  const config=mailConfig();if(!config)return false;
+  try {
+    const data=await senderDirectory();if(!data)return false;
+    const available=(data.senders??[]).flatMap((item)=>{
+      const id=typeof item.id==="string"?item.id:"";
+      const address=typeof item.address==="string"?item.address.trim().toLowerCase():"";
+      return id&&address.includes("@")&&address.includes(".")?[{id,address}]:[];
+    });
+    let fromAddress="";
+    if(input.senderMailboxId) {
+      fromAddress=available.find((item)=>item.id===input.senderMailboxId)?.address??"";
+      if(!fromAddress)return false;
+    } else {
+      const roleSender=available.find((item)=>item.address.split("@")[0]===input.sender)?.address??"";
+      const defaultSender=typeof data.sender==="string"?data.sender.trim().toLowerCase():"";
+      fromAddress=roleSender||defaultSender;
+    }
+    if(!fromAddress.includes("@")||!fromAddress.includes("."))return false;
+    const response=await fetch(config.baseUrl+"/api/mail",{method:"POST",headers:{Authorization:"Bearer "+config.apiKey,"Content-Type":"application/json"},body:JSON.stringify({from_address:fromAddress,to:input.to,subject:input.subject,html:input.html,text:plainTextFromHtml(input.html)}),cache:"no-store"});
+    return response.ok;
+  } catch {return false;}
+}
+
+const EVENT_ALIASES:Record<string,string>={
+  verify_account:"customer.registration_verification",
+  forgot_password:"customer.password_reset_requested",
+  password_changed:"customer.password_changed",
+  welcome:"customer.account_activated",
+  enquiry_received:"customer.enquiry_received",
+  staff_invitation:"staff.invitation_sent",
+};
+
+/** Render and send every enabled template attached to the matching system event. */
 export async function sendBrandonRvTemplateEmail(input:{
-  templateId:string;
-  sender:EmailSender;
-  to:string;
-  variables:Record<string,unknown>;
+  templateId:string;sender:EmailSender;to:string;variables:Record<string,unknown>;
 }) {
-  let overrides:Record<string,string>={};
+  const eventKey=EVENT_ALIASES[input.templateId]??input.templateId;
   try {
     const db=database();
     const {data:business}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();
     if(business) {
-      const {data:template}=await db.from("email_templates")
-        .select("subject,title,intro,body,button_label,enabled,is_security")
-        .eq("business_id",business.id).eq("template_key",input.templateId).maybeSingle();
-      if(template) {
-        if(!template.enabled&&!template.is_security)return true;
-        overrides={
-          subject:template.subject,
-          title:template.title,
-          intro:template.intro,
-          body:template.body,
-          cta:template.button_label,
-        };
+      const {data:templates,error}=await db.from("email_templates")
+        .select("template_key,event_key,subject,title,intro,body,button_label,enabled,is_security,sender_mailbox_id")
+        .eq("business_id",business.id).eq("event_key",eventKey);
+      if(!error&&templates?.length) {
+        const active=templates.filter((template)=>template.enabled||template.is_security);
+        const mailboxes=await getAvailableEmailSenders();
+        const results=await Promise.all(active.map(async(template)=>{
+          const selectedSender=mailboxes.find((mailbox)=>mailbox.id===template.sender_mailbox_id)?.address.split("@")[0];
+          const message=renderBrandonRvEmail(template.template_key,{...input.variables,sender_type:selectedSender??input.sender},{
+            subject:template.subject,title:template.title,intro:template.intro,body:template.body,cta:template.button_label,
+          });
+          return sendEmail({sender:input.sender,senderMailboxId:template.sender_mailbox_id,to:input.to,subject:message.subject,html:message.html});
+        }));
+        return results.every(Boolean);
       }
     }
   } catch {
-    // Fall back to the bundled branded template if the optional overrides are unavailable.
+    // If the optional template configuration is unavailable, use the bundled default.
   }
-  const message=renderBrandonRvEmail(input.templateId,input.variables,overrides);
+  const message=renderBrandonRvEmail(input.templateId,{...input.variables,sender_type:input.sender});
   return sendEmail({sender:input.sender,to:input.to,subject:message.subject,html:message.html});
 }
