@@ -15,7 +15,7 @@ export async function POST(request:Request){
   if(user){
    const token=newToken();await db.from("password_reset_tokens").delete().eq("user_id",user.id);
    const {error}=await db.from("password_reset_tokens").insert({user_id:user.id,token_hash:digest(token),expires_at:new Date(Date.now()+3600000).toISOString()});
-   if(!error){const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;const link=base+"/portal/reset-password?token="+encodeURIComponent(token);await sendTemplateEmail({key:"password_reset",to:user.email,name:user.full_name,buttonUrl:link});});}
+   if(!error){const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;const link=base+"/portal/reset-password?token="+encodeURIComponent(token);await sendTemplateEmail({key:"password_reset",to:user.email,name:user.full_name,buttonUrl:link});}
   }
   return Response.json({message:"If an active account exists for that email, a reset link has been sent."});
  }catch{return jsonError("Password reset is temporarily unavailable.",500);}
