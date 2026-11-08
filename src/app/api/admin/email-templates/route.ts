@@ -61,7 +61,7 @@ export async function PATCH(request:Request){
   const db=database();
   const {data:existing}=await db.from("email_templates").select("id,event_key,is_security").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
   if(!existing)return jsonError("Email template not found.",404);
-  const checked=await validate(body);if(checked.error)return jsonError(checked.error);
+  const checked=await validate(body);if(!checked.value)return jsonError(checked.error??"Invalid email template.");
   if(existing.is_security&&checked.value.event_key!==existing.event_key)return jsonError("Security templates cannot be reassigned to another function.");
   const {data:template,error}=await db.from("email_templates").update({...checked.value,updated_at:new Date().toISOString()})
     .eq("id",id).eq("business_id",access.membership!.business_id)
