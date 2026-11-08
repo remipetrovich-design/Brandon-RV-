@@ -4,9 +4,10 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Sign in to request an appointment.",401);if(user.account_type!=="customer")return jsonError("Customer account required.",403);
  try{
   const body=await request.json();const start=String(body.preferredStart??"");const location=String(body.location??"").trim();const notes=String(body.notes??"").trim().slice(0,2000);const vehicleId=body.vehicleId?String(body.vehicleId):null;const serviceId=body.serviceId?String(body.serviceId):null;
-  const startDate=new Date(start);if(!start||!Number.isFinite(startDate.getTime())||startDate.getTime()<Date.now()+60*60*1000)return jsonError("Choose a preferred time at least one hour from now.");
+  const startDate=new Date(start);if(!start||!Number.isFinite(startDate.getTime()))return jsonError("Choose a valid preferred time.");
   if(location.length<3||location.length>200)return jsonError("Enter the vehicle location so travel can be assessed.");
   const db=database();const {data:customer}=await db.from("customers").select("id,business_id").eq("user_id",user.id).maybeSingle();if(!customer)return jsonError("Customer profile not found.",404);
+  const {data:businessSettings}=await db.from("business_settings").select("settings").eq("business_id",customer.business_id).maybeSingle();const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,unknown>:{};const configuredNotice=Number(configured.booking_notice_hours??24);const noticeHours=Number.isFinite(configuredNotice)&&configuredNotice>=0?Math.max(1,configuredNotice):24;if(startDate.getTime()<Date.now()+noticeHours*60*60*1000)return jsonError("Choose a preferred time at least "+noticeHours+" hours from now.");
   if(vehicleId){const {data:vehicle}=await db.from("vehicles").select("id").eq("id",vehicleId).eq("customer_id",customer.id).maybeSingle();if(!vehicle)return jsonError("Select one of your saved vehicles.");}
   if(serviceId){const {data:service}=await db.from("services").select("id").eq("id",serviceId).eq("business_id",customer.business_id).eq("is_active",true).maybeSingle();if(!service)return jsonError("Select a valid service.");}
   const preferredEnd=new Date(startDate.getTime()+60*60*1000).toISOString();

@@ -23,6 +23,7 @@ export async function POST(request:Request){
   const db=database();const since=new Date(Date.now()-15*60*1000).toISOString();const {count}=await db.from("enquiries").select("id",{count:"exact",head:true}).eq("email",email).gte("created_at",since);
   if((count??0)>=5)return jsonError("Too many enquiries from this email. Please try again later.",429);
   const {data:business,error:businessError}=await db.from("businesses").select("id").eq("slug","brandon-rv").single();if(businessError||!business)return jsonError("Enquiry service is unavailable.",503);
+  const {data:businessSettings}=await db.from("business_settings").select("settings").eq("business_id",business.id).maybeSingle();const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,unknown>:{};if(configured.accepting_enquiries===false)return jsonError("Brandon RV is not accepting new enquiries at the moment. Please contact the business directly.",503);
   let customerId:string|null=null;let userId:string|null=null;
   if(customerAccount){userId=customerAccount.id;const {data:customer}=await db.from("customers").select("id").eq("user_id",customerAccount.id).maybeSingle();customerId=customer?.id??null;}
   const vehicleDescription=[vehicleType,vehicle,year].filter(Boolean).join(" · ");

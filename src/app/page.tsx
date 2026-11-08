@@ -1,12 +1,6 @@
 import Link from "next/link";
-import {getPublishedServices,getPublishedSitePage,getPublicBusiness,contentText,phoneHref} from "@/lib/public-site";
+import {getPublishedServices,getPublishedSitePage,getPublicBusiness,getPublicBusinessSettings,contentText,phoneHref} from "@/lib/public-site";
 export const dynamic="force-dynamic";
-
-const enquiryCategories = [
-  {title:"Cabinetry & interior hardware",description:"Ask about minor, non-structural repairs to suitable hinges, latches, runners, doors and trims."},
-  {title:"Living-area fittings",description:"Discuss suitable handles, catches and interior fittings. The exact installation requirements are checked first."},
-  {title:"Accessory enquiries",description:"Send the product details and photos. Electrical, plumbing and specialist systems are not assumed to be within scope."}
-];
 
 function CaravanIllustration(){
   return <svg viewBox="0 0 520 250" role="img" aria-label="Illustration of a caravan ready for a mobile service visit">
@@ -26,13 +20,13 @@ function CaravanIllustration(){
 }
 
 export default async function HomePage() {
-  const [page,business,publishedServices]=await Promise.all([getPublishedSitePage("home"),getPublicBusiness(),getPublishedServices()]);
+  const [page,business,publishedServices,businessSettings]=await Promise.all([getPublishedSitePage("home"),getPublicBusiness(),getPublishedServices(),getPublicBusinessSettings()]);
   const phone=business.phone??"0407 189 087";
   const callLink=phoneHref(phone);
   const location=[business.city,business.region].filter(Boolean).join(", ")||"Tamworth, NSW";
-  const services=publishedServices.length?publishedServices.slice(0,3).map(service=>({title:service.name,description:service.description??service.scope_notes??"Contact Brandon RV to discuss whether this work is suitable."})):enquiryCategories;
+  const services=publishedServices.slice(0,3).map(service=>({title:service.name,description:service.description??service.scope_notes??"Contact Brandon RV to discuss this service."}));
   const heroTitle=contentText(page?.content,"hero_title","Caravan repairs, without the workshop trip.");
-  const intro=contentText(page?.content,"intro","Mobile caravan and motorhome interior repair enquiries around Tamworth, NSW. Each request is reviewed before work is accepted, with the scope, location, capability and availability checked first.");
+  const intro=contentText(page?.content,"intro","Mobile caravan and motorhome repair and accessory services around Tamworth, NSW. Tell us what you need and we will discuss the best way forward.");
   const primaryAction=contentText(page?.content,"primary_action","Request a quote");
   const brandLine=business.brand_line??"From Factory Experience to Repairs On The Go";
 
@@ -44,7 +38,7 @@ export default async function HomePage() {
           <h1>{heroTitle}</h1>
           <p className="home-hero-intro">{intro}</p>
           <div className="home-hero-actions">
-            <Link className="button button-primary" href="/request-quote">{primaryAction}<span aria-hidden="true">→</span></Link>
+            {businessSettings.accepting_enquiries?<Link className="button button-primary" href="/request-quote">{primaryAction}<span aria-hidden="true">→</span></Link>:<span className="button button-secondary" aria-disabled="true">Enquiries temporarily unavailable</span>}
             <a className="button button-secondary" href={callLink}>Call {phone}</a>
           </div>
           <div className="home-hero-meta">
@@ -52,7 +46,7 @@ export default async function HomePage() {
             <span><i aria-hidden="true"/> Mobile visits by appointment</span>
             <span><i aria-hidden="true"/> Scope checked before acceptance</span>
           </div>
-          {business.status==="prelaunch"&&<div className="home-launch-note"><strong>Pre-launch</strong><span>Enquiries can be submitted for assessment. No booking or work is confirmed until the service scope, approvals, insurance and operating readiness are in place.</span></div>}
+          {business.status==="prelaunch"&&<div className="home-launch-note"><strong>Pre-launch</strong><span>Brandon RV is preparing to launch. You can still contact Chris to discuss your requirements.</span></div>}
         </div>
         <aside className="home-hero-panel" aria-label="Brandon RV mobile caravan service">
           <div className="home-panel-top"><span>BRANDON RV</span><span>MOBILE SERVICE · NSW</span></div>
@@ -73,9 +67,8 @@ export default async function HomePage() {
     </div></section>
 
     <section className="section services-section"><div className="shell">
-      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> WHAT YOU CAN ASK ABOUT</p><h2>Small repairs.<br/><em>More time on the road.</em></h2></div><p className="section-lead">A focused mobile service for suitable caravan and motorhome living-area repairs. Every request is assessed individually before it is accepted.</p></div>
-      <div className="service-grid">{services.map((service,index)=><article className="service-card" key={service.title}><span className="service-number">{String(index+1).padStart(2,"0")}</span><span className="service-arrow" aria-hidden="true">↗</span><h3>{service.title}</h3><p>{service.description}</p></article>)}</div>
-      <div className="service-note"><strong>Clear service boundaries</strong><p>Work is only accepted when it is within the confirmed service scope, demonstrated capability and insurance cover, and can be completed with suitable tools and safe site conditions. Some work must be referred to a specialist.</p></div>
+      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> OUR SERVICES</p><h2>Services that keep you<br/><em>more time on the road.</em></h2></div><p className="section-lead">These are the services Brandon RV currently offers. Contact Chris to discuss your requirements or ask about something not listed.</p></div>
+      {services.length?<div className="service-grid">{services.map((service,index)=><article className="service-card" key={service.title}><span className="service-number">{String(index+1).padStart(2,"0")}</span><span className="service-arrow" aria-hidden="true">↗</span><h3>{service.title}</h3><p>{service.description}</p></article>)}</div>:<p>Our service list is being updated. Contact Chris to discuss what you need.</p>}
       <div className="section-link-row"><Link href="/services" className="text-link">Explore service information <span aria-hidden="true">→</span></Link></div>
     </div></section>
 
@@ -83,24 +76,24 @@ export default async function HomePage() {
       <div className="process-heading"><p className="eyebrow eyebrow-light"><span className="eyebrow-line"/> A CLEAR PROCESS</p><h2>Know what happens<br/><em>before work begins.</em></h2><p>Requests are reviewed before a visit is confirmed. You will know the proposed scope, pricing and next step before work proceeds.</p><Link href="/how-it-works" className="button button-light">How it works <span aria-hidden="true">→</span></Link></div>
       <div className="process-steps">
         <div><span>01</span><div><h3>Send the details</h3><p>Tell us about the vehicle, location and issue. Photos help explain the work.</p></div></div>
-        <div><span>02</span><div><h3>Scope is reviewed</h3><p>The task, capability, site conditions and any specialist requirements are checked.</p></div></div>
+        <div><span>02</span><div><h3>Scope is reviewed</h3><p>Chris reviews the details and confirms the best way to proceed.</p></div></div>
         <div><span>03</span><div><h3>Quote and approval</h3><p>Receive an itemised quote or inspection proposal and approve the agreed work.</p></div></div>
         <div><span>04</span><div><h3>Visit and handover</h3><p>A suitable appointment is confirmed once availability and any required parts are ready.</p></div></div>
       </div>
     </div></section>
 
     <section className="home-value-section"><div className="shell">
-      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> THE BRANDON RV APPROACH</p><h2>Practical, clear<br/><em>and considered.</em></h2></div><p className="section-lead">The aim is to make smaller repair jobs easier to assess and organise, without promising work that needs a different specialist.</p></div>
+      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> THE BRANDON RV APPROACH</p><h2>Practical, clear<br/><em>and considered.</em></h2></div><p className="section-lead">The aim is to make caravan and motorhome repairs easier to organise, with clear communication from first enquiry through to completion.</p></div>
       <div className="home-value-grid">
         <article className="home-value-card"><span>01</span><h3>Understand the issue</h3><p>Vehicle details, photos and a clear description help identify the right next step.</p></article>
         <article className="home-value-card"><span>02</span><h3>Agree before work</h3><p>Scope, costs, parts and any changes are discussed and approved before work proceeds.</p></article>
-        <article className="home-value-card"><span>03</span><h3>Know the limits</h3><p>Tasks outside confirmed capability, permissions or cover are declined or referred.</p></article>
+        <article className="home-value-card"><span>03</span><h3>Straightforward updates</h3><p>Chris keeps you informed about the job, timing and next steps.</p></article>
       </div>
     </div></section>
 
     <section className="home-final-cta"><div className="shell home-final-cta-inner">
       <div><p className="eyebrow"><span className="eyebrow-line"/> HAVE A JOB IN MIND?</p><h2>Start with the details. We’ll help work out the next step.</h2><p>Share your vehicle, location and what needs attention.</p></div>
-      <div className="home-final-cta-actions"><Link className="button button-primary" href="/request-quote">Request a quote <span aria-hidden="true">→</span></Link><Link className="button button-secondary" href="/faq">Read the FAQs</Link></div>
+      <div className="home-final-cta-actions">{businessSettings.accepting_enquiries?<Link className="button button-primary" href="/request-quote">Request a quote <span aria-hidden="true">→</span></Link>:<span className="button button-secondary" aria-disabled="true">Enquiries temporarily unavailable</span>}<Link className="button button-secondary" href="/faq">Read the FAQs</Link></div>
     </div></section>
   </main>;
 }

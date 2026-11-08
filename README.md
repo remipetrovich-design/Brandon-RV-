@@ -95,9 +95,20 @@ Staff invitations are created by authorised staff administrators from People/Sta
 
 If the invitee already has an active customer account, they sign in with that account and accept the invitation; staff access is added to the existing identity without replacing customer records or history. If they do not have an account, they register as a customer using the invited email address. Email verification, when enabled, carries the invitation token forward; after verification they return to the invitation acceptance page. The invitation is validated again at acceptance, including email match, expiry, revocation and single-use status. The new account remains a customer account with staff access added as an employment/role extension.
 
-## Business scope
+## Business configuration
 
-The initial service model is mobile, appointment-based and focused on suitable minor non-structural caravan and motorhome interior repairs and accessories. Regulated, specialist or higher-risk work must not be offered unless the required competence, permissions and insurance have been confirmed. The application does not itself establish business licences, qualifications, insurer approvals or supplier agreements.
+The Business Configuration area is the control centre for the public business website and its customer-facing details.
+
+- **Website editor:** edit the seeded example pages, preview draft content and save changes. Publishing is a separate action, so saved drafts do not automatically change the live website.
+- **Services:** create, edit, organise, price, activate, publish and delete the services Brandon RV chooses to offer. The live catalogue starts empty; Chris manages the actual service list.
+- **Service areas:** manage area names, descriptions, radius, suburbs, postcodes, travel fees and publication status.
+- **Settings:** manage the public business profile and general operating preferences from one consolidated page.
+- **Email templates:** remains a separate tool for managing automated and customer email content.
+- **Integrations:** shows the status of existing connected services, including the OrbitFS Mail System, without exposing credentials.
+
+Service and area changes are stored against the Brandon RV business and flow to the public service pages and customer-facing service selection where applicable. Draft or unpublished entries remain hidden from the public website. Existing customer, job, quote, appointment, invoice and account records are retained.
+
+The business owner decides which services Brandon RV offers and manages the catalogue directly. The application does not create a résumé or infer a service list from the business plan.
 
 ## Deployment
 
