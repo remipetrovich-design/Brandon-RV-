@@ -3,12 +3,14 @@ import "server-only";
 export type EmailSender = "noreply" | "system" | "brandonrv";
 
 type EmailInput = {
-  /** Notification category; the actual From address comes from Mail Admin. */
+  /** Selects a matching assigned mailbox when available; never supplies an address. */
   sender: EmailSender;
   to: string;
   subject: string;
   html: string;
 };
+
+type SenderMailbox = { address?: unknown };
 
 function mailConfig() {
   const baseUrl = process.env.ORBITFS_MAIL_URL?.trim().replace(/\/+$/, "");
@@ -40,8 +42,9 @@ export function isEmailConfigured() {
 
 /**
  * Brandon RV owns and renders the email templates. OrbitFS Mail supplies the
- * active sender address assigned to this external system; no From address is
- * duplicated or hardcoded in the Brandon RV application.
+ * active sender addresses assigned to this external system. A matching
+ * notification mailbox is selected when available; otherwise the system's
+ * default assigned sender is used.
  */
 export async function sendEmail(input: EmailInput) {
   const config = mailConfig();
@@ -53,8 +56,7 @@ export async function sendEmail(input: EmailInput) {
       "Content-Type": "application/json",
     };
 
-    // Resolve the current sender assignment on every send so mailbox changes
-    // in Mail Admin take effect immediately without a Brandon RV redeploy.
+    // Resolve assignments for every send so Mail Admin changes apply immediately.
     const senderResponse = await fetch(config.baseUrl + "/api/mail/senders", {
       method: "GET",
       headers: authHeaders,
@@ -62,10 +64,26 @@ export async function sendEmail(input: EmailInput) {
     });
     if (!senderResponse.ok) return false;
 
-    const senderData = await senderResponse.json() as { sender?: unknown };
-    const fromAddress = typeof senderData.sender === "string"
+    const senderData = await senderResponse.json() as {
+      sender?: unknown;
+      senders?: SenderMailbox[];
+    };
+    const availableSenders = Array.isArray(senderData.senders)
+      ? senderData.senders
+          .map((mailbox) => typeof mailbox.address === "string"
+            ? mailbox.address.trim().toLowerCase()
+            : "")
+          .filter((address) => /^[^\s@]+@incendiarynetworks\.cc$/i.test(address))
+      : [];
+
+    const roleSender = availableSenders.find((address) =>
+      address.split("@")[0] === input.sender,
+    );
+    const defaultSender = typeof senderData.sender === "string"
       ? senderData.sender.trim().toLowerCase()
       : "";
+    const fromAddress = roleSender || defaultSender;
+
     if (!/^[^\s@]+@incendiarynetworks\.cc$/i.test(fromAddress)) return false;
 
     const response = await fetch(config.baseUrl + "/api/mail", {
