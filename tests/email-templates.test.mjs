@@ -41,7 +41,7 @@ test("every registered email renders in the shared branded layout", () => {
     assert.ok(email.subject, id + " subject");
     assert.match(email.html, /Brandon RV/);
     assert.match(email.html, /From Factory Experience to Repairs On The Go/);
-    assert.match(email.html, /brv-logo\.webp/);
+    assert.match(email.html, /brv-mark\\.webp/);
     assert.match(email.text, /Brandon RV/);
     assert.ok(email.category, id + " category");
   }
