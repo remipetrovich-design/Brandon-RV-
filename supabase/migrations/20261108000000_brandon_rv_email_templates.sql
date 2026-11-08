@@ -21,10 +21,22 @@ INSERT INTO public.email_templates (business_id, template_key, subject, body, bu
 SELECT b.id, t.template_key, t.subject, t.body, t.button_label, true, t.is_security
 FROM public.businesses b
 CROSS JOIN (VALUES
-  ('account_verification','Verify your Brandon RV account','Hi {name},\n\nConfirm your email address to activate your Brandon RV customer account.\n\nThis link expires in 24 hours. If you did not create this account, ignore this email.','Verify email address',true),
-  ('password_reset','Reset your Brandon RV password','Hi {name},\n\nUse the link below to reset your password. It expires in one hour.\n\nIf you did not request this, ignore this email.','Reset password',true),
-  ('welcome','Your Brandon RV account is ready','Hi {name},\n\nYour email address has been verified and your Brandon RV customer account is now active.','Open customer account',false),
-  ('enquiry_received','We received your Brandon RV enquiry','Hi {name},\n\nThanks for contacting Brandon RV. Your enquiry has been received and will be reviewed. We will contact you to discuss the next steps.','View customer account',false)
+  ('account_verification','Verify your Brandon RV account',$body$Hi {name},
+
+Confirm your email address to activate your Brandon RV customer account.
+
+This link expires in 24 hours. If you did not create this account, ignore this email.$body$,'Verify email address',true),
+  ('password_reset','Reset your Brandon RV password',$body$Hi {name},
+
+Use the link below to reset your password. It expires in one hour.
+
+If you did not request this, ignore this email.$body$,'Reset password',true),
+  ('welcome','Your Brandon RV account is ready',$body$Hi {name},
+
+Your email address has been verified and your Brandon RV customer account is now active.$body$,'Open customer account',false),
+  ('enquiry_received','We received your Brandon RV enquiry',$body$Hi {name},
+
+Thanks for contacting Brandon RV. Your enquiry has been received and will be reviewed. We will contact you to discuss the next steps.$body$,'Visit Brandon RV website',false)
 ) AS t(template_key,subject,body,button_label,is_security)
 WHERE b.slug='brandon-rv'
 ON CONFLICT (business_id, template_key) DO NOTHING;
