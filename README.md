@@ -104,6 +104,7 @@ The Business Configuration area is the control centre for the public business we
 - **Service areas:** manage area names, descriptions, radius, suburbs, postcodes, travel fees and publication status.
 - **Settings:** manage the public business profile and general operating preferences from one consolidated page.
 - **Email templates:** remains a separate tool for managing automated and customer email content.
+- **Integrations:** shows the status of existing connected services, including the OrbitFS Mail System, without exposing credentials.
 
 Service and area changes are stored against the Brandon RV business and flow to the public service pages and customer-facing service selection where applicable. Draft or unpublished entries remain hidden from the public website. Existing customer, job, quote, appointment, invoice and account records are retained.
 
