@@ -90,7 +90,7 @@ export async function sendBrandonRvTemplateEmail(input:{
       if(!error&&templates?.length) {
         const active=templates.filter((template)=>template.enabled||template.is_security);
         const results=await Promise.all(active.map(async(template)=>{
-          const message=renderBrandonRvEmail(template.template_key,input.variables,{
+          const message=renderBrandonRvEmail(template.template_key,{...input.variables,sender_type:input.sender},{
             subject:template.subject,title:template.title,intro:template.intro,body:template.body,cta:template.button_label,
           });
           return sendEmail({sender:input.sender,senderMailboxId:template.sender_mailbox_id,to:input.to,subject:message.subject,html:message.html});
@@ -101,6 +101,6 @@ export async function sendBrandonRvTemplateEmail(input:{
   } catch {
     // If the optional template configuration is unavailable, use the bundled default.
   }
-  const message=renderBrandonRvEmail(input.templateId,input.variables);
+  const message=renderBrandonRvEmail(input.templateId,{...input.variables,sender_type:input.sender});
   return sendEmail({sender:input.sender,to:input.to,subject:message.subject,html:message.html});
 }
