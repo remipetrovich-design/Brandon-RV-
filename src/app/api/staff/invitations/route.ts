@@ -32,7 +32,7 @@ export async function POST(request:Request){
   const token=randomBytes(32).toString("base64url"),expiresAt=new Date(Date.now()+7*86400000).toISOString();
   const {data:invitation,error}=await db.from("staff_invitations").insert({business_id:businessId,email,user_id:user?.id??null,role_key:roleKey,job_title:jobTitle,employment_type:employmentType,start_date:startDate,invited_by:access.user!.id,token_hash:digest(token),expires_at:expiresAt}).select("id").single();
   if(error||!invitation)return jsonError("Could not create the staff invitation.",500);
-  const origin=process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\\/+$/,"")||"https://brandon-rv.vercel.app";
+  const origin= (process.env.NEXT_PUBLIC_APP_URL?.trim()||"https://brandon-rv.vercel.app").replace(/\/+$/g,"");
   const link=origin+"/portal/accept-staff-invitation?token="+encodeURIComponent(token);
   const sent=await sendBrandonRvTemplateEmail({templateId:"staff_invitation",sender:"brandonrv",to:email,variables:{firstname:email.split("@")[0],email,inviter_name:access.user?.full_name??"Brandon RV",staff_role:role.name,job_title:jobTitle,invitation_url:link,expiry_time:"7 days"}});
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"staff.invitation.created",entity_type:"staff_invitation",entity_id:invitation.id,details:{email,role_key:roleKey,email_sent:sent}});
