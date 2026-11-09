@@ -41,7 +41,7 @@ export async function POST(request:Request){
    requested_service:String(body.requested_service??"").trim().slice(0,200)||null,description,
    preferred_contact:["email","phone","sms"].includes(String(body.preferred_contact))?String(body.preferred_contact):"email",
    source:"admin",status:legacyStatus(stage),stage,internal_notes:String(body.internal_notes??"").trim().slice(0,5000)||null,
-   customer_id:body.customer_id||null,user_id:body.user_id||null
+
   }).select("id,request_number,request_type,stage").single();
   if(error||!record)return jsonError("Could not create the enquiry record.",500);
   if(staffIds.length){const {error:assignError}=await db.from("enquiry_assignments").insert(staffIds.map((staff_id:string)=>({business_id:businessId,enquiry_id:record.id,staff_id,assigned_by:access.user!.id})));if(assignError){await db.from("enquiries").delete().eq("id",record.id).eq("business_id",businessId);return jsonError("Could not assign staff. The enquiry was not saved.",500);}}
