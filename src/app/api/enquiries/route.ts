@@ -8,7 +8,7 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
   const form=await request.formData();const requestType=String(form.get("requestType")??"quote_request");
-  if(!["general_enquiry","quote_request"].includes(requestType))return jsonError("Invalid enquiry type.");
+  if(!["public_enquiry","general_enquiry","quote_request"].includes(requestType))return jsonError("Invalid enquiry type.");
   const first=String(form.get("firstName")??"").trim();const last=String(form.get("lastName")??"").trim();
   const submittedName=(first+" "+last).trim();const submittedEmail=String(form.get("email")??"");
   const submittedPhone=String(form.get("phone")??"").trim();const user=await currentUser();
@@ -25,17 +25,17 @@ export async function POST(request:Request){
   const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,unknown>:{};
   if(configured.accepting_enquiries===false)return jsonError("Brandon RV is not accepting new enquiries at the moment. Please contact the business directly.",503);
   const reference=requestNumber();let guestToken:string|null=null;
-  if(requestType==="general_enquiry"){
+  if(requestType==="general_enquiry"||requestType==="public_enquiry"){
    const description=String(form.get("message")??"").trim();
    if(description.length<5||description.length>5000)return jsonError("Enter a message between 5 and 5,000 characters.");
-   const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,requested_service:"General enquiry",description,preferred_contact:"email",status:"new",source:"contact_page",request_type:"general_enquiry",request_number:reference}).select("id").single();
+   const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,requested_service:requestType==="public_enquiry"?"Public Contact form":"General enquiry",description,preferred_contact:"email",status:"new",source:requestType==="public_enquiry"?"contact_page":"website",request_type:requestType,request_number:reference}).select("id").single();
    if(error||!enquiry)return jsonError("Could not submit your enquiry. Please try again.",500);
    await sendBrandonRvTemplateEmail({templateId:"enquiry_received",sender:"noreply",to:email,variables:{firstname:first,lastname:last,enquiry_number:reference,service:"General enquiry",vehicle:"",suburb:"",enquiry_url:process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}});
-   return Response.json({success:true,referenceNumber:reference,message:"Your general enquiry has been sent. It is not a quote request or booking."},{status:201});
+   return Response.json({success:true,referenceNumber:reference,message:"Your public enquiry has been sent. It is not a quote request or booking."},{status:201});
   }
   const vehicleType=String(form.get("vehicleType")??"").trim();const vehicle=String(form.get("vehicle")??"").trim();
   const year=String(form.get("year")??"").trim();const requestedVehicleId=String(form.get("vehicleId")??"").trim();const location=String(form.get("location")??"").trim();
-  const workType=String(form.get("workType")??"").trim();const description=String(form.get("description")??"").trim();
+  const workType=String(form.get("workType")??"").trim();const description=String(form.get("description")??"").trim();const preferred=String(form.get("preferredContact")??"email");
   if((!requestedVehicleId&&!vehicleType)||!location||location.length>160||!workType||description.length<10||description.length>5000)return jsonError("Complete the vehicle, location and job description fields.");
   const files=form.getAll("files").filter((x):x is File=>x instanceof File&&x.size>0);
   if(files.length>8||files.some(f=>f.size>10*1024*1024||!allowedTypes.has(f.type)))return jsonError("Attach up to 8 JPG, PNG, WEBP or PDF files. Each file must be under 10 MB.");
@@ -44,7 +44,7 @@ export async function POST(request:Request){
    if(requestedVehicleId){const {data:existingVehicle}=await db.from("vehicles").select("id,make,model,year,vehicle_type").eq("id",requestedVehicleId).eq("customer_id",account.id).maybeSingle();if(!existingVehicle)return jsonError("Select one of your saved vehicles.");vehicleId=existingVehicle.id;vehicleDescription=[existingVehicle.vehicle_type,existingVehicle.make,existingVehicle.model,existingVehicle.year].filter(Boolean).join(" · ");}
    else if(vehicle){const {data:savedVehicle}=await db.from("vehicles").insert({business_id:business.id,customer_id:account.id,make:vehicle.slice(0,80),year:year&&/^\d{4}$/.test(year)?Number(year):null,vehicle_type:vehicleType,notes:"Added from Request a Quote"}).select("id").single();vehicleId=savedVehicle?.id??null;}
   }else guestToken=randomBytes(32).toString("base64url");
-  const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,location,vehicle_description:vehicleDescription,vehicle_id:vehicleId,requested_service:workType,description,preferred_contact:"email",status:"new",source:"website",request_type:"quote_request",request_number:reference,guest_access_token_hash:guestToken?digest(guestToken):null,guest_access_expires_at:guestToken?new Date(Date.now()+90*86400000).toISOString():null}).select("id").single();
+  const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,location,vehicle_description:vehicleDescription,vehicle_id:vehicleId,requested_service:workType,description,preferred_contact:["email","phone","sms"].includes(preferred)?preferred:"email",status:"new",source:"website",request_type:"quote_request",request_number:reference,guest_access_token_hash:guestToken?digest(guestToken):null,guest_access_expires_at:guestToken?new Date(Date.now()+90*86400000).toISOString():null}).select("id").single();
   if(error||!enquiry)return jsonError("Could not submit your quote request. Please try again.",500);
   const uploaded:string[]=[];
   for(const file of files){

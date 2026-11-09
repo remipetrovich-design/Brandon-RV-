@@ -29,9 +29,7 @@ export default async function AdminDashboard() {
   {label:"PARTS ORDERS",value:supplierOrders.count,detail:"Orders still being processed",href:"/admin/supplier-orders",permission:"suppliers.view"}
  ].filter(item=>allowed.has(item.permission));
  const quickLinks=[
-  {label:"General enquiries",detail:"Review general questions and contact messages",href:"/admin/general-enquiries",permission:"enquiries.view"},
-  {label:"Customer enquiries & tickets",detail:"Open customer conversations and internal notes",href:"/admin/customer-enquiries",permission:"enquiries.view"},
-  {label:"Quote requests",detail:"Review guest and customer quote requests",href:"/admin/quote-requests",permission:"enquiries.view"},
+  {label:"Enquiries & requests",detail:"Review public contact forms, general enquiries, customer tickets and quote requests in one register",href:"/admin/enquiries",permission:"enquiries.view"},
   {label:"Manage appointments",detail:"Review requests and schedule visits",href:"/admin/appointments",permission:"appointments.view"},
   {label:"Manage work orders",detail:"Track approved work and progress",href:"/admin/jobs",permission:"jobs.view"},
   {label:"Prepare a quote",detail:"Create and send an itemised quote",href:"/admin/quotes",permission:"quotes.view"},
