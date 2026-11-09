@@ -46,9 +46,9 @@ export async function PATCH(request:Request){
   const cancellation_policy=String(b.cancellation_policy??"").trim().slice(0,2000);
   const approval_required=b.approval_required!==false;
   const p=isObject(input.pricing)?input.pricing:{};
-  const optionalAmount=(value:unknown,max:number)=>value===null||value===undefined||value===""?null:Number(value);
-  const labour_rate=optionalAmount(p.labour_rate,5000);
-  const parts_markup_percent=optionalAmount(p.parts_markup_percent,200);
+  const optionalAmount=(value:unknown)=>value===null||value===undefined||value===""?null:Number(value);
+  const labour_rate=optionalAmount(p.labour_rate);
+  const parts_markup_percent=optionalAmount(p.parts_markup_percent);
   const minimum_attendance_minutes=number(p.minimum_attendance_minutes,60);
   const freight_policy=String(p.freight_policy??"at_cost");
   const consumables_policy=String(p.consumables_policy??"at_cost");
