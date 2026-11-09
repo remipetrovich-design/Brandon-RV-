@@ -11,7 +11,7 @@ export default function EnquiryForm(){
   const form=event.currentTarget;const data=new FormData(form);
   try{
    let vehicleId=selectedVehicle;
-   if(profile&&!vehicleId&&String(data.get("vehicleMake")??"").trim()){
+   if(profile&&!vehicleId&&(String(data.get("vehicleMake")??"").trim()||String(data.get("vehicleModel")??"").trim())){
     setSavingVehicle(true);
     const vr=await fetch("/api/portal/vehicles",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({make:data.get("vehicleMake"),model:data.get("vehicleModel"),year:data.get("year"),vehicle_type:data.get("vehicleType"),registration:data.get("registration"),vin:data.get("vin"),notes:data.get("vehicleNotes")})});
     const vd=await vr.json();if(!vr.ok){setNotice(vd.error??"Could not save your vehicle.");return;}vehicleId=vd.vehicle.id;setVehicles(old=>[vd.vehicle,...old]);setSelectedVehicle(vehicleId);
@@ -27,7 +27,7 @@ export default function EnquiryForm(){
     "Access/site details: "+String(data.get("accessDetails")??"").trim(),
     "Additional details: "+String(data.get("additionalDetails")??"").trim()
    ].filter(x=>!x.endsWith(": "));
-   const description=[String(data.get("description")??"").trim(),...detailLines].filter(Boolean).join("\n\n");
+   const description=[String(data.get("description")??"").trim(),...detailLines].filter(Boolean).join("\n\n").slice(0,5000);
    if(mode==="conversation"){
     const response=await fetch("/api/portal/enquiries",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:String(data.get("workType")??"Customer enquiry"),message:description,vehicleId:vehicleId||null,location:String(data.get("location")??"").trim(),vehicleDescription:[data.get("vehicleType"),data.get("vehicleMake"),data.get("vehicleModel"),data.get("year")].filter(Boolean).join(" "),preferredContact:String(data.get("preferredContact")??"email")})});
     const result=await response.json();if(!response.ok){setNotice(result.error??"Could not start your conversation.");return;}setTicketId(result.enquiry?.id??"");setReference(result.enquiry?.request_number??"");setSent(true);setNotice("Your conversation has been started.");return;
@@ -48,7 +48,7 @@ export default function EnquiryForm(){
  <div className="form-grid"><label>Type of work<select name="workType" required defaultValue=""><option value="" disabled>Select a category</option><option>Cabinetry or interior repair</option><option>Hardware or fittings</option><option>Interior accessory</option><option>Fault assessment</option><option>General question</option><option>Not sure</option></select></label><label>Vehicle location / suburb<input name="location" required placeholder="Where is the vehicle located?"/></label><label>How urgent is it?<select name="urgency" defaultValue="standard"><option value="standard">Standard</option><option value="soon">As soon as practical</option><option value="urgent">Urgent — please contact me</option><option value="flexible">Flexible</option></select></label><label>Preferred timing<input name="preferredDate" type="text" placeholder="e.g. Any time in December"/></label><label>Preferred contact method<select name="preferredContact" defaultValue="email"><option value="email">Email</option><option value="phone">Phone</option><option value="sms">SMS</option></select></label></div>
  <label className="full-label">Tell us about the job<textarea name="description" rows={5} required minLength={10} maxLength={5000} placeholder="What is happening? When did it start? Include any details that may help..."/></label>
  <label className="full-label">Access or site details (optional)<textarea name="accessDetails" rows={2} placeholder="Access restrictions, storage location, power availability, or other site information"/></label><label className="full-label">Anything else? (optional)<textarea name="additionalDetails" rows={2} placeholder="Other information that may help us assess your request"/></label>
- <label className="upload-field">Photos or documents (optional)<input name="files" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple onChange={e=>setFiles(Array.from(e.target.files??[]).map(f=>f.name))}/><small>{files.length?files.join(", "):"Up to 8 files, 10 MB each. JPG, PNG, WEBP or PDF."}</small></label>
+ {mode==="quote"&&<label className="upload-field">Photos or documents (optional)<input name="files" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple onChange={e=>setFiles(Array.from(e.target.files??[]).map(f=>f.name))}/><small>{files.length?files.join(", "):"Up to 8 files, 10 MB each. JPG, PNG, WEBP or PDF."}</small></label>
  {profile&&<div className="form-section-title"><span>04</span><div><strong>How would you like to proceed?</strong><small>Choose the right customer workflow</small></div></div>}
  {profile&&<div className="form-grid"><label className="full-label">Request type<select value={mode} onChange={e=>setMode(e.target.value as "quote"|"conversation")}><option value="quote">Request a quote</option><option value="conversation">Start a conversation / general enquiry</option></select></label></div>}
  {!profile&&<p className="form-disclaimer">Want to start an ongoing conversation in the customer portal? <a href="/portal/sign-in">Sign in or create an account</a>.</p>}
