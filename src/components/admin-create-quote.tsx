@@ -3,9 +3,9 @@ import {FormEvent,useEffect,useState} from "react";
 type Customer={id:string;full_name:string;email:string|null};
 type Enquiry={id:string;request_number:string;request_type:string;contact_name:string;email:string;requested_service:string};
 type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number};
-export default function AdminCreateQuote(){
+export default function AdminCreateQuote({initialEnquiryId=""}:{initialEnquiryId?:string}){
  const [customers,setCustomers]=useState<Customer[]>([]);const [enquiries,setEnquiries]=useState<Enquiry[]>([]);const [priorQuotes,setPriorQuotes]=useState<PriorQuote[]>([]);
- const [enquiryId,setEnquiryId]=useState("");const [customerId,setCustomerId]=useState("");const [supersedesQuoteId,setSupersedesQuoteId]=useState("");
+ const [enquiryId,setEnquiryId]=useState(initialEnquiryId);const [customerId,setCustomerId]=useState("");const [supersedesQuoteId,setSupersedesQuoteId]=useState("");
  const [description,setDescription]=useState("");const [quantity,setQuantity]=useState("1");const [unitPrice,setUnitPrice]=useState("");const [taxRate,setTaxRate]=useState("0");const [gstStatus,setGstStatus]=useState("not_configured");const [configuredGstRate,setConfiguredGstRate]=useState(10);const [expiryDate,setExpiryDate]=useState("");const [notes,setNotes]=useState("");const [terms,setTerms]=useState("");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
  useEffect(()=>{void(async()=>{try{const r=await fetch("/api/admin/quotes");const d=await r.json();if(r.ok){setCustomers(d.customers??[]);setEnquiries(d.enquiries??[]);setPriorQuotes(d.quotes??[]);const status=d.pricing?.gst_status??"not_configured";const rate=Number(d.pricing?.gst_rate??10);setGstStatus(status);setConfiguredGstRate(rate);setTaxRate(status==="registered"?String(rate):"0");}else setNotice(d.error??"Could not load quote records.");}catch{setNotice("Could not load quote records.");}})();},[]);
  const ticketQuotes=priorQuotes.filter(q=>q.enquiry_id===enquiryId);

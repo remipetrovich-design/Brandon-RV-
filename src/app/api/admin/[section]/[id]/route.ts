@@ -4,7 +4,7 @@ export const runtime="nodejs";
 const config:any={
  enquiries:{table:"enquiries",permission:"enquiries.manage",status:["new","reviewing","quoted","accepted","declined","converted","closed"],fields:["status","internal_notes"]},
  appointments:{table:"appointments",permission:"appointments.manage",status:["requested","confirmed","rescheduled","completed","cancelled"],fields:["status","starts_at","ends_at","location","internal_notes"]},
- jobs:{table:"jobs",permission:"jobs.manage",status:["pending","scheduled","in_progress","waiting_parts","completed","cancelled"],fields:["status","priority","scheduled_start","scheduled_end","customer_visible_notes","internal_notes","estimated_hours"]},
+ jobs:{table:"jobs",permission:"jobs.manage",status:["pending","scheduled","waiting_parts","cancelled"],fields:["status","priority","scheduled_start","scheduled_end","customer_visible_notes","internal_notes","estimated_hours"]},
  quotes:{table:"quotes",permission:"quotes.manage",status:["draft","sent","expired"],fields:["status"]},
  invoices:{table:"invoices",permission:"invoices.manage",status:["draft","issued","void"],fields:["status"]},
  customers:{table:"customers",permission:"customers.manage",status:["active","inactive"],fields:["status"]},
