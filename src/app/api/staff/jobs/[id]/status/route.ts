@@ -55,6 +55,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(itemError){await db.from("invoices").delete().eq("id",invoice.id);return jsonError("Could not create invoice items. Work Order remains in progress.",500);}
   const {error:updateError}=await db.from("jobs").update({status:"completed",completed_at:now,actual_end:now,work_summary:summary,customer_approval_status:"pending",final_report_created_at:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
   if(updateError){await db.from("invoices").delete().eq("id",invoice.id);return jsonError("Invoice was rolled back because the Work Order could not be completed.",500);}
+  await db.from("job_assignments").update({status:"completed"}).eq("job_id",id).eq("status","accepted");
   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.finished_report_created",entity_type:"job",entity_id:id,details:{invoice_id:invoice.id,invoice_number:invoice.invoice_number,total,entry_count:entries?.length??0}});
   return Response.json({success:true,status:"completed",invoice});
  }catch{return jsonError("Could not update Work Order.",500);}
