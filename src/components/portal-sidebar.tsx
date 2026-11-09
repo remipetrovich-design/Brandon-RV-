@@ -5,6 +5,7 @@ import SignOutButton from "@/components/sign-out-button";
 
 const links=[
   {href:"/portal",label:"Overview",icon:"home"},
+  {href:"/portal/enquiries",label:"Enquiries & messages",icon:"document"},
   {href:"/portal/quotes",label:"Quotes",icon:"quote"},
   {href:"/portal/bookings",label:"Bookings & jobs",icon:"calendar"},
   {href:"/portal/vehicles",label:"My vehicles",icon:"vehicle"},

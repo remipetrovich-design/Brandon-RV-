@@ -1,0 +1,10 @@
+"use client";
+import {FormEvent,useEffect,useState} from "react";
+import {useRouter} from "next/navigation";
+type Vehicle={id:string;make:string|null;model:string|null};
+export default function CustomerEnquiryForm(){
+ const [vehicles,setVehicles]=useState<Vehicle[]>([]);const router=useRouter();const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
+ useEffect(()=>{void(async()=>{try{const r=await fetch("/api/portal/vehicles");const d=await r.json();if(r.ok)setVehicles(d.vehicles??[]);}catch{}})();},[]);
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");const f=new FormData(e.currentTarget);try{const r=await fetch("/api/portal/enquiries",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:f.get("subject"),message:f.get("message"),vehicleId:f.get("vehicleId")||null})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create enquiry.");return;}setNotice("Enquiry "+d.enquiry.request_number+" created. Open the conversation below to message Brandon RV.");e.currentTarget.reset();router.refresh();}catch{setNotice("Could not create enquiry.");}finally{setBusy(false);}}
+ return <section className="portal-panel"><span className="panel-kicker">NEW CUSTOMER ENQUIRY</span><h2>Start a conversation</h2><form className="auth-form" onSubmit={submit}><label>Subject<input name="subject" required minLength={3} maxLength={180}/></label><label>Vehicle (optional)<select name="vehicleId" defaultValue=""><option value="">No vehicle selected</option>{vehicles.map(v=><option key={v.id} value={v.id}>{[v.make,v.model].filter(Boolean).join(" ")||"Saved vehicle"}</option>)}</select></label><label>Message<textarea name="message" rows={4} required minLength={5} maxLength={5000}/></label><button className="button button-primary" disabled={busy}>{busy?"Sending…":"Create customer enquiry →"}</button></form>{notice&&<p className="inline-notice" role="status">{notice}</p>}</section>;
+}
