@@ -14,12 +14,12 @@ export async function GET(request:Request){
  if(search)query=query.or("request_number.ilike.%"+search+"%,contact_name.ilike.%"+search+"%,email.ilike.%"+search+"%,phone.ilike.%"+search+"%,requested_service.ilike.%"+search+"%");
  const {data,error}=await query;if(error)return jsonError("Could not load enquiry records.",500);
  const ids=(data??[]).map(x=>x.id);
- const {data:assignments}=ids.length?await db.from("enquiry_assignments").select("enquiry_id,staff_id,assigned_at").in("enquiry_id",ids).is("unassigned_at",null):{data:[]};
+ const [{data:assignments},{data:activeStaff}]=await Promise.all([ids.length?db.from("enquiry_assignments").select("enquiry_id,staff_id,assigned_at").in("enquiry_id",ids).is("unassigned_at",null):Promise.resolve({data:[]}),db.from("staff").select("id,full_name,email,job_title").eq("business_id",businessId).eq("employment_status","active").order("full_name")]);
  const staffIds=[...new Set((assignments??[]).map(x=>x.staff_id))];
  const {data:staff}=staffIds.length?await db.from("staff").select("id,full_name,email,job_title").eq("business_id",businessId).in("id",staffIds):{data:[]};
  const staffById=new Map((staff??[]).map(x=>[x.id,x]));
  const rows=(data??[]).map(row=>({...row,assigned_staff:(assignments??[]).filter(a=>a.enquiry_id===row.id).map(a=>({...staffById.get(a.staff_id),assigned_at:a.assigned_at})).filter(x=>x.id)}));
- return Response.json({enquiries:rows,stages,types});
+ return Response.json({enquiries:rows,staff:activeStaff??[],stages,types});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
