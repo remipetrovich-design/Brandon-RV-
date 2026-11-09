@@ -113,3 +113,16 @@ The business owner decides which services Brandon RV offers and manages the cata
 ## Deployment
 
 The application is configured for deployment through the connected hosting environment. Configure the production environment variables there separately from GitHub Actions migration secrets. A successful database migration run confirms the migrations were applied; it does not, by itself, confirm a production website deployment.
+
+
+## Customer intake, tickets, quotes and bookings
+
+The public Contact page records **General Enquiries** separately from quote requests. General enquiries are not automatically converted into tickets, quotes or bookings.
+
+The public Request a Quote form is available without registration. Guest requests receive a Request Quote ID and a secure access link/code. Signed-in customers can reuse their account details and select a saved vehicle; a newly entered vehicle is added to their vehicle list. Customer Enquiries are created from the customer portal and use the same ticket conversation system.
+
+Customer Enquiries and Quote Requests are ticket-backed records. Customers and staff can exchange messages against the ticket; staff can add internal-only notes. Guest quote requests use a time-limited access token and do not require a customer login. Quotes are attached to tickets where applicable, support revision history, and record customer acceptance or decline with a timestamp.
+
+A preferred appointment time is only a request. A confirmed Booking requires an accepted quote and the agreed date, start/end time and service location. Confirming the Booking creates the existing job record as a Pending Work Order. The customer and staff/admin interfaces remain views over the same user identity and Supabase database.
+
+The migration for this workflow is applied through the existing production Supabase migration workflow after it is merged to main. No production database change is made by creating the feature branch or pull request.

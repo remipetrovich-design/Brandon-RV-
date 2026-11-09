@@ -2,28 +2,26 @@ import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;const db=database();
- const [{data:quotes},{data:staff}]=await Promise.all([
-  db.from("quotes").select("id,quote_number,total,customer_id,customers(full_name)").eq("business_id",access.membership!.business_id).eq("status","accepted").order("created_at",{ascending:false}),
+ const [{data:appointments,error},{data:staff}]=await Promise.all([
+  db.from("appointments").select("id,quote_id,customer_id,user_id,guest_name,guest_email,location,starts_at,ends_at,quotes(quote_number,status)").eq("business_id",access.membership!.business_id).eq("status","confirmed").order("starts_at",{ascending:true}),
   db.from("staff").select("id,job_title,users(full_name)").eq("business_id",access.membership!.business_id).eq("employment_status","active")
  ]);
- return Response.json({quotes:quotes??[],staff:staff??[]});
+ if(error)return jsonError("Could not load confirmed bookings.",500);const ids=(appointments??[]).map(x=>x.id);
+ const {data:existing}=ids.length?await db.from("jobs").select("appointment_id").in("appointment_id",ids):{data:[]};const used=new Set((existing??[]).map(x=>x.appointment_id));
+ return Response.json({appointments:(appointments??[]).filter(x=>!used.has(x.id)),staff:staff??[]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
  try{
-  const body=await request.json();const quoteId=String(body.quoteId??"");const title=String(body.title??"").trim();const scope=String(body.scope??"").trim().slice(0,5000);const priority=String(body.priority??"normal");const start=body.scheduledStart?new Date(String(body.scheduledStart)):null;const end=body.scheduledEnd?new Date(String(body.scheduledEnd)):null;const staffIds:string[]=Array.isArray(body.staffIds)?body.staffIds.map((x:unknown)=>String(x)):[];
-  if(!/^[0-9a-f-]{36}$/i.test(quoteId)||title.length<3||title.length>180)return jsonError("Select an accepted quote and enter a job title.");
-  if(!["low","normal","high","urgent"].includes(priority))return jsonError("Select a valid priority.");
-  if(start&&!Number.isFinite(start.getTime())||end&&!Number.isFinite(end.getTime())||start&&end&&end<=start)return jsonError("Check the scheduled start and end times.");
-  if(staffIds.length>20||staffIds.some(x=>!/^[0-9a-f-]{36}$/i.test(x)))return jsonError("Invalid staff selection.");
-  const db=database();const {data:quote}=await db.from("quotes").select("id,customer_id,user_id,quote_number").eq("id",quoteId).eq("business_id",access.membership!.business_id).eq("status","accepted").maybeSingle();if(!quote)return jsonError("Accepted quote not found.",404);
-  if(staffIds.length){const {data:staff}=await db.from("staff").select("id").eq("business_id",access.membership!.business_id).eq("employment_status","active").in("id",staffIds);if((staff??[]).length!==staffIds.length)return jsonError("One or more selected staff members are not active.");}
-  const jobNumber="BRV-"+Date.now().toString(36).toUpperCase();
-  const {data:job,error}=await db.from("jobs").insert({business_id:access.membership!.business_id,customer_id:quote.customer_id,user_id:quote.user_id,quote_id:quote.id,job_number:jobNumber,title,scope_of_work:scope||null,status:"scheduled",priority,scheduled_start:start?.toISOString()??null,scheduled_end:end?.toISOString()??null}).select("id,job_number,title").single();
-  if(error||!job)return jsonError("Could not create job.",500);
-  if(staffIds.length){const {error:assignmentError}=await db.from("job_assignments").insert(staffIds.map((staff_id:string)=>({business_id:access.membership!.business_id,job_id:job.id,staff_id,assigned_by:access.user!.id,status:"assigned"})));if(assignmentError){await db.from("jobs").delete().eq("id",job.id);return jsonError("Could not assign selected staff.",500);}}
-  await db.from("quotes").update({status:"converted",updated_at:new Date().toISOString()}).eq("id",quote.id);
-  await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:"job.created",entity_type:"job",entity_id:job.id,details:{job_number:jobNumber,quote_id:quote.id,staff_ids:staffIds}});
+  const body=await request.json();const appointmentId=String(body.appointmentId??"");if(!/^[0-9a-f-]{36}$/i.test(appointmentId))return jsonError("Select a confirmed booking.");
+  const db=database();const {data:appointment}=await db.from("appointments").select("id,business_id,customer_id,user_id,guest_name,guest_email,quote_id,location,starts_at,ends_at,status").eq("id",appointmentId).eq("business_id",access.membership!.business_id).eq("status","confirmed").maybeSingle();
+  if(!appointment||!appointment.quote_id||!appointment.starts_at||!appointment.ends_at||!appointment.location)return jsonError("Only a complete confirmed booking can create a Work Order.",409);
+  const {data:quote}=await db.from("quotes").select("id,quote_number,status").eq("id",appointment.quote_id).eq("business_id",access.membership!.business_id).eq("status","accepted").maybeSingle();if(!quote)return jsonError("The booking must reference an accepted quote.",409);
+  const {data:existing}=await db.from("jobs").select("id").eq("appointment_id",appointmentId).maybeSingle();if(existing)return Response.json({job:existing,alreadyCreated:true});
+  const {data:items}=await db.from("quote_items").select("description").eq("quote_id",quote.id).order("sort_order");const title=items?.[0]?.description??("Work for quote "+quote.quote_number);
+  const {data:job,error}=await db.from("jobs").insert({business_id:appointment.business_id,customer_id:appointment.customer_id,user_id:appointment.user_id,guest_name:appointment.guest_name,guest_email:appointment.guest_email,appointment_id:appointment.id,quote_id:quote.id,job_number:"BRV-"+Date.now().toString(36).toUpperCase(),title,scope_of_work:(items??[]).map((x:any)=>x.description).join("\n"),status:"pending",scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at}).select("id,job_number,title,status").single();
+  if(error||!job)return jsonError("Could not create Work Order.",500);
+  await db.from("audit_events").insert({business_id:appointment.business_id,actor_user_id:access.user!.id,action:"work_order.created_from_booking",entity_type:"job",entity_id:job.id,details:{appointment_id:appointment.id,quote_id:quote.id}});
   return Response.json({job},{status:201});
- }catch{return jsonError("Could not create job.",500);}
+ }catch{return jsonError("Could not create Work Order.",500);}
 }
