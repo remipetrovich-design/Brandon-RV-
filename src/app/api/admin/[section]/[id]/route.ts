@@ -60,12 +60,22 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   if(section==="quotes"&&update.status==="sent"){
    const {data:quoteRecord}=await db.from("quotes").select("quote_number,total,customer_id,enquiry_id").eq("id",id).maybeSingle();
    let customer:any=null;if(quoteRecord?.customer_id){const result=await db.from("users").select("full_name,email").eq("id",quoteRecord.customer_id).maybeSingle();customer=result.data;}else if(quoteRecord?.enquiry_id){const result=await db.from("enquiries").select("contact_name,email").eq("id",quoteRecord.enquiry_id).maybeSingle();customer=result.data;}
-   if(quoteRecord&&customer?.email){const safeName=String(customer.full_name??customer.contact_name??"Customer").replace(/[&<>"]/g,"");const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;const quoteUrl=quoteRecord.enquiry_id&&!quoteRecord.customer_id?base+"/request-status":base+"/portal/quotes";const guestNote=quoteRecord.enquiry_id&&!quoteRecord.customer_id?"Use the secure Request Quote link and access code from your original confirmation email. ":"";emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV quote "+quoteRecord.quote_number,html:"<p>Hi "+safeName+",</p><p>Your Brandon RV quote "+quoteRecord.quote_number+" is ready for review.</p><p>Quote total: <strong>$"+Number(quoteRecord.total).toFixed(2)+" AUD</strong></p><p>"+guestNote+"<a href=\\""+quoteUrl+"\\">View your quote</a></p><p>Work is not booked until Brandon RV confirms scheduling.</p>"});}
+   if(quoteRecord&&customer?.email){
+    const safeName=String(customer.full_name??customer.contact_name??"Customer").replace(/[&<>"]/g,"");
+    const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
+    const quoteUrl=quoteRecord.enquiry_id&&!quoteRecord.customer_id?base+"/request-status":base+"/portal/quotes";
+    const guestNote=quoteRecord.enquiry_id&&!quoteRecord.customer_id?"Use the secure Request Quote link and access code from your original confirmation email. ":"";
+    emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV quote "+quoteRecord.quote_number,html:`<p>Hi ${safeName},</p><p>Your Brandon RV quote ${quoteRecord.quote_number} is ready for review.</p><p>Quote total: <strong>$${Number(quoteRecord.total).toFixed(2)} AUD</strong></p><p>${guestNote}<a href="${quoteUrl}">View your quote</a></p><p>Work is not booked until Brandon RV confirms scheduling.</p>`});
+   }
   }
   if(section==="invoices"&&update.status==="issued"){
    const {data:invoice}=await db.from("invoices").select("invoice_number,total,due_date,customer_id").eq("id",id).maybeSingle();
    const {data:customer}=invoice?.customer_id?await db.from("users").select("full_name,email").eq("id",invoice.customer_id).maybeSingle():{data:null};
-   if(invoice&&customer?.email){const safeName=String(customer.full_name??"Customer").replace(/[&<>"]/g,"");const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV invoice "+invoice.invoice_number,html:"<p>Hi "+safeName+",</p><p>Your Brandon RV invoice "+invoice.invoice_number+" has been issued.</p><p>Amount due: <strong>$"+Number(invoice.total).toFixed(2)+" AUD</strong></p><p>Due date: "+(invoice.due_date??"As shown on your invoice")+"</p><p>View your invoice in the customer portal: <a href=\\""+base+"/portal/invoices\\">View invoices</a></p>"});}
+   if(invoice&&customer?.email){
+    const safeName=String(customer.full_name??"Customer").replace(/[&<>"]/g,"");
+    const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
+    emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV invoice "+invoice.invoice_number,html:`<p>Hi ${safeName},</p><p>Your Brandon RV invoice ${invoice.invoice_number} has been issued.</p><p>Amount due: <strong>$${Number(invoice.total).toFixed(2)} AUD</strong></p><p>Due date: ${invoice.due_date??"As shown on your invoice"}</p><p>View your invoice in the customer portal: <a href="${base}/portal/invoices">View invoices</a></p>`});
+   }
   }
   return Response.json({success:true,emailSent,jobCreated});
  }catch{return jsonError("Could not update record.",500);}
