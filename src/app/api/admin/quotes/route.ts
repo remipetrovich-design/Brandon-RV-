@@ -4,7 +4,7 @@ export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;const db=database();const businessId=access.membership!.business_id;
  const [{data:customers,error:customerError},{data:enquiries,error:enquiryError},{data:quotes,error:quoteError},{data:businessSettings}]=await Promise.all([
   db.from("customers").select("id,full_name,email").eq("business_id",businessId).eq("status","active").order("full_name"),
-  db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id").eq("business_id",businessId).in("request_type",["customer_enquiry","quote_request"]).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
+  db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id").eq("business_id",businessId).in("request_type",["public_enquiry","general_enquiry","customer_enquiry","quote_request"]).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
   db.from("quotes").select("id,quote_number,enquiry_id,revision_number").eq("business_id",businessId).not("enquiry_id","is",null).order("created_at",{ascending:false}),
   db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle()
  ]);
@@ -26,7 +26,7 @@ export async function POST(request:Request){
   if(gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed and marked as registered in Business Settings.");
   if(gstStatus==="registered"&&Math.abs(taxRate-configuredGstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings for this quote.");
   let customer:any=null;let enquiry:any=null;
-  if(enquiryId){const result=await db.from("enquiries").select("id,request_number,request_type,user_id,customer_id,email,status").eq("id",enquiryId).eq("business_id",access.membership!.business_id).in("request_type",["customer_enquiry","quote_request"]).maybeSingle();enquiry=result.data;if(!enquiry)return jsonError("Ticket not found.",404);customer={id:enquiry.user_id??null,user_id:enquiry.user_id??null};}
+  if(enquiryId){const result=await db.from("enquiries").select("id,request_number,request_type,user_id,customer_id,email,status").eq("id",enquiryId).eq("business_id",access.membership!.business_id).in("request_type",["public_enquiry","general_enquiry","customer_enquiry","quote_request"]).maybeSingle();enquiry=result.data;if(!enquiry)return jsonError("Ticket not found.",404);customer={id:enquiry.user_id??null,user_id:enquiry.user_id??null};}
   else{const result=await db.from("customers").select("id,user_id").eq("id",customerId).eq("business_id",access.membership!.business_id).eq("status","active").maybeSingle();customer=result.data;if(!customer)return jsonError("Customer not found.",404);}
   let revisionNumber=1;
   if(supersedesQuoteId){const {data:prior}=await db.from("quotes").select("id,enquiry_id,revision_number,status").eq("id",supersedesQuoteId).eq("business_id",access.membership!.business_id).maybeSingle();if(!prior||!enquiryId||prior.enquiry_id!==enquiryId)return jsonError("The quote revision must belong to the same ticket.",409);if(["accepted","converted"].includes(prior.status))return jsonError("An accepted or converted quote cannot be revised. Create a separately approved variation.",409);revisionNumber=Number(prior.revision_number??1)+1;}
