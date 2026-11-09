@@ -126,3 +126,16 @@ Customer Enquiries and Quote Requests are ticket-backed records. Customers and s
 A preferred appointment time is only a request. A confirmed Booking requires an accepted quote and the agreed date, start/end time and service location. Confirming the Booking creates the existing job record as a Pending Work Order. The customer and staff/admin interfaces remain views over the same user identity and Supabase database.
 
 The migration for this workflow is applied through the existing production Supabase migration workflow after it is merged to main. No production database change is made by creating the feature branch or pull request.
+
+
+## Owner configuration and launch readiness (Phase 6)
+
+The owner-facing Business Configuration area supports public business details, draft website content with preview and separate publishing, service areas, email templates and sender assignments, integrations, role permissions, booking availability, cancellation settings and pricing/GST configuration. Booking days, hours and unavailable dates are enforced when configured. Rates and GST remain unconfigured until Chris confirms them with the accountant; the business-plan figures are not treated as approved prices.
+
+Services have an explicit approval status: Approved for launch, Conditional, Assessment required, Deferred or Not offered. Only active, published services approved for launch are exposed to customers. Newly created services default to Assessment required and cannot be published until explicitly approved.
+
+The Phase 6 migration adds this service approval gate. It is forward-only and is applied by the existing Supabase migration workflow after the pull request is merged. Do not apply it manually to production while the change is under review.
+
+## Launch readiness (Phase 7)
+
+The production build must complete successfully before the application is considered deployable. Customer account isolation, staff permissions, quote approval, confirmed booking creation, Work Order generation, invoices, payment provider confirmation, email delivery, private file access and backup recovery still require operational verification before real customer use. Some checks require Chris to use the customer and staff interfaces; those are not represented as completed by a successful build.
