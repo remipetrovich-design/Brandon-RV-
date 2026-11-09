@@ -31,7 +31,7 @@ export async function POST(request:Request){
   if(!stages.includes(stage))return jsonError("Select a valid stage.");
   if(contactName.length<2||contactName.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254)return jsonError("Enter a valid contact name and email address.");
   if(phone.length>40||description.length<3||description.length>5000)return jsonError("Enter a phone number under 40 characters and a description between 3 and 5,000 characters.");
-  const staffIds=Array.isArray(body.staff_ids)?[...new Set(body.staff_ids.map((x:unknown)=>String(x)))]:[];
+  const staffIds=Array.isArray(body.staff_ids)?[...new Set<string>(body.staff_ids.map((x:unknown)=>String(x)))]:[];
   if(staffIds.length>20||staffIds.some((id:string)=>!/^[0-9a-f-]{36}$/i.test(id)))return jsonError("Invalid staff selection.");
   const db=database(),businessId=access.membership!.business_id;
   if(staffIds.length){const {data:staff}=await db.from("staff").select("id").eq("business_id",businessId).eq("employment_status","active").in("id",staffIds);if((staff??[]).length!==staffIds.length)return jsonError("One or more selected staff are not active in this business.");}
