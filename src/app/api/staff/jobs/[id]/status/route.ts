@@ -1,4 +1,5 @@
 import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+import {canStartWorkOrder,canFinishWorkOrder,calculateWorkOrderTotals} from "@/lib/work-order-lifecycle.mjs";
 export const runtime="nodejs";
 
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
@@ -19,7 +20,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const now=new Date().toISOString();
   if(action==="start"){
    if(job.status==="in_progress")return Response.json({success:true,status:"in_progress",alreadyStarted:true});
-   if(!["pending","scheduled"].includes(job.status))return jsonError("This Work Order cannot be started from its current status.",409);
+   if(!canStartWorkOrder(job.status,assignment?.status,canManage))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
    const {error}=await db.from("jobs").update({status:"in_progress",actual_start:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
    if(error)return jsonError("Could not start Work Order.",500);
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.started",entity_type:"job",entity_id:id,details:{staff_id:staff.id}});
@@ -29,7 +30,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    const {data:existingInvoice}=await db.from("invoices").select("id,invoice_number,total,status").eq("job_id",id).maybeSingle();
    return Response.json({success:true,status:"completed",invoice:existingInvoice,alreadyFinished:true});
   }
-  if(job.status!=="in_progress")return jsonError("Only an in-progress Work Order can be finished.",409);
+  if(!canFinishWorkOrder(job.status,assignment?.status,canManage))return jsonError("Only an in-progress Work Order with an accepted assignment can be finished.",409);
   const summary=String(body.workSummary??"").trim().slice(0,8000);
   if(summary.length<10)return jsonError("Add a useful summary of the work completed before finishing the Work Order.");
   const {data:entries,error:entryError}=await db.from("job_work_entries").select("id,entry_type,description,quantity,unit_price,tax_rate,line_total").eq("job_id",id).eq("business_id",membership.business_id).order("occurred_at");
@@ -40,9 +41,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    const {data:quoteItems}=await db.from("quote_items").select("description,quantity,unit_price,tax_rate,line_total").eq("quote_id",job.quote_id).order("sort_order");
    items=(quoteItems??[]).map((x:any,i:number)=>({...x,sort_order:i}));
   }
-  const subtotal=Number(items.reduce((n:any,x:any)=>n+Number(x.line_total),0).toFixed(2));
-  const taxAmount=Number(items.reduce((n:any,x:any)=>n+Number(x.line_total)*Number(x.tax_rate)/100,0).toFixed(2));
-  const total=Number((subtotal+taxAmount).toFixed(2));
+  const totals=calculateWorkOrderTotals(billable.length?(entries??[]):items);
+  const {subtotal,taxAmount,total}=totals;
   if(!items.length)return jsonError("Add at least one billable work item or link an approved quote before finishing this Work Order.",409);
   const {data:invoice,error:invoiceError}=await db.from("invoices").insert({
    business_id:membership.business_id,customer_id:job.customer_id,user_id:job.user_id,job_id:id,quote_id:job.quote_id,
