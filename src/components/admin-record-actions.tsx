@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 import {useRouter} from "next/navigation";
-const options:any={enquiries:["new","reviewing","quoted","accepted","declined","converted","closed"],appointments:["requested","confirmed","rescheduled","completed","cancelled"],jobs:["pending","scheduled","in_progress","waiting_parts","completed","cancelled"],quotes:["draft","sent","expired"],invoices:["draft","issued","void"],customers:["active","inactive"]};
+const options:any={enquiries:["new","reviewing","quoted","accepted","declined","converted","closed"],appointments:["requested","confirmed","rescheduled","completed","cancelled"],jobs:["pending","scheduled","waiting_parts","cancelled"],quotes:["draft","sent","expired"],invoices:["draft","issued","void"],customers:["active","inactive"]};
 const localValue=(v?:string|null)=>{if(!v)return "";const d=new Date(v);if(Number.isNaN(d.getTime()))return "";return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
 export default function AdminRecordActions({section,id,status,isActive,isPublished,startsAt,endsAt,preferredStart,location}:{section:string;id:string;status?:string;isActive?:boolean;isPublished?:boolean;startsAt?:string|null;endsAt?:string|null;preferredStart?:string|null;location?:string|null}){
  const [value,setValue]=useState(status??(isActive!==undefined?String(isActive):String(!!isPublished)));const [start,setStart]=useState(localValue(startsAt??preferredStart));const [end,setEnd]=useState(localValue(endsAt));const [place,setPlace]=useState(location??"");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const router=useRouter();
