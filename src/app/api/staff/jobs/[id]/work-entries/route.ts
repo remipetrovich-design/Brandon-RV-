@@ -34,16 +34,15 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(access.job.status!=="in_progress")return jsonError("Work entries can only be added while the Work Order is in progress.",409);
   const body=await request.json();const entryType=String(body.entryType??"note");
   const description=String(body.description??"").trim().slice(0,2000);
-  const quantity=Number(body.quantity??1),unitPrice=Number(body.unitPrice??0),taxRate=Number(body.taxRate??0);
+  const quantity=Number(body.quantity??1),unitPrice=Number(body.unitPrice??0);
   const customerVisible=body.customerVisible!==false;
   if(!["labour","parts","note"].includes(entryType)||description.length<2)return jsonError("Enter a valid work entry.");
-  if(!Number.isFinite(quantity)||quantity<=0||quantity>10000||!Number.isFinite(unitPrice)||unitPrice<0||unitPrice>10000000||!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter valid quantity, price and tax values.");
+  if(!Number.isFinite(quantity)||quantity<=0||quantity>10000||!Number.isFinite(unitPrice)||unitPrice<0||unitPrice>10000000)return jsonError("Enter valid quantity and price values.");
   const {data:businessSettings}=await access.db.from("business_settings").select("settings").eq("business_id",membership.business_id).maybeSingle();
   const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
   const pricing=configured.pricing&&typeof configured.pricing==="object"?configured.pricing:{};
   const gstStatus=String(pricing.gst_status??"not_configured"),configuredGstRate=Number(pricing.gst_rate??10);
-  if(entryType!=="note"&&gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed and marked as registered in Business Settings.");
-  if(entryType!=="note"&&gstStatus==="registered"&&Math.abs(taxRate-configuredGstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings for this work entry.");
+  const taxRate=entryType==="note"?0:gstStatus==="registered"?configuredGstRate:0;
   const lineTotal=entryType==="note"?0:Number((quantity*unitPrice).toFixed(2));
   const {data:entry,error}=await access.db.from("job_work_entries").insert({
    business_id:membership.business_id,job_id:id,staff_id:access.staff?.id??null,created_by:user.id,
