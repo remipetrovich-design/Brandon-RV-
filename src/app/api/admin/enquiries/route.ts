@@ -7,7 +7,7 @@ const reference=()=> "BRV-ENQ-"+new Date().toISOString().slice(2,10).replaceAll(
 export async function GET(request:Request){
  const access=await authorizePermission("enquiries.view");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id,url=new URL(request.url);
- const type=url.searchParams.get("type")??"all",stage=url.searchParams.get("stage")??"all",search=(url.searchParams.get("q")??"").trim().slice(0,120);
+ const type=url.searchParams.get("type")??"all",stage=url.searchParams.get("stage")??"all",search=(url.searchParams.get("q")??"").replace(/[^a-zA-Z0-9@._+ -]/g,"").trim().slice(0,120);
  let query=db.from("enquiries").select("id,request_number,request_type,contact_name,email,phone,location,vehicle_description,requested_service,description,preferred_contact,status,stage,source,internal_notes,created_at,updated_at,customer_id,user_id").eq("business_id",businessId).order("created_at",{ascending:false}).limit(250);
  if(types.includes(type))query=query.eq("request_type",type);
  if(stages.includes(stage))query=query.eq("stage",stage);
