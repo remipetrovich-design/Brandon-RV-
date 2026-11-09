@@ -139,3 +139,14 @@ The Phase 6 migration adds this service approval gate. It is forward-only and is
 ## Launch readiness (Phase 7)
 
 The production build must complete successfully before the application is considered deployable. Customer account isolation, staff permissions, quote approval, confirmed booking creation, Work Order generation, invoices, payment provider confirmation, email delivery, private file access and backup recovery still require operational verification before real customer use. Some checks require Chris to use the customer and staff interfaces; those are not represented as completed by a successful build.
+
+
+## Unified enquiry and request management
+
+The admin panel has one Enquiries & Requests register. Public Contact form submissions, general enquiries logged by staff, customer portal enquiries and quote requests are stored once in the existing `enquiries` table and shown as category filters in the same register. The old category URLs redirect to the matching filter; they do not create separate records or separate inbox implementations.
+
+Staff with the required permission can create an intake record directly in the admin panel, edit the contact and request details, change its pipeline stage, assign multiple active employees, review assignment and stage history, view private attachments and continue the internal/customer conversation. Public Contact form submissions use the `public_enquiry` type. Existing Contact form records are reclassified in place during the migration, not duplicated. General enquiries remain available for staff-entered phone, email and in-person requests.
+
+Pipeline stages: New, Contacted, Awaiting Information, Assessment Required, Quote in Progress, Quote Sent, Awaiting Approval, Approved, Declined, Converted and Closed. Existing enquiry status values are retained for compatibility with the quote and booking workflows; stage changes update the corresponding legacy status and create an immutable stage-history entry.
+
+Staff assignment history and stage history are stored against the same enquiry record. Assignments are business-scoped and limited to active staff in the Brandon RV workspace. The unified enquiry migration is forward-only and must run through the existing Supabase migration workflow after merge.
