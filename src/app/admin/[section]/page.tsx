@@ -32,7 +32,7 @@ const staffRoleLabels:Record<string,string>={apprentice:"Apprentice",senior_work
 const staffRoleLabel=(v:string)=>staffRoleLabels[v]??label(v);
 const format=(v:any)=>v===null||v===undefined?"—":typeof v==="boolean"?(v?"Yes":"No"):typeof v==="object"?JSON.stringify(v):typeof v==="string"&&v.includes("T")&&!Number.isNaN(Date.parse(v))?new Date(v).toLocaleString("en-AU"):String(v);
 export default async function AdminSectionPage({params}:{params:Promise<{section:string}>}){
- const {section}=await params;const config=sections[section];if(!config)notFound();
+ const {section}=await params;if(section==="general-enquiries")redirect("/admin/enquiries?type=general_enquiry");if(section==="customer-enquiries")redirect("/admin/enquiries?type=customer_enquiry");if(section==="quote-requests")redirect("/admin/enquiries?type=quote_request");if(section==="enquiries")redirect("/admin/enquiries");const config=sections[section];if(!config)notFound();
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/staff");
  if(!(await userHasPermission(user.id,config.permission)))redirect("/admin");
