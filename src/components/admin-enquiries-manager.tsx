@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import {FormEvent,useEffect,useMemo,useState} from "react";
+import {FormEvent,useEffect,useState} from "react";
 type Staff={id:string;full_name:string;job_title:string|null};
 type Enquiry={id:string;request_number:string;request_type:string;contact_name:string;email:string;phone:string|null;requested_service:string|null;description:string;stage:string;source:string|null;created_at:string;assigned_staff:Staff[]};
 const types=[{id:"all",label:"All intake"},{id:"public_enquiry",label:"Public enquiries"},{id:"general_enquiry",label:"General enquiries"},{id:"customer_enquiry",label:"Customer enquiries"},{id:"quote_request",label:"Quote requests"}];
@@ -14,7 +14,6 @@ export default function AdminEnquiriesManager({initialType="all"}:{initialType?:
  async function load(){try{const p=new URLSearchParams();if(type!=="all")p.set("type",type);if(stage!=="all")p.set("stage",stage);if(query)p.set("q",query);const r=await fetch("/api/admin/enquiries?"+p.toString(),{cache:"no-store"});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not load enquiries.");return;}setRows(d.enquiries??[]);setStaff(d.staff??[]);}catch{setNotice("Could not load enquiries.");}}
  useEffect(()=>{void load();},[type,stage,query]);
  async function create(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");try{const r=await fetch("/api/admin/enquiries",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,staff_ids:staffIds})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create record.");return;}setShowCreate(false);setForm({request_type:"general_enquiry",contact_name:"",email:"",phone:"",location:"",vehicle_description:"",requested_service:"",description:"",preferred_contact:"email",internal_notes:""});setStaffIds([]);setNotice("Created "+d.enquiry.request_number+".");await load();}catch{setNotice("Could not create record.");}finally{setBusy(false);}}
- const counts=useMemo(()=>types.map(t=>({id:t.id,label:t.label,count:t.id==="all"?rows.length:rows.filter(r=>r.request_type===t.id).length})),[rows]);
  return <div className="brv-enquiry-manager">
   <div className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">ONE INTAKE REGISTER</span><h2>Enquiries & requests</h2><p>Every enquiry is one record. These tabs are filtered views, not separate copies.</p></div><button className="button button-primary" onClick={()=>setShowCreate(v=>!v)}>{showCreate?"Close form":"+ New record"}</button></div>
    <div className="brv-enquiry-tabs" role="tablist" aria-label="Enquiry categories">{types.map(t=><button key={t.id} type="button" className={type===t.id?"active":""} onClick={()=>setType(t.id)}>{t.label}</button>)}</div>
