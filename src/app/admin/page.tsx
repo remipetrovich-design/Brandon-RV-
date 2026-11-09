@@ -2,6 +2,7 @@ import Link from "next/link";
 import {redirect} from "next/navigation";
 import {currentUser,currentMembership,database,userHasPermissions} from "@/lib/auth";
 import StaffTasks from "@/components/staff-tasks";
+import StaffWorkOrders from "@/components/staff-work-orders";
 import StaffTimeClock from "@/components/staff-time-clock";
 export const dynamic="force-dynamic";
 export default async function AdminDashboard() {
@@ -49,7 +50,7 @@ export default async function AdminDashboard() {
   {prelaunch&&<section className="brv-admin-launch-notice"><span>PRE-LAUNCH</span><div><strong>Business setup is still in progress.</strong><p>Confirm the business details, approved service menu, service area and website content before publishing or accepting live work.</p></div>{setupLinks.length>0&&<Link href={setupLinks[0].href}>Continue setup →</Link>}</section>}
   {stats.length>0&&<><div className="brv-admin-section-heading"><div><span>LIVE WORKSPACE</span><h2>Operational snapshot</h2></div><small>Live counts from the Brandon RV business database</small></div><div className="portal-stat-grid brv-admin-stat-grid">{stats.map(stat=><Link className="brv-admin-stat" href={stat.href} key={stat.label}><span>{stat.label}</span><strong>{stat.value??"—"}</strong><small>{stat.detail}</small><b>Open →</b></Link>)}</div></>}
   {quickLinks.length>0&&<><div className="brv-admin-section-heading"><div><span>DAILY OPERATIONS</span><h2>Get work moving</h2></div></div><div className="portal-shortcuts brv-admin-quicklinks">{quickLinks.map(item=><Link href={item.href} key={item.href}><strong>{item.label}</strong><small>{item.detail}</small><span aria-hidden="true">→</span></Link>)}</div></>}
-  {staffProfile.data&&<section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">MY WORK</span><h2>Employee tools</h2><p>Your assigned tasks and time clock are available here alongside the business functions your permissions allow.</p></div></div><StaffTasks/><StaffTimeClock/></section>}
+  {staffProfile.data&&<section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">MY WORK</span><h2>Employee tools</h2><p>Your assigned tasks and time clock are available here alongside the business functions your permissions allow.</p></div></div><StaffWorkOrders/><StaffTasks/><StaffTimeClock/></section>}
   {setupLinks.length>0&&<section className="portal-panel brv-admin-setup-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">BUSINESS CONFIGURATION</span><h2>Manage the customer-facing business</h2><p>Keep the website, services and business details connected to the same records used by the business workspace.</p></div></div><div className="brv-admin-setup-links">{setupLinks.map(item=><Link href={item.href} key={item.href}>{item.label}<span>→</span></Link>)}</div></section>}
  </div></main>;
 }
