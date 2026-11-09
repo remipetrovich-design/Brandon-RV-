@@ -11,6 +11,18 @@ ALTER TABLE public.enquiries DROP CONSTRAINT IF EXISTS enquiries_stage_check;
 ALTER TABLE public.enquiries ADD CONSTRAINT enquiries_stage_check
   CHECK (stage IN ('new','contacted','awaiting_information','assessment_required','quote_in_progress','quote_sent','awaiting_approval','approved','declined','converted','closed'));
 
+-- Preserve the existing workflow state when deriving the new pipeline stage.
+UPDATE public.enquiries
+SET stage=CASE status
+  WHEN 'reviewing' THEN 'contacted'
+  WHEN 'quoted' THEN 'quote_sent'
+  WHEN 'accepted' THEN 'approved'
+  WHEN 'declined' THEN 'declined'
+  WHEN 'converted' THEN 'converted'
+  WHEN 'closed' THEN 'closed'
+  ELSE 'new'
+END;
+
 -- Existing contact-form submissions are reclassified in place, not copied.
 UPDATE public.enquiries
 SET request_type='public_enquiry', stage=CASE status
