@@ -15,6 +15,9 @@ export async function POST(request:Request){
   if(location.length<3||location.length>200)return jsonError("Enter the vehicle location so travel can be assessed.");
   const db=database();const {data:quote}=await db.from("quotes").select("id,business_id,customer_id,user_id,enquiry_id,quote_number,status").eq("id",quoteId).eq("user_id",user.id).eq("status","accepted").maybeSingle();
   if(!quote)return jsonError("Only an accepted quote can be used to request a booking.",409);
+  if(quote.enquiry_id){const {data:jobcard}=await db.from("enquiries").select("id,request_type,archived_at").eq("id",quote.enquiry_id).eq("user_id",user.id).maybeSingle();if(!jobcard||jobcard.request_type!=="quote_request"||jobcard.archived_at)return jsonError("This Jobcard is closed and cannot accept a booking request.",409);}
+  const {data:existingBooking}=await db.from("appointments").select("id,status").eq("quote_id",quote.id).in("status",["requested","confirmed","rescheduled"]).limit(1).maybeSingle();
+  if(existingBooking)return jsonError("A booking request already exists for this quote. Open the Jobcard to view its status.",409);
   const {data:customer}=await db.from("customers").select("id,business_id").eq("user_id",user.id).maybeSingle();if(!customer)return jsonError("Customer profile not found.",404);
   const {data:businessSettings}=await db.from("business_settings").select("settings").eq("business_id",customer.business_id).maybeSingle();const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,unknown>:{};const configuredNotice=Number(configured.booking_notice_hours??24);const noticeHours=Number.isFinite(configuredNotice)&&configuredNotice>=0?Math.max(1,configuredNotice):24;
   if(startDate.getTime()<Date.now()+noticeHours*60*60*1000)return jsonError("Choose a preferred time at least "+noticeHours+" hours from now.");
