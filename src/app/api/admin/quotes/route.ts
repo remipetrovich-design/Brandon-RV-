@@ -20,14 +20,14 @@ export async function POST(request:Request){
   const body=await request.json();
   const enquiryId=String(body.enquiryId??"");
   const rawItems=Array.isArray(body.items)?body.items:[];
-  const items=rawItems.map((item:any)=>({description:String(item.description??"").trim(),quantity:Number(item.quantity??1),unitPrice:Number(item.unitPrice??0)}));
+  const items:{description:string;quantity:number;unitPrice:number}[]=rawItems.map((item:any)=>({description:String(item.description??"").trim(),quantity:Number(item.quantity??1),unitPrice:Number(item.unitPrice??0)}));
   const taxRate=Number(body.taxRate??0);
   const notes=String(body.notes??"").trim().slice(0,3000);
   const terms=String(body.terms??"").trim().slice(0,3000);
   const expiryDate=body.expiryDate?String(body.expiryDate):null;
   const supersedesQuoteId=body.supersedesQuoteId?String(body.supersedesQuoteId):null;
   if(!/^[0-9a-f-]{36}$/i.test(enquiryId)||items.length<1||items.length>30)return jsonError("Select a Quote Request Jobcard and add between 1 and 30 quote lines.");
-  if(items.some(item=>item.description.length<3||item.description.length>500||!Number.isFinite(item.quantity)||item.quantity<=0||item.quantity>10000||!Number.isFinite(item.unitPrice)||item.unitPrice<0||item.unitPrice>10000000))return jsonError("Each quote line needs a description, a positive quantity and a valid unit price.");
+  if(items.some((item:{description:string;quantity:number;unitPrice:number})=>item.description.length<3||item.description.length>500||!Number.isFinite(item.quantity)||item.quantity<=0||item.quantity>10000||!Number.isFinite(item.unitPrice)||item.unitPrice<0||item.unitPrice>10000000))return jsonError("Each quote line needs a description, a positive quantity and a valid unit price.");
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid tax rate.");
   if(expiryDate&&(!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)||expiryDate<=new Date().toISOString().slice(0,10)))return jsonError("Quote expiry must be a valid future date.");
   const db=database(),businessId=access.membership!.business_id;
@@ -49,14 +49,14 @@ export async function POST(request:Request){
    if(["accepted","converted"].includes(prior.status))return jsonError("An accepted quote cannot be revised. Use the variation approval workflow for additional work.",409);
    revisionNumber=Number(prior.revision_number??1)+1;
   }
-  const lines=items.map((item,index)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,line_total:Number((item.quantity*item.unitPrice).toFixed(2)),sort_order:index}));
-  const subtotal=Number(lines.reduce((sum,item)=>sum+item.line_total,0).toFixed(2));
-  const taxAmount=Number((lines.reduce((sum,item)=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
+  const lines:{description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number;sort_order:number}[]=items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,line_total:Number((item.quantity*item.unitPrice).toFixed(2)),sort_order:index}));
+  const subtotal=Number(lines.reduce((sum:number,item:{line_total:number})=>sum+item.line_total,0).toFixed(2));
+  const taxAmount=Number((lines.reduce((sum:number,item:{line_total:number;tax_rate:number})=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
   const total=Number((subtotal+taxAmount).toFixed(2));
   const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
   const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customer.id,user_id:customer.user_id,enquiry_id:enquiry.id,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id").single();
   if(error||!quote)return jsonError("Could not create quote.",500);
-  const {error:itemError}=await db.from("quote_items").insert(lines.map(item=>({...item,quote_id:quote.id})));
+  const {error:itemError}=await db.from("quote_items").insert(lines.map((item:{description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number;sort_order:number})=>({...item,quote_id:quote.id})));
   if(itemError){await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not save quote lines. The draft was rolled back.",500);}
   if(supersedesQuoteId){const {error:supersedeError}=await db.from("quotes").update({status:"superseded",updated_at:new Date().toISOString()}).eq("id",supersedesQuoteId).eq("business_id",businessId);if(supersedeError){await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not supersede the previous quote revision. The new draft was rolled back.",500);}}
   const now=new Date().toISOString();
