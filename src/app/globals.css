@@ -892,3 +892,16 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 .brv-workcard-customer-photos img { height:130px; }
 .brv-admin-frame .brv-senior-review-photos { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
 .brv-admin-frame .brv-senior-review-photos img { height:76px; }
+
+
+.brv-workcard-detail-actions { display:flex; justify-content:flex-end; margin-bottom:10px; }
+@media print {
+ body:has(.brv-staff-work-orders) * { visibility:hidden!important; }
+ body:has(.brv-staff-work-orders) .brv-workcard-detail,
+ body:has(.brv-staff-work-orders) .brv-workcard-detail * { visibility:visible!important; }
+ body:has(.brv-staff-work-orders) .brv-workcard-detail { position:absolute!important; inset:0 auto auto 0!important; width:100%!important; max-width:none!important; margin:0!important; padding:0!important; border:0!important; background:#fff!important; }
+ body:has(.brv-staff-work-orders) .brv-workcard-detail-actions,
+ body:has(.brv-staff-work-orders) .brv-workcard-detail form,
+ body:has(.brv-staff-work-orders) .brv-workcard-detail button { display:none!important; }
+ body:has(.brv-staff-work-orders) .brv-workcard-detail .brv-workcard-photo-grid img { height:90px!important; }
+}
