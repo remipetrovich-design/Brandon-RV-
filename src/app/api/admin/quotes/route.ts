@@ -1,3 +1,5 @@
+import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id;
