@@ -89,3 +89,40 @@ test("quote issue email resolves the real customer foreign key",async()=>{
  assert.match(route,/eq\("id",quoteRecord\.user_id\)/);
  assert.match(route,/from\("customers"\)\.select\("full_name,email"\)/);
 });
+
+
+test("worker completion is separately signed off and cannot bypass senior review",async()=>{
+ const worker=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
+ const senior=await source("../src/app/api/admin/jobs/[id]/approval/route.ts");
+ const migration=await source("../supabase/migrations/20261111130000_workcard_senior_signoff.sql");
+ const customer=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
+ assert.match(worker,/worker_signed_off_by:user\.id/);
+ assert.match(worker,/senior_approval_status:"pending"/);
+ assert.match(senior,/review_workcard/);
+ assert.match(migration,/worker_signed_off_at IS NULL/);
+ assert.match(migration,/customer_approval_status = 'pending'/);
+ assert.match(migration,/status = 'in_progress'/);
+ assert.match(customer,/senior_approval_status/);
+});
+
+test("staff work entry and completion endpoints require an accepted assignment",async()=>{
+ const status=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
+ const entries=await source("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
+ assert.match(status,/if\(assignment\?\.status!=="accepted"\)/);
+ assert.match(entries,/allowed:assignment\?\.status==="accepted"/);
+});
+
+test("admin Workcard assignment edits preserve accepted workers",async()=>{
+ const api=await source("../src/app/api/admin/jobs/[id]/assign/route.ts");
+ assert.match(api,/currentByStaff/);
+ assert.match(api,/status:"removed"/);
+ assert.match(api,/status:"assigned"/);
+ assert.doesNotMatch(api,/from\\("job_assignments"\\)\\.delete\\(\\)/);
+});
+
+test("staff Workcard lists expand one detailed record at a time",async()=>{
+ const page=await source("../src/components/staff-work-orders.tsx");
+ assert.match(page,/expandedId/);
+ assert.match(page,/aria-expanded/);
+ assert.match(page,/Open Workcard/);
+});
