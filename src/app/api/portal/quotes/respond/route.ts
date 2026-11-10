@@ -17,7 +17,7 @@ export async function POST(request:Request){
  if(declined&&quote.enquiry_id){
   const {data:enquiry}=await db.from("enquiries").select("id,stage").eq("id",quote.enquiry_id).eq("business_id",quote.business_id).maybeSingle();
   if(enquiry&& !["converted","closed"].includes(String(enquiry.stage))){
-   const {error:closeError}=await db.from("enquiries").update({stage:"closed",status:"closed",updated_at:responseAt}).eq("id",enquiry.id).eq("business_id",quote.business_id);
+   const {error:closeError}=await db.from("enquiries").update({stage:"closed",status:"closed",archived_at:responseAt,updated_at:responseAt}).eq("id",enquiry.id).eq("business_id",quote.business_id);
    if(closeError)return jsonError("Your quote was declined, but the request could not be closed automatically. Please contact Brandon RV.",500);
    await db.from("enquiry_stage_history").insert({business_id:quote.business_id,enquiry_id:enquiry.id,from_stage:enquiry.stage,to_stage:"closed",changed_by:user.id,note:"Customer declined quote "+quote.quote_number+". Request automatically closed and archived."});
   }
