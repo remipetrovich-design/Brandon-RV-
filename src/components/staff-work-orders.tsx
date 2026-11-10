@@ -1,15 +1,73 @@
 "use client";
 import {FormEvent,useEffect,useState} from "react";
+
 type Entry={id:string;entry_type:string;description:string;quantity:number;unit_price:number;line_total:number;occurred_at:string};
 type WorkOrder={id:string;job_number:string;title:string;status:string;scope_of_work:string|null;scheduled_start:string|null;customer_name?:string;entries:Entry[];assignment_status:string};
+
 export default function StaffWorkOrders(){
- const [orders,setOrders]=useState<WorkOrder[]>([]);const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
+ const [orders,setOrders]=useState<WorkOrder[]>([]);
+ const [notice,setNotice]=useState("");
+ const [busy,setBusy]=useState(false);
+ const [expandedId,setExpandedId]=useState<string|null>(null);
  const [entryForms,setEntryForms]=useState<Record<string,{entryType:string;description:string;quantity:string;unitPrice:string;customerVisible:boolean}>>({});
  const [summaries,setSummaries]=useState<Record<string,string>>({});
- async function load(){try{const r=await fetch("/api/staff/jobs");const d=await r.json();if(!r.ok){setNotice(d.error??"Could not load Work Orders.");return;}setOrders((d.workOrders??[]).map((x:any)=>({...x.job,assignment_status:x.status,entries:x.entries??[]})));}catch{setNotice("Could not load Work Orders.");}}
+
+ async function load(){
+  try{
+   const r=await fetch("/api/staff/jobs",{cache:"no-store"});
+   const d=await r.json();
+   if(!r.ok){setNotice(d.error??"Could not load Workcards.");return;}
+   setOrders((d.workOrders??[]).map((x:any)=>({...x.job,assignment_status:x.status,entries:x.entries??[]})));
+  }catch{setNotice("Could not load Workcards.");}
+ }
  useEffect(()=>{void load();},[]);
+
  function form(id:string){return entryForms[id]??{entryType:"labour",description:"",quantity:"1",unitPrice:"",customerVisible:true};}
- async function action(url:string,body:any,method="POST"){setBusy(true);setNotice("");try{const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update Work Order.");return false;}setNotice("Work Order updated.");await load();return true;}catch{setNotice("Could not update Work Order.");return false;}finally{setBusy(false);}}
- async function addEntry(e:FormEvent<HTMLFormElement>,id:string){e.preventDefault();const f=form(id);if(await action("/api/staff/jobs/"+id+"/work-entries",{entryType:f.entryType,description:f.description,quantity:Number(f.quantity),unitPrice:Number(f.unitPrice),customerVisible:f.customerVisible})){setEntryForms(v=>({...v,[id]:{...form(id),description:"",unitPrice:""}}));}}
- return <section className="portal-panel"><span className="panel-kicker">WORKSHOP</span><h2>Assigned Work Orders</h2>{orders.length?<div className="activity-list">{orders.map(job=><article className="activity-item" key={job.id}><div className="activity-date">{job.job_number}</div><div className="activity-copy"><strong>{job.title}</strong><span>{job.status.replaceAll("_"," ")} · {job.scheduled_start?new Date(job.scheduled_start).toLocaleString("en-AU"):"Schedule to be confirmed"}</span>{job.scope_of_work&&<small>{job.scope_of_work}</small>}{job.status==="pending"||job.status==="scheduled"?job.assignment_status==="assigned"?<button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/accept",{})}>Accept Work Order</button>:<button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/status",{action:"start"},"PATCH")}>Start job / mark arrived</button>:null}{job.status==="in_progress"&&<><div className="divider-line"/><strong>Record work performed</strong>{job.entries.map(x=><small key={x.id}>{x.entry_type.toUpperCase()} · {x.description} · Qty {x.quantity} · ${Number(x.line_total).toFixed(2)}</small>)}<form className="auth-form" onSubmit={e=>void addEntry(e,job.id)}><label>Entry type<select value={form(job.id).entryType} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),entryType:e.target.value}}))}><option value="labour">Labour</option><option value="parts">Parts</option><option value="note">Work note (not billed)</option></select></label><label>Description<input required minLength={2} maxLength={2000} value={form(job.id).description} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),description:e.target.value}}))}/></label><div className="form-grid"><label>Quantity / hours<input type="number" min="0.01" step="0.01" value={form(job.id).quantity} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),quantity:e.target.value}}))}/></label><label>Unit price AUD<input type="number" min="0" step="0.01" value={form(job.id).unitPrice} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),unitPrice:e.target.value}}))}/></label></div><small>Tax is applied automatically using Brandon RV Business Settings.</small><label><input type="checkbox" checked={form(job.id).customerVisible} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),customerVisible:e.target.checked}}))}/> Include in customer report</label><button className="button button-secondary" disabled={busy}>Add work entry</button></form><label>Final work summary<textarea rows={3} minLength={10} maxLength={8000} value={summaries[job.id]??""} onChange={e=>setSummaries(v=>({...v,[job.id]:e.target.value}))} placeholder="Describe what was completed, tests performed and any follow-up required."/></label><button className="button button-primary" disabled={busy||(summaries[job.id]??"").trim().length<10} onClick={()=>void action("/api/staff/jobs/"+job.id+"/status",{action:"finish",workSummary:summaries[job.id]},"PATCH")}>Finish Work Order & generate final report/invoice</button></>}</div></article>)}</div>:<p className="panel-footnote">No Work Orders are currently assigned to you.</p>}{notice&&<p className="inline-notice" role="status">{notice}</p>}</section>;
+ async function action(url:string,body:any,method="POST"){
+  setBusy(true);setNotice("");
+  try{
+   const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+   const d=await r.json();
+   if(!r.ok){setNotice(d.error??"Could not update Workcard.");return false;}
+   setNotice("Workcard updated.");await load();return true;
+  }catch{setNotice("Could not update Workcard.");return false;}
+  finally{setBusy(false);}
+ }
+ async function addEntry(e:FormEvent<HTMLFormElement>,id:string){
+  e.preventDefault();const f=form(id);
+  if(await action("/api/staff/jobs/"+id+"/work-entries",{entryType:f.entryType,description:f.description,quantity:Number(f.quantity),unitPrice:Number(f.unitPrice),customerVisible:f.customerVisible})){
+   setEntryForms(v=>({...v,[id]:{...form(id),description:"",unitPrice:""}}));
+  }
+ }
+ const pretty=(v:string)=>v.replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase());
+
+ return <section className="portal-panel brv-workcards-panel">
+  <div className="portal-panel-heading"><div><span className="panel-kicker">YOUR ASSIGNED WORK</span><h2>Workcards</h2><p>Open one Workcard at a time. Record the work as you complete it.</p></div><button type="button" className="button button-secondary" onClick={()=>void load()} disabled={busy}>Refresh</button></div>
+  {orders.length?<div className="brv-workcard-list">{orders.map(job=><article className="brv-workcard-card" key={job.id}>
+   <div className="brv-workcard-summary">
+    <div className="brv-workcard-identity"><strong>{job.job_number}</strong><span>{job.title}</span><small>{pretty(job.status)} · {job.scheduled_start?new Date(job.scheduled_start).toLocaleString("en-AU"):"Schedule to be confirmed"}</small></div>
+    <button type="button" className="button button-secondary brv-workcard-open" aria-expanded={expandedId===job.id} aria-controls={"workcard-detail-"+job.id} onClick={()=>setExpandedId(current=>current===job.id?null:job.id)}>{expandedId===job.id?"Close Workcard":"Open Workcard"}</button>
+   </div>
+   {expandedId===job.id&&<div className="brv-workcard-detail" id={"workcard-detail-"+job.id}>
+    {job.scope_of_work&&<div className="brv-workcard-scope"><span className="panel-kicker">APPROVED SCOPE</span><p>{job.scope_of_work}</p></div>}
+    {(job.status==="pending"||job.status==="scheduled")&&<div className="brv-workcard-next"><p>{job.assignment_status==="assigned"?"This Workcard is assigned to you. Accept it before starting.":"Accept the assignment before recording work."}</p>{job.assignment_status==="assigned"?<button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/accept",{})}>Accept assignment</button>:<button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/status",{action:"start"},"PATCH")}>Start Workcard / mark arrived</button>}</div>}
+    {job.status==="in_progress"&&<>
+     <div className="brv-workcard-entries"><strong>Work recorded</strong>{job.entries.length?job.entries.map(x=><div className="brv-workcard-entry" key={x.id}><span>{pretty(x.entry_type)}</span><p>{x.description}</p><small>{x.entry_type==="note"?"Non-billable note":"Qty "+x.quantity+" · $"+Number(x.line_total).toFixed(2)}</small></div>):<p className="panel-footnote">No work entries yet.</p>}</div>
+     <form className="auth-form brv-workcard-entry-form" onSubmit={e=>void addEntry(e,job.id)}>
+      <strong>Add work entry</strong>
+      <label>Entry type<select value={form(job.id).entryType} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),entryType:e.target.value}}))}><option value="labour">Labour</option><option value="parts">Parts</option><option value="note">Work note (not billed)</option></select></label>
+      <label>Description<input required minLength={2} maxLength={2000} value={form(job.id).description} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),description:e.target.value}}))}/></label>
+      <div className="form-grid"><label>Quantity / hours<input type="number" min="0.01" step="0.01" value={form(job.id).quantity} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),quantity:e.target.value}}))}/></label><label>Unit price AUD<input type="number" min="0" step="0.01" value={form(job.id).unitPrice} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),unitPrice:e.target.value}}))}/></label></div>
+      <small>Tax uses the confirmed business settings. Keep internal notes and customer-visible work updates separate.</small>
+      <label className="brv-workcard-checkbox"><input type="checkbox" checked={form(job.id).customerVisible} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),customerVisible:e.target.checked}}))}/> Show this entry on the customer Jobcard</label>
+      <button className="button button-secondary" disabled={busy||!form(job.id).description.trim()}>Add entry</button>
+     </form>
+     <div className="brv-workcard-finish"><label>Work completed summary<textarea rows={3} minLength={10} maxLength={8000} value={summaries[job.id]??""} onChange={e=>setSummaries(v=>({...v,[job.id]:e.target.value}))} placeholder="Describe completed work, tests performed and any follow-up required."/></label><button className="button button-primary" disabled={busy||(summaries[job.id]??"").trim().length<10} onClick={()=>void action("/api/staff/jobs/"+job.id+"/status",{action:"finish",workSummary:summaries[job.id]},"PATCH")}>Submit Workcard & sign off</button></div>
+    </>}
+    {job.status==="completed"&&<p className="inline-notice">Workcard submitted. It is awaiting management review and customer closeout.</p>}
+    {job.status==="waiting_parts"&&<p className="panel-footnote">This Workcard is waiting for parts. Keep the job notes up to date.</p>}
+   </div>}
+  </article>)}</div>:<p className="panel-footnote">No Workcards are currently assigned to you.</p>}
+  {notice&&<p className="inline-notice" role="status">{notice}</p>}
+ </section>;
 }
