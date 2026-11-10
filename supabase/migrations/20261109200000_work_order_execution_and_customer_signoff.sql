@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.job_work_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   business_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
   job_id uuid NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
-  staff_id uuid REFERENCES public.staff(id) ON DELETE SET NULL,
+  staff_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
   created_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
   entry_type text NOT NULL CHECK (entry_type IN ('labour','parts','note')),
   description text NOT NULL,
