@@ -2,7 +2,7 @@ import {createHash} from "node:crypto";
 import {database,normalizeEmail,passwordHash,digest,newToken,jsonError,sameOrigin,createSession} from "@/lib/auth";
 import {isEmailConfigured,sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
-const isValidBirthDate=(value:string)=>{if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
+const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
@@ -10,7 +10,7 @@ export async function POST(request:Request){
   const suppliedFirstName=String(body.firstName??"").trim();
   const suppliedLastName=String(body.lastName??"").trim();
   const legacyName=String(body.fullName??"").trim();
-  const nameParts=legacyName.split(/\\s+/);
+  const nameParts=legacyName.split(/\s+/);
   const firstName=suppliedFirstName||nameParts[0]||"";
   const lastName=suppliedFirstName?suppliedLastName:(nameParts.slice(1).join(" ")||"");
   const fullName=[firstName,lastName].filter(Boolean).join(" ");
@@ -24,7 +24,7 @@ export async function POST(request:Request){
   const password=String(body.password??"");
   const invitationToken=String(body.invitationToken??"").trim();
   if(!firstName||!lastName||firstName.length>120||lastName.length>120||fullName.length<2||fullName.length>120)return jsonError("Enter a valid first and last name.");
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
+  if(!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
   if(password.length<12||password.length>128)return jsonError("Use a password between 12 and 128 characters.");
   if(phone.length>40||address.length>500||suburb.length>120||state.length>80||postcode.length>12)return jsonError("One or more contact details exceed the allowed length.");
   if(dateOfBirth&&!isValidBirthDate(dateOfBirth))return jsonError("Enter a valid date of birth.");
