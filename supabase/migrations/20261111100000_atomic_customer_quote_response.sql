@@ -22,7 +22,7 @@ BEGIN
     RAISE EXCEPTION 'Invalid quote response.' USING ERRCODE = '22023';
   END IF;
 
-  SELECT id, business_id, enquiry_id, quote_number, status
+  SELECT id, business_id, customer_id, enquiry_id, quote_number, status
     INTO v_quote
     FROM public.quotes
    WHERE id = p_quote_id
@@ -85,7 +85,7 @@ BEGIN
   INSERT INTO public.customer_messages
     (business_id, customer_id, user_id, enquiry_id, quote_id, sender_type, sender_user_id, message, is_internal)
   VALUES
-    (v_quote.business_id, p_user_id, p_user_id, v_quote.enquiry_id, v_quote.id, 'customer', p_user_id, v_message, false);
+    (v_quote.business_id, v_quote.customer_id, p_user_id, v_quote.enquiry_id, v_quote.id, 'customer', p_user_id, v_message, false);
 
   INSERT INTO public.audit_events
     (business_id, actor_user_id, action, entity_type, entity_id, details)
