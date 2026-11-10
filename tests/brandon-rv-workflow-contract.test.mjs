@@ -46,3 +46,30 @@ test("a Workcard can only be created from an accepted quote and confirmed bookin
  assert.match(api,/eq\("status","accepted"\)/);
  assert.match(api,/Only a complete confirmed booking can create a Work Order/);
 });
+
+test("general enquiries never expose the ticket reply composer",async()=>{
+ const page=await source("../src/app/admin/enquiries/[id]/page.tsx");
+ assert.match(page,/\["customer_enquiry","quote_request"\]\.includes\(item\.request_type\)/);
+ assert.match(page,/General enquiries are handled by phone or email/);
+});
+
+test("quotes can only be prepared for active Quote Request Jobcards",async()=>{
+ const api=await source("../src/app/api/admin/quotes/route.ts");
+ const form=await source("../src/components/admin-create-quote.tsx");
+ assert.match(api,/eq\("request_type","quote_request"\)/);
+ assert.match(api,/\.is\("archived_at",null\)/);
+ assert.match(api,/request_type,"quote_request"/);
+ assert.match(form,/Quote Request Jobcard/);
+ assert.doesNotMatch(form,/No ticket|Select customer|customerId/);
+});
+
+test("issuing a quote advances the Jobcard atomically",async()=>{
+ const route=await source("../src/app/api/admin/[section]/[id]/route.ts");
+ const migration=await source("../supabase/migrations/20261111120000_atomic_quote_issue.sql");
+ assert.match(route,/issue_quote_for_jobcard/);
+ assert.match(migration,/FOR UPDATE/);
+ assert.match(migration,/status = 'sent'/);
+ assert.match(migration,/stage = 'quote_sent'/);
+ assert.match(migration,/enquiry_stage_history/);
+ assert.match(migration,/audit_events/);
+});
