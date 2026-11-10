@@ -34,7 +34,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(summary.length<10)return jsonError("Add a useful summary of the work completed before finishing the Work Order.");
   const {data:entries,error:entryError}=await db.from("job_work_entries").select("id,entry_type,description,quantity,unit_price,tax_rate,line_total").eq("job_id",id).eq("business_id",membership.business_id).order("occurred_at");
   if(entryError)return jsonError("Could not load Work Order entries.",500);
-  const billable=(entries??[]).filter(x=>x.entry_type!=="note");
+  const billable=(entries??[]).filter(x=>!["note","test"].includes(x.entry_type));
   let items=billable.map((x:any,i:number)=>({description:x.description,quantity:Number(x.quantity),unit_price:Number(x.unit_price),tax_rate:Number(x.tax_rate),line_total:Number(x.line_total),sort_order:i}));
   if(!items.length&&job.quote_id){
    const {data:quoteItems}=await db.from("quote_items").select("description,quantity,unit_price,tax_rate,line_total").eq("quote_id",job.quote_id).order("sort_order");
