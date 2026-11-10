@@ -32,8 +32,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const allowed=["contact_name","email","phone","location","vehicle_description","requested_service","description","preferred_contact","internal_notes","stage"];
   const update:any={};
   for(const key of allowed){if(body[key]===undefined)continue;const value=body[key];
-   if(key==="request_type"){if(!types.includes(String(value)))return jsonError("Select a valid enquiry type.");update.request_type=String(value);}
-   else if(key==="stage"){if(!stages.includes(String(value)))return jsonError("Select a valid stage.");update.stage=String(value);}
+   if(key==="stage"){if(!stages.includes(String(value)))return jsonError("Select a valid stage.");update.stage=String(value);}
    else if(key==="email"){const v=String(value).trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(v)||v.length>254)return jsonError("Enter a valid email address.");update.email=v;}
    else if(key==="contact_name"){const v=String(value).trim();if(v.length<2||v.length>120)return jsonError("Enter a contact name between 2 and 120 characters.");update.contact_name=v;}
    else if(key==="description"){const v=String(value).trim();if(v.length<3||v.length>5000)return jsonError("Description must be between 3 and 5,000 characters.");update.description=v;}
