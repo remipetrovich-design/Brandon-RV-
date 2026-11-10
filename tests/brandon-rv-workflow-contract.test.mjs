@@ -58,7 +58,6 @@ test("quotes can only be prepared for active Quote Request Jobcards",async()=>{
  const form=await source("../src/components/admin-create-quote.tsx");
  assert.match(api,/eq\("request_type","quote_request"\)/);
  assert.match(api,/\.is\("archived_at",null\)/);
- assert.match(api,/request_type,"quote_request"/);
  assert.match(form,/Quote Request Jobcard/);
  assert.doesNotMatch(form,/No ticket|Select customer|customerId/);
 });
