@@ -10,7 +10,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(decision==="changes_requested"&&note.length<5)return jsonError("Describe what needs attention before submitting.");
   const db=database();const {data:job}=await db.from("jobs").select("id,business_id,customer_id,job_number,status,customer_approval_status,senior_approval_status,appointment_id,quote_id").eq("id",id).eq("user_id",user.id).maybeSingle();
   if(!job)return jsonError("Completed Work Order not found.",404);
-  if(job.status!=="completed"||job.senior_approval_status!=="approved"||job.customer_approval_status!=="pending")return jsonError("This Workcard is not yet approved for customer review.",409);
+  if(job.status!=="completed"||!["approved","legacy_approved"].includes(String(job.senior_approval_status))||job.customer_approval_status!=="pending")return jsonError("This Workcard is not yet approved for customer review.",409);
   const now=new Date().toISOString();
   const {data:invoice}=await db.from("invoices").select("id,invoice_number,status").eq("job_id",id).eq("business_id",job.business_id).maybeSingle();
   if(!invoice||invoice.status!=="draft")return jsonError("The final invoice is not ready for approval.",409);
