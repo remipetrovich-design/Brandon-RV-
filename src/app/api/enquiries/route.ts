@@ -13,8 +13,8 @@ export async function POST(request:Request){
   const submittedName=(first+" "+last).trim();const submittedEmail=String(form.get("email")??"");
   const submittedPhone=String(form.get("phone")??"").trim();const user=await currentUser();
   const account=user?.account_type==="customer"?user:null;
-  const name=account?.full_name??submittedName;const email=normalizeEmail(account?.email??submittedEmail);
-  const phone=String(account?.phone??submittedPhone).trim();
+  const name=String(account?.full_name??"").trim()||submittedName;const email=normalizeEmail(String(account?.email??"").trim()||submittedEmail);
+  const phone=String(account?.phone??"").trim()||submittedPhone;
   if(name.length<3||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||phone.length<6||phone.length>40)return jsonError("Enter valid contact details.");
   const db=database();const since=new Date(Date.now()-15*60*1000).toISOString();
   const {count}=await db.from("enquiries").select("id",{count:"exact",head:true}).eq("email",email).gte("created_at",since);
