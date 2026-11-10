@@ -49,12 +49,10 @@ export async function POST(request:Request){
   const verificationEnabled=isEmailConfigured();
   const {data:user,error}=await db.from("users").insert({
    email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
-   date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"customer",
+   date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"unverified",
    user_role:null,business_id:business.id,status:verificationEnabled?"pending":"active",email_verified_at:null
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
-  const {data:customer,error:customerError}=await db.from("customers").insert({business_id:business.id,user_id:user.id,full_name:fullName,email,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,status:"active"}).select("id").single();
-  if(customerError||!customer){await db.from("users").delete().eq("id",user.id);return jsonError("Could not finish setting up your customer profile.",500);}
   if(!verificationEnabled){
    if(staffInvitation)await createSession(user.id,request);
    return Response.json({verificationRequired:false,invitationUrl:staffInvitation?"/portal/accept-staff-invitation?token="+encodeURIComponent(invitationToken):null,message:staffInvitation?"Your customer account is ready. Continue to accept your staff invitation.":"Your customer account is ready. You can now sign in. Email verification and password recovery emails are not enabled yet; use an email address you can access."},{status:201});
