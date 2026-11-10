@@ -845,7 +845,9 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 @page { size:A4; margin:13mm; }
 @media print {
  body { background:#fff!important; }
- .portal-sidebar,.portal-mobile-menu,.portal-topbar,.portal-header,.brv-jobcard-top-actions,.brv-print-button,.brv-jobcard-quote-actions,.brv-jobcard-booking-form,.brv-jobcard-messages form,.brv-jobcard-messages button { display:none!important; }
+ .portal-sidebar,.portal-mobile-menu,.portal-topbar,.portal-header,.portal-footer,.brv-jobcard-top-actions,.brv-print-button,.brv-jobcard-quote-actions,.brv-jobcard-booking-form,.brv-jobcard-messages form,.brv-jobcard-messages button { display:none!important; }
+ .portal-shell { display:block!important; max-width:none!important; }
+ .portal-main { width:100%!important; max-width:none!important; margin:0!important; padding:0!important; }
  .brv-jobcard-document { width:100%; max-width:none; margin:0; padding:0; border:0; }
  .brv-jobcard-header h1 { font-size:25px; }
  .brv-jobcard-section { break-inside:auto; }
