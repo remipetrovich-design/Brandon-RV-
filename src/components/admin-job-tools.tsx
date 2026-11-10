@@ -1,6 +1,7 @@
 "use client";
 import {FormEvent,useState} from "react";
 type StaffOption={id:string;job_title:string|null;users:{full_name:string;email:string}|null};
+type ReviewJob={status:string;work_summary:string|null;worker_signed_off_at:string|null;senior_approval_status:string;senior_approved_at:string|null;senior_approval_note:string|null};
 export default function AdminJobTools({jobId}:{jobId:string}){
  const [staff,setStaff]=useState<StaffOption[]>([]);
  const [assigned,setAssigned]=useState<string[]>([]);
@@ -11,17 +12,32 @@ export default function AdminJobTools({jobId}:{jobId:string}){
  const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);
  const [loaded,setLoaded]=useState(false);
+ const [review,setReview]=useState<ReviewJob|null>(null);
+ const [reviewNote,setReviewNote]=useState("");
  async function load(){
   try{
-   const r=await fetch("/api/admin/jobs/"+jobId+"/assign",{cache:"no-store"});
-   const d=await r.json();
+   const [r,rr]=await Promise.all([fetch("/api/admin/jobs/"+jobId+"/assign",{cache:"no-store"}),fetch("/api/admin/jobs/"+jobId+"/approval",{cache:"no-store"})]);
+   const [d,rd]=await Promise.all([r.json(),rr.json()]);
    if(!r.ok){setNotice(d.error??"Could not load staff assignments.");return;}
+   if(!rr.ok){setNotice(rd.error??"Could not load senior review.");return;}
    setStaff(d.staff??[]);
    setAssigned((d.assignments??[]).filter((x:any)=>["assigned","accepted"].includes(x.status)).map((x:any)=>x.staff_id));
+   setReview(rd.job??null);
    setLoaded(true);
   }catch{setNotice("Could not load staff assignments.");}
  }
  function toggle(id:string){setAssigned(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);}
+ async function submitReview(decision:"approved"|"changes_requested"){
+  if(decision==="changes_requested"&&reviewNote.trim().length<5){setNotice("Describe the corrections required.");return;}
+  setBusy(true);setNotice("");
+  try{
+   const r=await fetch("/api/admin/jobs/"+jobId+"/approval",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision,note:reviewNote})});
+   const d=await r.json();if(!r.ok){setNotice(d.error??"Could not save senior review.");return;}
+   setNotice(decision==="approved"?"Senior review approved. The final report is now available to the customer.":"Workcard returned to the worker for corrections.");
+   setReviewNote("");await load();
+  }catch{setNotice("Could not save senior review.");}
+  finally{setBusy(false);}
+ }
  async function saveAssignments(){
   setBusy(true);setNotice("");
   try{
@@ -43,6 +59,7 @@ export default function AdminJobTools({jobId}:{jobId:string}){
   <summary>Team & tasks</summary>
   <div className="brv-admin-job-tools-content">
    {staff.length? <><div className="brv-admin-job-assignees">{staff.map(s=><label key={s.id}><input type="checkbox" checked={assigned.includes(s.id)} onChange={()=>toggle(s.id)}/><span>{s.users?.full_name??"Employee"}<small>{s.job_title??s.users?.email??""}</small></span></label>)}</div><button className="button button-secondary" type="button" disabled={busy||!loaded} onClick={()=>void saveAssignments()}>Save assignments</button></>:<p className="panel-footnote">{loaded?"No active staff profiles are available.":"Open to load team and task controls."}</p>}
+   {review&&<section className="brv-senior-review"><span className="panel-kicker">WORKCARD CONTROL</span><h3>Senior review</h3>{review.senior_approval_status==="pending"?<><p>Worker sign-off: {review.worker_signed_off_at?new Date(review.worker_signed_off_at).toLocaleString("en-AU"):"Recorded"}</p>{review.work_summary&&<p>{review.work_summary}</p>}<label>Review note (required when returning)<textarea rows={2} value={reviewNote} onChange={e=>setReviewNote(e.target.value)} maxLength={2000} placeholder="Corrections required, or notes for the customer handover."/></label><div className="brv-senior-review-actions"><button className="button button-primary" type="button" disabled={busy} onClick={()=>void submitReview("approved")}>Approve Workcard</button><button className="button button-secondary" type="button" disabled={busy||reviewNote.trim().length<5} onClick={()=>void submitReview("changes_requested")}>Return for corrections</button></div></>:review.senior_approval_status==="approved"?<p className="inline-notice">Senior approved {review.senior_approved_at?new Date(review.senior_approved_at).toLocaleString("en-AU"):""}.</p>:review.senior_approval_status==="legacy_approved"?<p className="panel-footnote">Legacy completed Workcard. No separate senior sign-off was recorded in the previous workflow.</p>:review.senior_approval_status==="changes_requested"?<p className="panel-footnote">Returned for corrections: {review.senior_approval_note??"See review notes."}</p>:<p className="panel-footnote">Senior review becomes available after the worker submits the Workcard.</p>}</section>}
    <div className="divider-line"/>
    <h3>Add a job task</h3>
    <form className="auth-form" onSubmit={createTask}>
