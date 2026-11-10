@@ -100,6 +100,7 @@ test("worker completion is separately signed off and cannot bypass senior review
  assert.match(worker,/senior_approval_status:"pending"/);
  assert.match(senior,/review_workcard/);
  assert.match(migration,/worker_signed_off_at IS NULL/);
+ assert.ok(migration.includes("v_job.worker_signed_off_by = p_actor_user_id"));
  assert.match(migration,/customer_approval_status = 'pending'/);
  assert.match(migration,/status = 'in_progress'/);
  assert.match(customer,/senior_approval_status/);
