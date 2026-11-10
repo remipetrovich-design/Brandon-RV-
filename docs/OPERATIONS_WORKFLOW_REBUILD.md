@@ -1,51 +1,85 @@
 # Brandon RV — Operations Workflow Rebuild
 
-## Business rules sourced from the business plan
-Brandon RV launches as a mobile caravan and motorhome interior repair/accessory service, not a general mobile mechanic. Launch candidates include minor non-structural cabinetry, hinges, latches, runners, doors, trims and suitable interior fittings. 12V/24V accessories, water-system work, awnings and insurance-related work remain conditional. Diesel heaters, underbody servicing, motorhome mechanical work, 240V, gas, complex inverter/solar, structural repairs, major water damage and certification inspections are deferred or excluded until the required scope, competence, permissions and insurance are established.
+## Business rules from the plan
 
-The form must capture vehicle make/model/year, type, registration, VIN/chassis where available, location, symptoms, requested work, access/site information and photographs. Vehicle categories should include caravan, motorhome, camper trailer and horse float only where appropriate. Vehicle type never automatically authorises a task.
+Brandon RV launches as a mobile caravan and motorhome interior repair/accessory service in Tamworth NSW. It is not a general mobile mechanic, workshop, storage or towing operation. Launch candidates are minor non-structural cabinetry, hinges, latches, runners, doors, trims and suitable living-area fittings. 12V/24V accessories, pumps/taps/fittings/leaks, awnings and insurance-related work are conditional on exact task, competence, legal permissions, site conditions and insurance. Diesel heaters, underbody servicing, motorhome mechanical work, 240V, gas, complex inverter/solar, structural repairs, major water damage and certification inspections are deferred or excluded unless later approved. Horse floats and camper trailers may be considered only for comparable approved tasks.
 
-## Two separate intake routes
-1. **General Enquiry** — public Contact page. Creates a general/public enquiry only. No quote, booking, jobcard or workcard is created. Admin can add internal notes, update contact details and record call/email follow-up. No customer reply composer is required.
-2. **Request a Quote** — public quote form. Creates a quote-request ticket and the first customer-facing Jobcard. Guest requests receive a time-limited access link; signed-in customers can select a saved vehicle and reuse their account details. The contact form is not part of this flow.
+The public service menu must be driven by approved service records. A vehicle category never authorises a repair. The customer must provide make, model, year, registration/VIN where available, location, symptoms, requested work, site/access details and photos where useful. A preferred visit time is not a booking.
 
-## Target workflow
-1. Customer submits Request a Quote.
-2. Create a permanent Jobcard in **New / Senior review required** state, linked to the enquiry, customer or guest, and vehicle.
-3. Senior staff review service suitability, vehicle details, photos, site conditions, scope boundaries and missing information. Record internal notes and the review decision.
-4. Senior staff prepares a detailed, customer-readable quote with separate labour, parts, freight, consumables, travel and applicable tax treatment. Quote revisions remain immutable.
-5. Customer discusses the request in the ticket thread and accepts or declines a specific quote revision. Record actor, timestamp, revision and decision.
-6. Only an accepted quote can proceed to scheduling. Confirm the actual service date, start/end time, customer site address and access notes. A preferred time is not a booking.
-7. Create an unassigned Workcard from the accepted scope and confirmed booking. Workcard is the technician document; Jobcard remains the customer-facing record.
-8. Management assigns an eligible worker. Worker sees assigned Workcards and the information needed to perform that job.
-9. Worker records arrival/start, site safety checks, existing condition, notes, photographs, time, labour, parts/materials, test results and handover details. Internal notes remain private.
-10. If hidden damage or additional work changes scope/cost, worker submits a variation request with notes/photos. Senior staff reviews it and sends a revised quote/variation. No extra work proceeds until customer approval is recorded.
-11. Worker submits the Workcard for completion and signs off their work.
-12. Senior staff reviews the Workcard, verifies records and signs off/reopens it with required corrections.
-13. Approved Workcard data is consolidated into the final Jobcard: approved original scope, variations, work performed, parts, labour/time, photographs, tests, costs, worker and senior approvals, dates and handover.
-14. Issue the final itemised invoice. Customer reviews and signs off the completion record/invoice; payment is then recorded through verified payment-provider confirmation or an authorised manual reconciliation.
-15. Close and archive the Jobcard only after required sign-offs and payment state are satisfied. Preserve all versions, messages, approvals and audit history.
+## Reuse-first data architecture
 
-## Document responsibilities
-- **Jobcard:** customer-readable master record, from initial request through final handover. Shows customer/vehicle, enquiry summary, discussion outcome, quote revisions and decisions, booking, work completed, parts, variations, approvals, invoice and payment.
-- **Workcard:** staff/worker execution document created only after quote acceptance and confirmed booking. Contains internal instructions, assignment, safety/site checks, work notes, photos, time, parts, tests, variations and worker/senior sign-offs. Printable as an A4 hard copy and usable digitally.
+Do not create parallel Jobcard and Workcard tables if existing records can safely provide the same identity and lifecycle.
 
-## Current repository findings
-The existing system already has a unified `enquiries` intake, quote revisions, ticket messages, guest access tokens, appointments, jobs/work orders, staff assignments and job work entries. The current production sequence creates a `jobs` work order after a confirmed appointment. That is not yet the requested model because the customer Jobcard must exist immediately at quote-request submission and the Workcard must be created later. Do not silently repurpose or delete existing records. Introduce a parent Jobcard record and a separate Workcard record, then link existing enquiry/quote/appointment/job records to them with a forward-only migration and backfill strategy.
+- **Jobcard:** existing `enquiries` record for `quote_request` becomes the permanent customer master record. It is created immediately on Request a Quote submission and retains its request number and ID through quote, booking, Workcard, invoice, payment and archive. General enquiries remain separate and never become Jobcards.
+- **Workcard:** existing `jobs` record is the staff execution document. Keep the database table name for compatibility; label it Workcard in the interface. Create it only after the quote is accepted and a real booking is confirmed.
+- **Quotes:** retain `quotes` and `quote_items`; each issued revision remains separately identifiable and linked to the Jobcard.
+- **Appointments:** retain `appointments`; requested/preferred times are not confirmed bookings.
+- **Invoices and payments:** retain `invoices` and `payments`.
+- **Messages, files, assignment, history and audit:** reuse `customer_messages`, `enquiry_attachments`, `enquiry_assignments`, `enquiry_stage_history`, `job_assignments`, `job_work_entries` and `audit_events`.
 
-## Delivery sequence
-- P0: compact and stabilise admin/staff workspace; separate General Enquiries and Quote Requests queues; improve list loading and action discoverability.
-- P1: introduce Jobcard/Workcard data model, migration, secure APIs, status transitions and audit trail.
-- P2: implement senior review, quote revision approval, accepted-quote booking gate and Workcard generation/assignment.
-- P3: implement worker execution form, variation approvals, worker sign-off and senior sign-off.
-- P4: consolidate final Jobcard, printable customer PDF, invoice approval/payment and archive.
-- P5: run end-to-end permission, customer-isolation, failure, duplicate-submit, print and mobile verification.
+The customer Jobcard view aggregates these related records. The staff Workcard view is the execution surface. They are two role-specific views of one job, not duplicate records. Existing data must be linked/backfilled safely; never delete or overwrite customer, vehicle, enquiry, quote, job, invoice or payment history.
+
+## Separate public routes
+
+1. **General Enquiry** — Contact page for general questions only. Creates a general/public enquiry. No quote, Jobcard, booking, Workcard or reply composer. Admin staff can record internal notes and email/phone follow-up.
+2. **Request a Quote** — separate public form. Logged-in users have contact details prefilled and can select saved vehicles. Guests can submit without an account and receive a secure expiring access link. This form must not offer a mode switch into general enquiry. Submission creates one quote-request enquiry/Jobcard, not a quote, booking or Workcard.
+
+## Jobcard workflow
+
+1. Customer submits Request a Quote; create the Jobcard immediately.
+2. Senior staff reviews suitability, vehicle details, photos, requested work, site conditions and missing information.
+3. Senior staff records internal notes and either requests information, marks assessment required, declines unsuitable work or prepares a detailed itemised quote.
+4. Quote includes labour, parts, freight, consumables, travel and correct tax treatment. Each revision is retained.
+5. Customer discusses the Jobcard and accepts or declines a specific quote revision.
+6. A declined quote closes and archives the Jobcard, revokes guest access and preserves the full record/audit trail. Decline reason is optional. Archived records leave active queues but remain available to authorised staff and customer history.
+7. Only an accepted quote can move to scheduling. Staff confirms date, start/end time, customer-site location and access. A preferred date is not a confirmed booking.
+
+## Workcard workflow
+
+8. After accepted quote and confirmed booking, create one unassigned Workcard.
+9. Management assigns an eligible active worker. Record the assigning manager and time.
+10. Worker accepts assignment before starting. Worker sees only assigned Workcards.
+11. Worker records arrival, site permission/safety checks, existing condition, notes, photos, time, labour, parts/materials, tests and handover. Internal notes and supplier costs remain private.
+12. If scope/cost changes, worker stops the affected extra work and submits a variation with evidence. Senior staff reviews it and sends a variation quote. No extra work proceeds until customer approval.
+13. Worker submits and signs off the Workcard.
+14. Senior staff separately reviews and signs off or returns it for correction. A worker cannot approve their own Workcard.
+15. Approved Workcard details are consolidated into the Jobcard, including scope, variations, work performed, parts, time, photos, tests, costs, approvals and handover.
+
+## Final customer approval and payment
+
+16. Customer reviews the final Jobcard/report revision and approves or requests changes. Approval is recorded against that exact revision.
+17. After customer approval, issue the itemised invoice.
+18. Record payment only from provider confirmation or authorised manual reconciliation.
+19. Archive the Jobcard after required sign-offs and payment/closeout conditions are met. Preserve revisions, messages, approvals, files and audit history.
+
+## Current implementation evidence and gaps
+
+The repository already has enquiry records, quote revisions, ticket messages, guest token columns, appointments, jobs/work orders, staff assignment, work entries, invoices and payments. This supports a reuse-first implementation.
+
+The current sequence is still incomplete:
+- Quote submission creates an enquiry, but the customer does not yet have one complete Jobcard view spanning quote, booking, Workcard, final approval and invoice.
+- The existing `jobs` Work Order is created after a confirmed booking, which is the correct creation gate for a Workcard, but the current staff interface still presents Work Orders rather than the complete compact Workcard workflow.
+- Worker work entries and customer approval exist in partial form; a distinct immutable senior sign-off and a complete variation approval workflow still need to be enforced.
+- Guest quote-request access is time-limited at creation, but closure must revoke it immediately. Guest access and the request-status route need end-to-end verification.
+- The public Request a Quote form previously allowed a signed-in user to switch to a general conversation. That has been removed so General Enquiry and Request a Quote remain separate.
+- Quote decline now records the customer decision and attempts to close/archive the related enquiry. This needs atomic database handling and end-to-end failure/concurrency tests before release.
+
+## Delivery order
+
+- P0 — lock the business boundaries, separate public intake, define the shared design/UX contract, compact admin/staff screens and remove redundant navigation/actions.
+- P1 — complete Jobcard aggregation and status model using existing enquiry/quote/appointment records; add secure guest/customer access and archive/revocation behavior.
+- P2 — complete quote revision review, customer discussion/decision and accepted-quote booking gate.
+- P3 — complete Workcard creation/assignment, worker execution, attachments, time/parts/tests, variations, worker sign-off and separate senior sign-off.
+- P4 — consolidate final Jobcard, customer approval, invoice issue, payment reconciliation and archive.
+- P5 — browser-rendered page consistency, responsive/print QA, role isolation, failure/concurrency tests and migration validation.
 
 ## Non-negotiable safeguards
-- Keep existing customers, vehicles, enquiries, quotes, jobs, invoices and payment history.
-- No work starts before quote acceptance, confirmed booking and worker assignment.
-- No scope/cost increase without customer approval.
-- Keep internal notes and supplier costs private.
+
+- Keep existing customer and financial history.
+- Do not create a Workcard before accepted quote and confirmed booking.
+- Do not start work before worker assignment and acceptance.
+- No scope or cost increase without customer approval.
+- Internal notes, supplier costs and private attachments never reach customers.
 - Enforce permissions server-side.
-- Keep all sign-offs immutable and attributable to a user and timestamp.
+- Record every approval with actor, role, timestamp and target revision.
 - No production migration is applied by creating this branch or pull request.
