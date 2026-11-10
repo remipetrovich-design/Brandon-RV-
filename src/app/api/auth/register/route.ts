@@ -24,7 +24,7 @@ export async function POST(request:Request){
   const password=String(body.password??"");
   const invitationToken=String(body.invitationToken??"").trim();
   if(!firstName||!lastName||firstName.length>120||lastName.length>120||fullName.length<2||fullName.length>120)return jsonError("Enter a valid first and last name.");
-  if(!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email)||email.length>254)return jsonError("Enter a valid email address.");
+  if(!email||email.length>254)return jsonError("Enter an email address.");
   if(password.length<12||password.length>128)return jsonError("Use a password between 12 and 128 characters.");
   if(phone.length>40||address.length>500||suburb.length>120||state.length>80||postcode.length>12)return jsonError("One or more contact details exceed the allowed length.");
   if(dateOfBirth&&!isValidBirthDate(dateOfBirth))return jsonError("Enter a valid date of birth.");
