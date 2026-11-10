@@ -13,7 +13,7 @@ export default function CustomerJobcardBookingRequest({quoteId,quoteNumber,vehic
   }catch{setNotice("Could not request booking.");}
   finally{setBusy(false);}
  }
- const min=new Date(Date.now()+3600000);min.setSeconds(0,0);const minLocal=new Date(min.getTime()-min.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ const min=new Date(Date.now()+24*3600000);min.setSeconds(0,0);const minLocal=new Date(min.getTime()-min.getTimezoneOffset()*60000).toISOString().slice(0,16);
  return <form className="auth-form brv-jobcard-booking-form" onSubmit={submit}>
   <h4>Request a booking for {quoteNumber}</h4>
   <p className="panel-footnote">This is a preferred visit time only. Brandon RV must confirm the actual date, time and location.</p>
