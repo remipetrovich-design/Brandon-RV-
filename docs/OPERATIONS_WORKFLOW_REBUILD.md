@@ -52,28 +52,37 @@ The customer Jobcard view aggregates these related records. The staff Workcard v
 18. Record payment only from provider confirmation or authorised manual reconciliation.
 19. Archive the Jobcard after required sign-offs and payment/closeout conditions are met. Preserve revisions, messages, approvals, files and audit history.
 
-## Current implementation evidence and gaps
+## Current implementation evidence and remaining gaps
 
-The repository already has enquiry records, quote revisions, ticket messages, guest token columns, appointments, jobs/work orders, staff assignment, work entries, invoices and payments. This supports a reuse-first implementation.
+Implemented on the draft branch:
+- The public General Enquiry route is now `/general-enquiry`; the old `/contact` route redirects there. Logged-in customer details are prefilled. It creates a general enquiry only and has no quote, booking or reply-composer flow.
+- Request a Quote is a separate quote-only form. Signed-in customers can select saved vehicles; guests receive a secure Jobcard link with a time limit. The general-enquiry mode switch has been removed.
+- The existing `enquiries` row is the Jobcard identity. Customer accounts have a Jobcard register and a single Jobcard document that aggregates request details, quote revisions/line items, booking, Workcard, customer-visible work entries/photos, final approval, invoice items and messages. Guest users see the same core Jobcard stages in their secure request workspace.
+- General Enquiries, Quote Requests and Customer Enquiries have separate admin queues. General enquiry detail has internal notes and follow-up details but no customer reply composer. Archived requests are removed from active queues and remain filterable.
+- Quotes are itemised (up to 30 lines), GST uses the configured business setting, and quote preparation is restricted to active Quote Request Jobcards. A separate authorised senior reviewer must approve a draft prepared by another staff member before the quote can be issued. Quote issue advances the Jobcard through an atomic database function.
+- Customer quote acceptance/decline is atomic for account and guest users. Decline reason is optional; the quote and Jobcard close, archive timestamp is recorded, guest access is revoked and the event is audited.
+- Account and guest booking requests require an accepted quote, prevent duplicate requests and apply the configured notice period, working days, unavailable dates, opening hours, advance window and appointment/travel conflict checks. A preferred time is still only a request.
+- A Workcard is created only after an accepted quote and confirmed booking. Management assigns workers; workers must accept the assignment before starting or recording work. Assignment edits preserve accepted assignments.
+- Staff Workcards use a compact one-at-a-time detail view. Workers can record labour, parts, non-billable notes and tests/checks, upload private photos, and explicitly choose which photos are customer-visible. Non-billable tests and notes are excluded from invoice totals.
+- Worker completion records a sign-off. A separate senior review can approve the Workcard or return it for correction. Returning it reopens the Workcard, records the reason and removes the draft invoice. The final report is not shown to the customer until senior approval.
+- The customer can approve or request changes to the final report. Draft invoice details remain hidden until customer approval; the itemised invoice is then issued and shown in the Jobcard.
+- Admin enquiry detail panels are aligned in a two-column supporting layout. Workcard and quote controls are collapsed and lazy-loaded; the staff Workcard list opens one detailed record at a time. The public site styles remain separate. The Jobcard includes responsive and A4 print styling.
 
-The current sequence is still incomplete:
-- Quote submission creates the enquiry record that serves as the Jobcard identity, but the customer does not yet have one complete Jobcard view spanning quote, booking, Workcard, final approval and invoice.
-- The existing `jobs` Work Order is created after a confirmed booking, which is the correct creation gate for a Workcard, but the current staff interface still presents Work Orders rather than the complete compact Workcard workflow.
-- Worker work entries and customer approval exist in partial form; a distinct immutable senior sign-off and a complete variation approval workflow still need to be enforced.
-- Quote creation is now restricted to active `quote_request` Jobcards. General/public enquiries and customer conversations cannot be turned into quotes through the quote composer. General enquiry detail pages have no customer reply composer.
-- Quote issue advances the Jobcard stage in an atomic database function. Account and guest quote responses are also atomic; decline closes and archives the Jobcard, records the optional reason, and revokes guest access.
-- Guest quote-request access is time-limited at creation; closure revokes it immediately. The request-status route and all guest flows still need end-to-end verification.
-- The public Request a Quote form no longer offers a general conversation mode; General Enquiry and Request a Quote remain separate.
-- Quote decline now records the customer decision and attempts to close/archive the related enquiry. This needs atomic database handling and end-to-end failure/concurrency tests before release.
+Still required before the workflow can be called complete:
+- A formal variation workflow is not implemented yet. The worker must be able to request a variation, senior staff must review it, the customer must approve/decline the cost and scope, and the Workcard must prevent the extra work until approval. The current quote API deliberately blocks revising an accepted quote rather than silently changing the agreed scope.
+- Successful closeout archive rules after final customer approval, invoice issue and payment need to be completed. Declined requests already archive and revoke guest access.
+- Final customer approval and invoice issuance still need transaction-level failure/concurrency hardening; quote decisions and senior review are already database-transactional.
+- Guest and signed-in workflows need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior.
+- The A4 print output and all page widths/spacing still need browser-rendered visual QA at desktop, tablet and mobile breakpoints. The CSS and type/build checks do not by themselves prove every page looks correct in a live browser.
+- Existing completed Workcards are grandfathered as legacy-approved and clearly labelled as records without a separate historical senior sign-off.
 
 ## Delivery order
 
-- P0 — lock the business boundaries, separate public intake, define the shared design/UX contract, compact admin/staff screens and remove redundant navigation/actions.
-- P1 — complete Jobcard aggregation and status model using existing enquiry/quote/appointment records; add secure guest/customer access and archive/revocation behavior.
-- P2 — complete quote revision review, customer discussion/decision and accepted-quote booking gate.
-- P3 — complete Workcard creation/assignment, worker execution, attachments, time/parts/tests, variations, worker sign-off and separate senior sign-off.
-- P4 — consolidate final Jobcard, customer approval, invoice issue, payment reconciliation and archive.
-- P5 — browser-rendered page consistency, responsive/print QA, role isolation, failure/concurrency tests and migration validation.
+- P0 — compact shared UI, split General Enquiry and Request a Quote, remove redundant controls and preserve existing data.
+- P1 — customer Jobcard master, itemised quote revisions, senior quote approval, customer decision and confirmed-booking gate.
+- P2 — Workcard assignment, worker execution, photos/tests, worker sign-off and separate senior review.
+- P3 — formal variations, customer final approval, invoice issue, payment reconciliation and successful-closeout archive.
+- P4 — browser-rendered page QA, A4 print verification, role isolation, failure/concurrency tests and migration validation.
 
 ## Non-negotiable safeguards
 
