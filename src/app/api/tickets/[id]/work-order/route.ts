@@ -37,7 +37,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const {data:appointments}=await db.from("appointments").select("id,quote_id").eq("business_id",enquiry.business_id).eq("enquiry_id",id).eq("status","confirmed");
   const appointmentIds=(appointments??[]).map(x=>x.id);if(!appointmentIds.length)return jsonError("No confirmed booking was found for this request.",404);
   const {data:job}=await db.from("jobs").select("id,business_id,job_number,status,customer_approval_status,senior_approval_status,appointment_id,quote_id").eq("id",jobId).eq("business_id",enquiry.business_id).in("appointment_id",appointmentIds).maybeSingle();
-  if(!job||job.status!=="completed"||job.senior_approval_status!=="approved"||job.customer_approval_status!=="pending")return jsonError("This Workcard is not yet approved for customer review.",409);
+  if(!job||job.status!=="completed"||!["approved","legacy_approved"].includes(String(job.senior_approval_status))||job.customer_approval_status!=="pending")return jsonError("This Workcard is not yet approved for customer review.",409);
   const {data:invoice}=await db.from("invoices").select("id,invoice_number,status").eq("job_id",job.id).eq("business_id",job.business_id).maybeSingle();
   if(!invoice||invoice.status!=="draft")return jsonError("The final invoice is not ready for approval.",409);
   const now=new Date().toISOString();
