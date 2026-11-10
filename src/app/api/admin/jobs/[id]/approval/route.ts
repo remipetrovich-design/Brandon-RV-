@@ -5,7 +5,9 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {id}=await params;
  const {data:job,error}=await database().from("jobs").select("id,job_number,status,work_summary,worker_signed_off_by,worker_signed_off_at,senior_approval_status,senior_approved_by,senior_approved_at,senior_approval_note,customer_approval_status").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
  if(error||!job)return jsonError("Workcard not found.",404);
- return Response.json({job});
+ const {data:photos}=await database().from("job_attachments").select("id,file_name,mime_type,storage_path,customer_visible,created_at").eq("business_id",access.membership!.business_id).eq("job_id",id).order("created_at",{ascending:false});
+ const attachments=await Promise.all((photos??[]).map(async file=>{const {data:signed}=await database().storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:signed?.signedUrl??null};}));
+ return Response.json({job,attachments});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
