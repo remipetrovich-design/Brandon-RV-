@@ -47,7 +47,7 @@ test("registration sends the branded mandatory email verification template", () 
   assert.match(registrationRoute, /sendBrandonRvTemplateEmail/);
   assert.match(registrationRoute, /verification_url:link/);
   assert.match(registrationRoute, /sender:"noreply"/);
-  assert.match(registrationRoute, /status:verificationEnabled\?"pending":"active"/);
+  assert.match(registrationRoute, /status:verificationEnabled\?"unverified":"active"/);
   assert.match(templates, /verify_account:/);
 });
 
