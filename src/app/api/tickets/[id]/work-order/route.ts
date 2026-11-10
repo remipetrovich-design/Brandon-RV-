@@ -15,14 +15,16 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  const appointment=appointments?.[0];if(!appointment)return Response.json({workOrder:null});
  const {data:job}=await db.from("jobs").select("id,job_number,title,status,work_summary,customer_approval_status,senior_approval_status,quote_id").eq("business_id",enquiry.business_id).eq("appointment_id",appointment.id).maybeSingle();
  if(!job)return Response.json({workOrder:null});
- const [{data:entries,error:entryError},{data:invoice},{data:quote},{data:vehicle}]=await Promise.all([
+ const [{data:entries,error:entryError},{data:invoice},{data:quote},{data:vehicle},{data:photos}]=await Promise.all([
   db.from("job_work_entries").select("id,entry_type,description,quantity,line_total,customer_visible").eq("business_id",enquiry.business_id).eq("job_id",job.id).eq("customer_visible",true).order("occurred_at"),
   db.from("invoices").select("invoice_number,total,status,payments(id,amount,method,reference,paid_at,status)").eq("business_id",enquiry.business_id).eq("job_id",job.id).maybeSingle(),
   job.quote_id?db.from("quotes").select("quote_number,total").eq("id",job.quote_id).maybeSingle():Promise.resolve({data:null}),
-  appointment.vehicle_id?db.from("vehicles").select("make,model,year,registration").eq("id",appointment.vehicle_id).maybeSingle():Promise.resolve({data:null})
+  appointment.vehicle_id?db.from("vehicles").select("make,model,year,registration").eq("id",appointment.vehicle_id).maybeSingle():Promise.resolve({data:null}),
+  db.from("job_attachments").select("id,file_name,mime_type,storage_path").eq("business_id",enquiry.business_id).eq("job_id",job.id).eq("customer_visible",true).order("created_at",{ascending:false})
  ]);
  if(entryError)return jsonError("Could not load the final Work Order report.",500);
- return Response.json({workOrder:{...job,entries:entries??[],invoice:invoice??null,quote:quote??null,booking:appointment,vehicle:vehicle??null}});
+ const attachments=await Promise.all((photos??[]).map(async file=>{const {data:signed}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:signed?.signedUrl??null};}));
+ return Response.json({workOrder:{...job,entries:entries??[],attachments,invoice:invoice??null,quote:quote??null,booking:appointment,vehicle:vehicle??null}});
 }
 
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
