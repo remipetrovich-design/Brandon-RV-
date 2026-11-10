@@ -69,7 +69,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(value.length>fieldLimits[field])return jsonError("One or more fields exceed the allowed length.");
    update[field]=value||null;
   }
-  if(body.status!==undefined){const value=String(body.status).trim();if(!["unverified","active","suspended","banned"].includes(value))return jsonError("Account status must be unverified, active, suspended or banned.");update.status=value;}
+  if(body.status!==undefined){const value=String(body.status).trim();if(!["active","suspended","banned"].includes(value))return jsonError("Account status can only be set to active, suspended or banned. Unverified is system-controlled.");update.status=value;}
   if(!Object.keys(update).length)return jsonError("No customer changes supplied.");
   const db=database(),businessId=a.membership!.business_id;
   const {data:customer}=await db.from("customers").select("id,user_id,full_name,first_name,last_name").eq("id",id).eq("business_id",businessId).maybeSingle();
