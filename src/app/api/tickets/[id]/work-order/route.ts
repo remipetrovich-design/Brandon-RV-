@@ -17,7 +17,7 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  if(!job)return Response.json({workOrder:null});
  const [{data:entries,error:entryError},{data:invoice},{data:quote},{data:vehicle},{data:photos}]=await Promise.all([
   db.from("job_work_entries").select("id,entry_type,description,quantity,line_total,customer_visible").eq("business_id",enquiry.business_id).eq("job_id",job.id).eq("customer_visible",true).order("occurred_at"),
-  db.from("invoices").select("invoice_number,total,status,payments(id,amount,method,reference,paid_at,status)").eq("business_id",enquiry.business_id).eq("job_id",job.id).maybeSingle(),
+  db.from("invoices").select("invoice_number,total,status,payments(id,amount,method,reference,paid_at,status),invoice_items(id,description,quantity,unit_price,line_total)").eq("business_id",enquiry.business_id).eq("job_id",job.id).maybeSingle(),
   job.quote_id?db.from("quotes").select("quote_number,total").eq("id",job.quote_id).maybeSingle():Promise.resolve({data:null}),
   appointment.vehicle_id?db.from("vehicles").select("make,model,year,registration").eq("id",appointment.vehicle_id).maybeSingle():Promise.resolve({data:null}),
   db.from("job_attachments").select("id,file_name,mime_type,storage_path").eq("business_id",enquiry.business_id).eq("job_id",job.id).eq("customer_visible",true).order("created_at",{ascending:false})
