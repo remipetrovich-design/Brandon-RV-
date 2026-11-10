@@ -2,7 +2,7 @@
 import {FormEvent,useEffect,useState} from "react";
 
 type Entry={id:string;entry_type:string;description:string;quantity:number;unit_price:number;line_total:number;occurred_at:string};
-type WorkOrder={id:string;job_number:string;title:string;status:string;scope_of_work:string|null;scheduled_start:string|null;customer_name?:string;entries:Entry[];assignment_status:string};
+type WorkOrder={id:string;job_number:string;title:string;status:string;scope_of_work:string|null;scheduled_start:string|null;senior_approval_status?:string;senior_approval_note?:string|null;customer_name?:string;entries:Entry[];assignment_status:string};
 
 export default function StaffWorkOrders(){
  const [orders,setOrders]=useState<WorkOrder[]>([]);
