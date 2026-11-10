@@ -874,3 +874,19 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 .brv-jobcard-totals { display:grid; gap:6px; margin-top:10px; }
 .brv-jobcard-totals > div:not(.brv-jobcard-total) { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:11px; }
 .brv-jobcard-totals .brv-jobcard-total { margin-top:3px; }
+
+.brv-workcard-photos { display:grid; gap:9px; padding:12px; border:1px solid var(--line); background:#fff; }
+.brv-workcard-photos > div:first-child { display:grid; gap:3px; }
+.brv-workcard-photos > div:first-child strong { font-size:12px; }
+.brv-workcard-photos > div:first-child small { color:var(--muted); font-size:10px; }
+.brv-workcard-photos form { display:grid; gap:9px; padding-top:9px; border-top:1px solid var(--line); }
+.brv-workcard-photos form label { display:grid; gap:5px; font-size:11px; }
+.brv-workcard-photos input[type="file"] { max-width:100%; font-size:11px; }
+.brv-workcard-photo-grid,.brv-workcard-customer-photos,.brv-senior-review-photos { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+.brv-workcard-photo-grid a,.brv-workcard-customer-photos a,.brv-senior-review-photos a { display:grid; gap:4px; min-width:0; color:var(--green); text-decoration:none; font-size:10px; overflow-wrap:anywhere; }
+.brv-workcard-photo-grid img,.brv-workcard-customer-photos img,.brv-senior-review-photos img { width:100%; height:88px; object-fit:cover; background:#e8e8e1; border:1px solid var(--line); }
+.brv-workcard-photo-grid small,.brv-senior-review-photos small { color:var(--muted); font-size:9px; }
+.brv-workcard-customer-photos { margin:12px 0; }
+.brv-workcard-customer-photos img { height:130px; }
+.brv-admin-frame .brv-senior-review-photos { grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
+.brv-admin-frame .brv-senior-review-photos img { height:76px; }
