@@ -2,6 +2,7 @@
 import {FormEvent,useState} from "react";
 type StaffOption={id:string;job_title:string|null;full_name:string;email:string};
 type ReviewJob={status:string;work_summary:string|null;worker_signed_off_at:string|null;senior_approval_status:string;senior_approved_at:string|null;senior_approval_note:string|null};
+type ReviewPhoto={id:string;file_name:string;url:string|null;customer_visible:boolean};
 export default function AdminJobTools({jobId,canAssign,canManage}:{jobId:string;canAssign:boolean;canManage:boolean}){
  const [staff,setStaff]=useState<StaffOption[]>([]);
  const [assigned,setAssigned]=useState<string[]>([]);
@@ -13,6 +14,7 @@ export default function AdminJobTools({jobId,canAssign,canManage}:{jobId:string;
  const [busy,setBusy]=useState(false);
  const [loaded,setLoaded]=useState(false);
  const [review,setReview]=useState<ReviewJob|null>(null);
+ const [reviewPhotos,setReviewPhotos]=useState<ReviewPhoto[]>([]);
  const [reviewNote,setReviewNote]=useState("");
  async function load(){
   try{
@@ -21,7 +23,7 @@ export default function AdminJobTools({jobId,canAssign,canManage}:{jobId:string;
     canManage?fetch("/api/admin/jobs/"+jobId+"/approval",{cache:"no-store"}):Promise.resolve(null)
    ]);
    if(assignResponse){const d=await assignResponse.json();if(!assignResponse.ok){setNotice(d.error??"Could not load staff assignments.");return;}setStaff(d.staff??[]);setAssigned((d.assignments??[]).filter((x:any)=>["assigned","accepted"].includes(x.status)).map((x:any)=>x.staff_id));}
-   if(reviewResponse){const d=await reviewResponse.json();if(!reviewResponse.ok){setNotice(d.error??"Could not load senior review.");return;}setReview(d.job??null);}
+   if(reviewResponse){const d=await reviewResponse.json();if(!reviewResponse.ok){setNotice(d.error??"Could not load senior review.");return;}setReview(d.job??null);setReviewPhotos(d.attachments??[]);}
    setLoaded(true);
   }catch{setNotice("Could not load Workcard controls.");}
  }
