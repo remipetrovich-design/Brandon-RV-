@@ -8,7 +8,7 @@ const navigation=[
  {href:"/about-services",label:"About / Services",matches:["/about-services","/about","/services"]},
  {href:"/how-it-works",label:"How it works / Service areas",matches:["/how-it-works","/service-areas"]},
  {href:"/faq",label:"FAQs",matches:["/faq"]},
- {href:"/contact",label:"Contact",matches:["/contact"]}
+ {href:"/general-enquiry",label:"General Enquiry",matches:["/general-enquiry","/contact"]}
 ];
 
 export default function SiteHeader({brandLine,isLoggedIn}:{brandLine:string;isLoggedIn:boolean}) {
