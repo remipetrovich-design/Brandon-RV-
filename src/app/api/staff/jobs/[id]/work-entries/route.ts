@@ -1,4 +1,4 @@
-import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+import {currentUser,currentMembership,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 
 async function accessJob(jobId:string,userId:string,businessId:string){
@@ -9,8 +9,7 @@ async function accessJob(jobId:string,userId:string,businessId:string){
   db.from("jobs").select("id,status,customer_approval_status").eq("id",jobId).eq("business_id",businessId).maybeSingle(),
   db.from("job_assignments").select("id,status").eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle()
  ]);
- const canManage=await userHasPermission(userId,"jobs.manage");
- return {db,staff,job,allowed:canManage||assignment?.status==="accepted",assignment};
+ return {db,staff,job,allowed:assignment?.status==="accepted",assignment};
 }
 
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
