@@ -1,4 +1,7 @@
 -- Workcard evidence: non-billable tests/checks and private photo/document attachments.
+-- Guest Jobcards can progress through final invoice and payment without a customer account.
+ALTER TABLE public.invoices ALTER COLUMN customer_id DROP NOT NULL;
+ALTER TABLE public.payments ALTER COLUMN customer_id DROP NOT NULL;
 ALTER TABLE public.job_work_entries DROP CONSTRAINT IF EXISTS job_work_entries_entry_type_check;
 ALTER TABLE public.job_work_entries ADD CONSTRAINT job_work_entries_entry_type_check
   CHECK (entry_type IN ('labour','parts','note','test'));
