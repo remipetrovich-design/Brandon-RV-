@@ -138,3 +138,30 @@
 .brv-admin-frame .brv-senior-review textarea { min-height:62px; resize:vertical; }
 .brv-admin-frame .brv-senior-review-actions { display:flex; flex-wrap:wrap; gap:7px; }
 .brv-admin-frame .brv-senior-review-actions .button { min-height:34px; padding:0 10px; font-size:11px; }
+
+
+/* Workcard rows use a stable grid so expanded controls never squeeze into a narrow flex column. */
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px 12px;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-date { grid-column:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-copy { grid-column:2; min-width:0; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:3; grid-row:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools {
+  grid-column:2 / -1;
+  width:100%;
+  min-width:0;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools[open] { grid-column:2 / -1; }
+@media (max-width: 700px) {
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) {
+    grid-template-columns:minmax(0,1fr) auto;
+  }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-date { grid-column:1 / -1; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-copy { grid-column:1 / -1; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:1; grid-row:auto; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools { grid-column:1 / -1; }
+}
