@@ -7,6 +7,7 @@ const navigation:AdminNavGroup[]=[
  {title:"Service workflow",items:[
   {label:"General enquiries",href:"/admin/general-enquiries",permission:"enquiries.view",icon:"inbox"},
   {label:"Quote requests",href:"/admin/quote-requests",permission:"enquiries.view",icon:"quote"},
+  {label:"Customer enquiries",href:"/admin/customer-enquiries",permission:"enquiries.view",icon:"users"},
   {label:"All intake",href:"/admin/enquiries",permission:"enquiries.view",icon:"inbox"},
   {label:"Customers",href:"/admin/customers",permission:"customers.view",icon:"users"},
   {label:"Vehicles",href:"/admin/vehicles",permission:"vehicles.view",icon:"vehicle"},
