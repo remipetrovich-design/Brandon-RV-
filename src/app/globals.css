@@ -870,3 +870,7 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 .brv-quote-preview > div { display:flex; justify-content:space-between; gap:10px; font-size:11px; }
 .brv-quote-preview-total { padding-top:7px; border-top:1px solid var(--line); font-weight:750; }
 .brv-quote-preview-total strong { font-size:15px; }
+
+.brv-jobcard-totals { display:grid; gap:6px; margin-top:10px; }
+.brv-jobcard-totals > div:not(.brv-jobcard-total) { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:11px; }
+.brv-jobcard-totals .brv-jobcard-total { margin-top:3px; }
