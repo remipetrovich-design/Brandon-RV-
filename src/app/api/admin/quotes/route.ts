@@ -54,7 +54,7 @@ export async function POST(request:Request){
   const taxAmount=Number((lines.reduce((sum,item)=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
   const total=Number((subtotal+taxAmount).toFixed(2));
   const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
-  const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customer.id,user_id:customer.user_id,enquiry_id:enquiry.id,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id").single();
+  const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customer.id,user_id:customer.user_id,enquiry_id:enquiry.id,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id").single();
   if(error||!quote)return jsonError("Could not create quote.",500);
   const {error:itemError}=await db.from("quote_items").insert(lines.map(item=>({...item,quote_id:quote.id})));
   if(itemError){await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not save quote lines. The draft was rolled back.",500);}
