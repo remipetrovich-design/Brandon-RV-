@@ -45,7 +45,7 @@ BEGIN
     RAISE EXCEPTION 'Describe the corrections required.' USING ERRCODE = '22023';
   END IF;
 
-  SELECT id, status, senior_approval_status, worker_signed_off_at
+  SELECT id, status, senior_approval_status, worker_signed_off_at, worker_signed_off_by
     INTO v_job
     FROM public.jobs
    WHERE id = p_job_id
