@@ -31,6 +31,8 @@ test("account and guest quote responses use atomic database transactions",async(
   assert.match(migration,/customer_messages/);
   assert.match(migration,/audit_events/);
  }
+ assert.match(accountMigration,/v_quote\.customer_id, p_user_id/);
+ assert.match(accountMigration,/request_type <> 'quote_request'/);
 });
 
 test("declined Jobcards are excluded from active enquiry queues but remain filterable",async()=>{
@@ -71,4 +73,19 @@ test("issuing a quote advances the Jobcard atomically",async()=>{
  assert.match(migration,/stage = 'quote_sent'/);
  assert.match(migration,/enquiry_stage_history/);
  assert.match(migration,/audit_events/);
+});
+
+
+test("admin cannot reclassify a general enquiry into a quote request",async()=>{
+ const api=await source("../src/app/api/admin/enquiries/[id]/route.ts");
+ assert.doesNotMatch(api,/const allowed=\[[^\]]*request_type/);
+ assert.match(api,/archived_at=before\.archived_at/);
+ assert.match(api,/guest_access_token_hash=null/);
+});
+
+test("quote issue email resolves the real customer foreign key",async()=>{
+ const route=await source("../src/app/api/admin/[section]/[id]/route.ts");
+ assert.match(route,/select\("quote_number,total,customer_id,user_id,enquiry_id"\)/);
+ assert.match(route,/eq\("id",quoteRecord\.user_id\)/);
+ assert.match(route,/from\("customers"\)\.select\("full_name,email"\)/);
 });
