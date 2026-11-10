@@ -58,6 +58,10 @@ BEGIN
     RAISE EXCEPTION 'This Workcard is not awaiting senior review.' USING ERRCODE = 'P0001';
   END IF;
 
+  IF v_job.worker_signed_off_by = p_actor_user_id THEN
+    RAISE EXCEPTION 'A different authorised senior staff member must review this Workcard.' USING ERRCODE = 'P0001';
+  END IF;
+
   IF p_decision = 'approved' THEN
     UPDATE public.jobs
        SET senior_approval_status = 'approved',
