@@ -21,7 +21,7 @@ export default async function JobcardDetailPage({params,searchParams}:{params:Pr
  if(quoteError||appointmentError||attachmentError)throw new Error("Could not load the complete Jobcard.");
  const appointmentIds=(appointments??[]).map(x=>x.id);
  const [{data:jobs},{data:vehicle}]=await Promise.all([
-  appointmentIds.length?db.from("jobs").select("id,job_number,title,status,work_summary,customer_approval_status,senior_approval_status,senior_approval_note,worker_signed_off_at,completed_at,scheduled_start,appointment_id,quote_id,customer_visible_notes,actual_start,actual_end").eq("user_id",user.id).in("appointment_id",appointmentIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+  appointmentIds.length?db.from("jobs").select("id,job_number,title,status,work_summary,customer_approval_status,senior_approval_status,senior_approval_note,worker_signed_off_at,completed_at,scheduled_start,appointment_id,quote_id,customer_visible_notes").eq("user_id",user.id).in("appointment_id",appointmentIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
   jobcard.vehicle_id?db.from("vehicles").select("make,model,year,vehicle_type,registration,vin").eq("id",jobcard.vehicle_id).eq("customer_id",user.id).maybeSingle():Promise.resolve({data:null})
  ]);
  const jobIds=(jobs??[]).map(x=>x.id);
