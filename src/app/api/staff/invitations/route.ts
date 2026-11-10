@@ -3,7 +3,6 @@ import {authorizePermission,database,digest,jsonError,normalizeEmail,sameOrigin}
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 import {sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
-const validEmail=(v:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const staffRoleKeys=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
@@ -17,7 +16,7 @@ export async function POST(request:Request){
  try{
   const body=await request.json(),email=normalizeEmail(String(body.email??"")),roleKey=String(body.roleKey??"").trim();
   const jobTitle=String(body.jobTitle??"").trim(),employmentType=String(body.employmentType??"full_time"),startDate=body.startDate?String(body.startDate):new Date().toISOString().slice(0,10);
-  if(!validEmail(email)||email.length>254)return jsonError("Enter a valid email address.");
+  if(!email||email.length>254)return jsonError("Enter an email address.");
   if(!jobTitle||jobTitle.length>100)return jsonError("Enter a job title.");
   if(!["casual","part_time","full_time"].includes(employmentType))return jsonError("Select a valid employment type.");
   if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)||Number.isNaN(Date.parse(startDate)))return jsonError("Enter a valid start date.");
