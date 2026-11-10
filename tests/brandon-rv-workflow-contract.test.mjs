@@ -170,3 +170,35 @@ test("customer invoice is hidden until the final Jobcard is approved",async()=>{
  const component=await source("../src/components/customer-work-approval.tsx");
  assert.ok(component.includes('invoice&&approvalStatus==="approved"'));
 });
+
+
+test("Workcard photo evidence is private by default and customer-visible only by choice",async()=>{
+ const migration=await source("../supabase/migrations/20261111150000_workcard_photos_and_tests.sql");
+ const upload=await source("../src/app/api/staff/jobs/[id]/attachments/route.ts");
+ const customer=await source("../src/components/customer-work-approval.tsx");
+ assert.ok(migration.includes("CREATE TABLE IF NOT EXISTS public.job_attachments"));
+ assert.ok(migration.includes("customer_visible boolean NOT NULL DEFAULT false"));
+ assert.ok(upload.includes("file.size>10*1024*1024"));
+ assert.ok(upload.includes('customer_visible:customerVisible'));
+ assert.ok(customer.includes("attachments.map"));
+});
+
+test("guest and account booking requests use one quote and the configured availability rules",async()=>{
+ const account=await source("../src/app/api/portal/appointments/route.ts");
+ const guest=await source("../src/app/api/tickets/[id]/booking-request/route.ts");
+ assert.ok(account.includes("existingBooking"));
+ assert.ok(guest.includes("existingBooking"));
+ assert.ok(guest.includes("working_days"));
+ assert.ok(guest.includes("unavailable_dates"));
+ assert.ok(guest.includes("travel_buffer_minutes"));
+ assert.ok(guest.includes("appointments"));
+});
+
+test("Workcard test/check entries are non-billable",async()=>{
+ const route=await source("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
+ const helper=await source("../src/lib/work-order-lifecycle.mjs");
+ const finish=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
+ assert.ok(route.includes('"labour","parts","note","test"'));
+ assert.ok(helper.includes('["note", "test"]'));
+ assert.ok(finish.includes('!["note","test"].includes(x.entry_type)'));
+});
