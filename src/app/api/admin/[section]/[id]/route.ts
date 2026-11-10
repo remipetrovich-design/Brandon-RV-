@@ -68,8 +68,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   }
   let emailSent=false;
   if(section==="quotes"&&update.status==="sent"){
-   const {data:quoteRecord}=await db.from("quotes").select("quote_number,total,customer_id,enquiry_id").eq("id",id).maybeSingle();
-   let customer:any=null;if(quoteRecord?.customer_id){const result=await db.from("users").select("full_name,email").eq("id",quoteRecord.customer_id).maybeSingle();customer=result.data;}else if(quoteRecord?.enquiry_id){const result=await db.from("enquiries").select("contact_name,email").eq("id",quoteRecord.enquiry_id).maybeSingle();customer=result.data;}
+   const {data:quoteRecord}=await db.from("quotes").select("quote_number,total,customer_id,user_id,enquiry_id").eq("id",id).maybeSingle();
+   let customer:any=null;if(quoteRecord?.user_id){const result=await db.from("users").select("full_name,email").eq("id",quoteRecord.user_id).maybeSingle();customer=result.data;}else if(quoteRecord?.customer_id){const result=await db.from("customers").select("full_name,email").eq("id",quoteRecord.customer_id).eq("business_id",membership.business_id).maybeSingle();customer=result.data;}else if(quoteRecord?.enquiry_id){const result=await db.from("enquiries").select("contact_name,email").eq("id",quoteRecord.enquiry_id).eq("business_id",membership.business_id).maybeSingle();customer=result.data;}
    if(quoteRecord&&customer?.email){
     const safeName=String(customer.full_name??customer.contact_name??"Customer").replace(/[&<>"]/g,"");
     const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
