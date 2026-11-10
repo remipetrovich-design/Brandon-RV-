@@ -12,13 +12,24 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const {id}=await params;try{const body=await request.json();const token=String(body.guestToken??"");const response=String(body.response??"");const quoteId=String(body.quoteId??"");
+ const {id}=await params;
+ try{
+  const body=await request.json();
+  const token=String(body.guestToken??"");
+  const response=String(body.response??"");
+  const quoteId=String(body.quoteId??"");
+  const responseNote=String(body.responseNote??"").trim().slice(0,1000);
   if(!["accepted","declined"].includes(response)||!/^[0-9a-f-]{36}$/i.test(quoteId))return jsonError("Invalid quote response.");
-  const {db,enquiry}=await guestTicket(id,token);if(!enquiry)return jsonError("Request not found or guest access expired.",404);
-  const {data:quote}=await db.from("quotes").select("id,quote_number,status").eq("id",quoteId).eq("enquiry_id",id).eq("status","sent").maybeSingle();if(!quote)return jsonError("This quote is no longer awaiting a response.",409);
-  const responseAt=new Date().toISOString();const {error}=await db.from("quotes").update({status:response,response_at:responseAt,updated_at:responseAt}).eq("id",quoteId).eq("status","sent");if(error)return jsonError("Could not save your response.",500);
-  await db.from("customer_messages").insert({business_id:enquiry.business_id,customer_id:null,user_id:null,enquiry_id:id,quote_id:quoteId,sender_type:"customer",sender_user_id:null,guest_name:enquiry.contact_name,guest_email:enquiry.email,message:"Quote "+quote.quote_number+" was "+response+".",is_internal:false});
-  await db.from("audit_events").insert({business_id:enquiry.business_id,actor_user_id:null,action:"guest_quote."+response,entity_type:"quote",entity_id:quoteId,details:{request_id:id,response_at:responseAt}});
-  return Response.json({success:true,response});
+  if(!token||token.length<20)return jsonError("Request not found or guest access expired.",404);
+  const db=database();
+  const {data,error}=await db.rpc("respond_to_guest_quote",{
+   p_ticket_id:id,p_quote_id:quoteId,p_guest_token_hash:digest(token),p_response:response,p_response_note:responseNote||null
+  });
+  if(error){
+   if(error.code==="P0001")return jsonError("This quote or guest access is no longer available.",409);
+   return jsonError("Could not save your quote response. No changes were made.",500);
+  }
+  if(!data?.success)return jsonError("Could not confirm your quote response. No changes were made.",500);
+  return Response.json({success:true,response,archived:data.request_archived===true});
  }catch{return jsonError("Could not save your quote response.",500);}
 }
