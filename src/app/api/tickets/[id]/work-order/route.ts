@@ -13,7 +13,7 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  const {db,enquiry}=await guestAccess(id,token);if(!enquiry)return jsonError("Request not found or guest access expired.",404);
  const {data:appointments}=await db.from("appointments").select("id,starts_at,ends_at,location,vehicle_id").eq("business_id",enquiry.business_id).eq("enquiry_id",id).eq("status","confirmed").order("starts_at",{ascending:false}).limit(1);
  const appointment=appointments?.[0];if(!appointment)return Response.json({workOrder:null});
- const {data:job}=await db.from("jobs").select("id,job_number,title,status,work_summary,customer_approval_status,quote_id").eq("business_id",enquiry.business_id).eq("appointment_id",appointment.id).maybeSingle();
+ const {data:job}=await db.from("jobs").select("id,job_number,title,status,work_summary,customer_approval_status,senior_approval_status,quote_id").eq("business_id",enquiry.business_id).eq("appointment_id",appointment.id).maybeSingle();
  if(!job)return Response.json({workOrder:null});
  const [{data:entries,error:entryError},{data:invoice},{data:quote},{data:vehicle}]=await Promise.all([
   db.from("job_work_entries").select("id,entry_type,description,quantity,line_total,customer_visible").eq("business_id",enquiry.business_id).eq("job_id",job.id).eq("customer_visible",true).order("occurred_at"),
@@ -36,8 +36,8 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const {db,enquiry}=await guestAccess(id,token);if(!enquiry)return jsonError("Request not found or guest access expired.",404);
   const {data:appointments}=await db.from("appointments").select("id,quote_id").eq("business_id",enquiry.business_id).eq("enquiry_id",id).eq("status","confirmed");
   const appointmentIds=(appointments??[]).map(x=>x.id);if(!appointmentIds.length)return jsonError("No confirmed booking was found for this request.",404);
-  const {data:job}=await db.from("jobs").select("id,business_id,job_number,status,customer_approval_status,appointment_id,quote_id").eq("id",jobId).eq("business_id",enquiry.business_id).in("appointment_id",appointmentIds).maybeSingle();
-  if(!job||job.status!=="completed"||job.customer_approval_status!=="pending")return jsonError("This Work Order is not awaiting customer approval.",409);
+  const {data:job}=await db.from("jobs").select("id,business_id,job_number,status,customer_approval_status,senior_approval_status,appointment_id,quote_id").eq("id",jobId).eq("business_id",enquiry.business_id).in("appointment_id",appointmentIds).maybeSingle();
+  if(!job||job.status!=="completed"||job.senior_approval_status!=="approved"||job.customer_approval_status!=="pending")return jsonError("This Workcard is not yet approved for customer review.",409);
   const {data:invoice}=await db.from("invoices").select("id,invoice_number,status").eq("job_id",job.id).eq("business_id",job.business_id).maybeSingle();
   if(!invoice||invoice.status!=="draft")return jsonError("The final invoice is not ready for approval.",409);
   const now=new Date().toISOString();
