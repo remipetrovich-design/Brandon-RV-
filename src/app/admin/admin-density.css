@@ -165,3 +165,30 @@
   .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:1; grid-row:auto; }
   .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools { grid-column:1 / -1; }
 }
+
+
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px 12px;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-date { grid-column:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-copy { grid-column:2; min-width:0; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:3; grid-row:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:2 / -1; width:100%; min-width:0; }
+.brv-admin-frame .brv-admin-quote-tools { border:1px solid #dce5ee; border-radius:7px; background:#fff; }
+.brv-admin-frame .brv-admin-quote-tools > summary { min-height:32px; display:flex; align-items:center; padding:0 9px; color:#31516d; font-size:10px; font-weight:750; cursor:pointer; list-style-position:inside; }
+.brv-admin-frame .brv-admin-quote-tools-content { display:grid; gap:8px; padding:10px; border-top:1px solid #e6edf3; }
+.brv-admin-frame .brv-admin-quote-status { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:11px; text-transform:capitalize; }
+.brv-admin-frame .brv-admin-quote-tools-content label { display:grid; gap:5px; font-size:11px; font-weight:650; }
+.brv-admin-frame .brv-admin-quote-tools-content textarea { min-height:62px; resize:vertical; }
+.brv-admin-frame .brv-admin-quote-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.brv-admin-frame .brv-admin-quote-actions .button { min-height:34px; padding:0 10px; font-size:11px; }
+@media (max-width:700px) {
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) { grid-template-columns:minmax(0,1fr) auto; }
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-date,
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-copy,
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:1 / -1; }
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:1; grid-row:auto; }
+}
