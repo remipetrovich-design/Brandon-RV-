@@ -26,3 +26,15 @@ test("customer register includes every customer group account and shows account 
  assert.match(s,/Account: "\+label\(row\.status\)/);
  assert.match(s,/row\.status==="unverified"/);
 });
+
+test("unverified is system-controlled and cannot be manually selected",()=>{
+ const profile=read("../src/components/admin-customer-profile.tsx");
+ const actions=read("../src/components/admin-record-actions.tsx");
+ const api=read("../src/app/api/admin/customers/[id]/route.ts");
+ assert.match(profile,/Unverified \(system controlled\)/);
+ assert.match(profile,/disabled/);
+ assert.doesNotMatch(profile,/<option value="unverified">Unverified<\/option>/);
+ assert.doesNotMatch(actions,/customers:\["unverified"/);
+ assert.match(api,/\["active","suspended","banned"\]/);
+ assert.doesNotMatch(api,/\["unverified","active","suspended","banned"\]/);
+});
