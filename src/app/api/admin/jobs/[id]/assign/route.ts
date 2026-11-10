@@ -18,7 +18,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const wanted=new Set(ids);
   const remove=(currentAssignments??[]).filter(x=>!wanted.has(x.staff_id)&&x.status!=="removed");
   const add=ids.filter((staff_id:string)=>!currentByStaff.has(staff_id));
-  const restore=ids.filter((staff_id:string)=>currentByStaff.get(staff_id)?.status==="removed");
+  const restore=ids.filter((staff_id:string)=>["removed","declined"].includes(String(currentByStaff.get(staff_id)?.status)));
   if(remove.length){const {error}=await db.from("job_assignments").update({status:"removed"}).in("id",remove.map(x=>x.id));if(error)return jsonError("Could not release previous assignments.",500);}
   if(add.length){const {error}=await db.from("job_assignments").insert(add.map((staff_id:string)=>({business_id:membership.business_id,job_id:id,staff_id,assigned_by:user.id,status:"assigned"})));if(error)return jsonError("Could not save new assignments.",500);}
   if(restore.length){const {error}=await db.from("job_assignments").update({status:"assigned",assigned_by:user.id,assigned_at:new Date().toISOString()}).eq("job_id",id).in("staff_id",restore);if(error)return jsonError("Could not restore previous assignments.",500);}
