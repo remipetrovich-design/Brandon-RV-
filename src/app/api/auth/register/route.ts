@@ -49,8 +49,8 @@ export async function POST(request:Request){
   const verificationEnabled=isEmailConfigured();
   const {data:user,error}=await db.from("users").insert({
    email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
-   date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"unverified",
-   user_role:null,business_id:business.id,status:verificationEnabled?"pending":"active",email_verified_at:null
+   date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"customer",
+   user_role:null,business_id:business.id,status:verificationEnabled?"unverified":"active",email_verified_at:verificationEnabled?null:new Date().toISOString()
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
   if(!verificationEnabled){
@@ -59,11 +59,11 @@ export async function POST(request:Request){
   }
   const token=newToken();const tokenHash=digest(token);
   const {error:tokenError}=await db.from("email_verification_tokens").insert({user_id:user.id,token_hash:tokenHash,expires_at:new Date(Date.now()+86400000).toISOString()});
-  if(tokenError){await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Could not start email verification.",500);}
+  if(tokenError){await db.from("users").delete().eq("id",user.id);return jsonError("Could not start email verification.",500);}
   const base= (process.env.NEXT_PUBLIC_APP_URL?.trim()||"https://brandon-rv.vercel.app").replace(/\/+$/g,"");
   const link=base+"/portal/verify-email?token="+encodeURIComponent(token)+(staffInvitation?"&invitation_token="+encodeURIComponent(invitationToken):"");
   const sent=await sendBrandonRvTemplateEmail({templateId:"verify_account",sender:"noreply",to:email,variables:{firstname:firstName,lastname:lastName,verification_url:link,expiry_time:"24 hours"}});
-  if(!sent){await db.from("email_verification_tokens").delete().eq("token_hash",tokenHash);await db.from("customers").delete().eq("id",customer.id);await db.from("users").delete().eq("id",user.id);return jsonError("Email delivery failed. Please try again later or contact Brandon RV.",503);}
+  if(!sent){await db.from("email_verification_tokens").delete().eq("token_hash",tokenHash);await db.from("users").delete().eq("id",user.id);return jsonError("Email delivery failed. Please try again later or contact Brandon RV.",503);}
   return Response.json({verificationRequired:true,message:"Check your email for a verification link."},{status:201});
  }catch{return jsonError("Registration is temporarily unavailable.",500);}
 }
