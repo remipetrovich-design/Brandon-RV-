@@ -768,3 +768,88 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
  .brv-workcard-entry { grid-template-columns:1fr; }
  .brv-workcard-entry small { grid-column:auto; }
 }
+
+
+/* Customer Jobcard: one stable document view from request through closeout. */
+.brv-jobcard-document { width:min(100%,1080px); margin:0 auto; padding:22px 26px; background:var(--white); border:1px solid var(--line); min-width:0; }
+.brv-jobcard-top-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+.brv-jobcard-top-actions > a { color:var(--green); font-size:12px; font-weight:700; text-decoration:none; }
+.brv-jobcard-header { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; padding:0 0 18px; border-bottom:1px solid var(--line); }
+.brv-jobcard-header > div { min-width:0; }
+.brv-jobcard-header h1,.brv-jobcard-header h2 { margin:7px 0 5px; font:400 clamp(24px,3vw,34px)/1.12 var(--display); overflow-wrap:anywhere; }
+.brv-jobcard-header p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; }
+.brv-jobcard-section { min-width:0; padding:19px 0; border-bottom:1px solid var(--line); }
+.brv-jobcard-section-heading { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+.brv-jobcard-section-heading > span { color:var(--orange); font-size:11px; font-weight:800; padding-top:3px; }
+.brv-jobcard-section-heading h2 { margin:0; font:400 21px/1.2 var(--display); }
+.brv-jobcard-section-heading p { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.5; }
+.brv-jobcard-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 18px; }
+.brv-jobcard-facts > div { min-width:0; display:grid; gap:4px; }
+.brv-jobcard-facts small { color:var(--muted); font-size:10px; }
+.brv-jobcard-facts strong { font-size:12px; font-weight:650; overflow-wrap:anywhere; }
+.brv-jobcard-description { margin-top:16px; padding:12px 14px; background:#f6f5ef; border-left:2px solid var(--orange); }
+.brv-jobcard-description strong,.brv-jobcard-files > strong { font-size:12px; }
+.brv-jobcard-description p { margin:6px 0 0; white-space:pre-line; font-size:12px; line-height:1.65; overflow-wrap:anywhere; }
+.brv-jobcard-files { display:grid; gap:7px; margin-top:14px; }
+.brv-jobcard-files a { color:var(--green); font-size:12px; overflow-wrap:anywhere; }
+.brv-jobcard-quote { padding:14px 0; border-top:1px solid var(--line); min-width:0; }
+.brv-jobcard-quote:first-child { border-top:0; padding-top:0; }
+.brv-jobcard-quote-head,.brv-jobcard-booking,.brv-jobcard-workcard-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.brv-jobcard-quote-head > div,.brv-jobcard-booking > div,.brv-jobcard-workcard-head > div { min-width:0; display:grid; gap:4px; }
+.brv-jobcard-quote-head strong,.brv-jobcard-booking strong,.brv-jobcard-workcard-head strong { font-size:13px; }
+.brv-jobcard-quote-head small,.brv-jobcard-booking small,.brv-jobcard-workcard-head small { color:var(--muted); font-size:10px; }
+.brv-jobcard-items { list-style:none; padding:0; margin:12px 0; border-top:1px solid var(--line); }
+.brv-jobcard-items li { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); font-size:12px; }
+.brv-jobcard-items li > span { min-width:0; }
+.brv-jobcard-items small { display:block; margin-top:3px; color:var(--muted); font-size:10px; }
+.brv-jobcard-items li > strong { flex:0 0 auto; }
+.brv-jobcard-total { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+.brv-jobcard-total span { color:var(--muted); font-size:11px; }
+.brv-jobcard-total strong { font-size:17px; }
+.brv-jobcard-quote-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:end; gap:12px; margin-top:12px; }
+.brv-jobcard-quote-actions form { min-width:0; display:grid; gap:8px; }
+.brv-jobcard-quote-actions label { display:grid; gap:5px; color:var(--muted); font-size:10px; }
+.brv-jobcard-booking { padding:12px 0; border-top:1px solid var(--line); }
+.brv-jobcard-booking span { font-size:11px; }
+.brv-jobcard-workcard { margin-top:12px; padding:12px; background:#f7f7f2; border:1px solid var(--line); min-width:0; }
+.brv-jobcard-workcard > p { color:var(--muted); font-size:11px; line-height:1.5; }
+.brv-jobcard-messages { border-bottom:0; }
+.brv-jobcard-footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding-top:14px; color:var(--muted); font-size:9px; }
+.brv-jobcard-list-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 12px; }
+.brv-jobcard-list-heading strong { font-size:13px; }
+.brv-jobcard-list { display:grid; gap:8px; }
+.brv-jobcard-list-item { display:flex; justify-content:space-between; align-items:center; gap:14px; min-width:0; padding:13px 15px; background:var(--white); border:1px solid var(--line); color:inherit; text-decoration:none; }
+.brv-jobcard-list-item > div:first-child { display:grid; gap:4px; min-width:0; }
+.brv-jobcard-list-item strong { font:400 18px/1.2 var(--display); overflow-wrap:anywhere; }
+.brv-jobcard-list-item small { color:var(--muted); font-size:10px; }
+.brv-jobcard-list-meta { display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.brv-jobcard-list-meta > span:last-child { color:var(--orange); font-size:18px; }
+.brv-jobcard-guest-summary .brv-jobcard-header { border:0; padding-bottom:8px; }
+.brv-jobcard-guest-summary .brv-jobcard-header h2 { font-size:24px; }
+.brv-jobcard-guest-summary > p { white-space:pre-line; color:var(--muted); font-size:12px; line-height:1.6; }
+.brv-invoice-items { display:grid; gap:0; margin:8px 0; border-top:1px solid var(--line); }
+.brv-invoice-items > div { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); font-size:11px; }
+.brv-invoice-items > div > span { min-width:0; }
+.brv-invoice-items small { display:block; margin-top:3px; color:var(--muted); font-size:10px; }
+.brv-jobcard-booking-form { margin-top:14px; padding:13px; border:1px solid var(--line); background:#fafaf6; }
+.brv-jobcard-booking-form h4 { margin:0; font:400 18px/1.2 var(--display); }
+@media (max-width:720px) {
+ .brv-jobcard-document { padding:15px 13px; }
+ .brv-jobcard-header { flex-direction:column; gap:10px; }
+ .brv-jobcard-facts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .brv-jobcard-quote-actions { grid-template-columns:minmax(0,1fr); }
+ .brv-jobcard-list-item { align-items:flex-start; flex-direction:column; }
+ .brv-jobcard-list-meta { width:100%; justify-content:space-between; }
+}
+@media (max-width:420px) { .brv-jobcard-facts { grid-template-columns:minmax(0,1fr); } }
+@page { size:A4; margin:13mm; }
+@media print {
+ body { background:#fff!important; }
+ .portal-sidebar,.portal-mobile-menu,.portal-topbar,.portal-header,.brv-jobcard-top-actions,.brv-print-button,.brv-jobcard-quote-actions,.brv-jobcard-booking-form,.brv-jobcard-messages form,.brv-jobcard-messages button { display:none!important; }
+ .brv-jobcard-document { width:100%; max-width:none; margin:0; padding:0; border:0; }
+ .brv-jobcard-header h1 { font-size:25px; }
+ .brv-jobcard-section { break-inside:auto; }
+ .brv-jobcard-quote,.brv-jobcard-booking,.brv-jobcard-workcard,.brv-jobcard-facts > div { break-inside:avoid; }
+ .brv-jobcard-section-heading { break-after:avoid; }
+ .brv-jobcard-document a { color:#111; text-decoration:none; }
+}
