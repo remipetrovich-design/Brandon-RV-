@@ -57,11 +57,13 @@ The customer Jobcard view aggregates these related records. The staff Workcard v
 The repository already has enquiry records, quote revisions, ticket messages, guest token columns, appointments, jobs/work orders, staff assignment, work entries, invoices and payments. This supports a reuse-first implementation.
 
 The current sequence is still incomplete:
-- Quote submission creates an enquiry, but the customer does not yet have one complete Jobcard view spanning quote, booking, Workcard, final approval and invoice.
+- Quote submission creates the enquiry record that serves as the Jobcard identity, but the customer does not yet have one complete Jobcard view spanning quote, booking, Workcard, final approval and invoice.
 - The existing `jobs` Work Order is created after a confirmed booking, which is the correct creation gate for a Workcard, but the current staff interface still presents Work Orders rather than the complete compact Workcard workflow.
 - Worker work entries and customer approval exist in partial form; a distinct immutable senior sign-off and a complete variation approval workflow still need to be enforced.
-- Guest quote-request access is time-limited at creation, but closure must revoke it immediately. Guest access and the request-status route need end-to-end verification.
-- The public Request a Quote form previously allowed a signed-in user to switch to a general conversation. That has been removed so General Enquiry and Request a Quote remain separate.
+- Quote creation is now restricted to active `quote_request` Jobcards. General/public enquiries and customer conversations cannot be turned into quotes through the quote composer. General enquiry detail pages have no customer reply composer.
+- Quote issue advances the Jobcard stage in an atomic database function. Account and guest quote responses are also atomic; decline closes and archives the Jobcard, records the optional reason, and revokes guest access.
+- Guest quote-request access is time-limited at creation; closure revokes it immediately. The request-status route and all guest flows still need end-to-end verification.
+- The public Request a Quote form no longer offers a general conversation mode; General Enquiry and Request a Quote remain separate.
 - Quote decline now records the customer decision and attempts to close/archive the related enquiry. This needs atomic database handling and end-to-end failure/concurrency tests before release.
 
 ## Delivery order
