@@ -1,7 +1,6 @@
 "use client";
 import {FormEvent,useState} from "react";
 type StaffOption={id:string;job_title:string|null;users:{full_name:string;email:string}|null};
-type JobReview={status:string;work_summary:string|null;customer_approval_status:string;senior_approval_status?:string};
 export default function AdminJobTools({jobId}:{jobId:string}){
  const [staff,setStaff]=useState<StaffOption[]>([]);
  const [assigned,setAssigned]=useState<string[]>([]);
