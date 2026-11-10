@@ -41,15 +41,18 @@ BEGIN
    WHERE id = v_quote.id;
 
   IF v_quote.enquiry_id IS NOT NULL THEN
-    SELECT id, stage
+    SELECT id, stage, request_type, archived_at
       INTO v_enquiry
       FROM public.enquiries
      WHERE id = v_quote.enquiry_id
        AND business_id = v_quote.business_id
      FOR UPDATE;
 
-    IF FOUND THEN
-      v_target_stage := CASE WHEN p_response = 'declined' THEN 'closed' ELSE 'approved' END;
+    IF NOT FOUND OR v_enquiry.request_type <> 'quote_request' OR v_enquiry.archived_at IS NOT NULL THEN
+      RAISE EXCEPTION 'This quote is not attached to an active Quote Request Jobcard.' USING ERRCODE = 'P0001';
+    END IF;
+
+    v_target_stage := CASE WHEN p_response = 'declined' THEN 'closed' ELSE 'approved' END;
 
       UPDATE public.enquiries
          SET stage = v_target_stage,
@@ -71,7 +74,6 @@ BEGIN
              ELSE 'Customer accepted quote ' || v_quote.quote_number || '; Jobcard moved to booking coordination.'
            END);
       END IF;
-    END IF;
   END IF;
 
   v_message := CASE WHEN p_response = 'declined'
