@@ -133,40 +133,40 @@ test("quote preparation is itemised and requires a different senior reviewer bef
  const form=await source("../src/components/admin-create-quote.tsx");
  const review=await source("../src/app/api/admin/quotes/[id]/approval/route.ts");
  const issue=await source("../supabase/migrations/20261111140000_quote_senior_review.sql");
- assert.match(api,/items\\.length<1/);
- assert.match(api,/quote_items/);
- assert.match(api,/prepared_by:access\\.user/);
- assert.match(form,/Add line item/);
- assert.match(form,/subtotal\\+tax/);
- assert.match(review,/review_quote/);
- assert.match(issue,/prepared_by = p_actor_user_id/);
- assert.match(issue,/senior_approval_status NOT IN \\('approved','legacy_approved'\\)/);
+ assert.ok(api.includes("items.length<1"));
+ assert.ok(api.includes("quote_items"));
+ assert.ok(api.includes("prepared_by:access.user!.id"));
+ assert.ok(form.includes("Add line item"));
+ assert.ok(form.includes("subtotal+tax"));
+ assert.ok(review.includes("review_quote"));
+ assert.ok(issue.includes("prepared_by = p_actor_user_id"));
+ assert.ok(issue.includes("senior_approval_status NOT IN ('approved','legacy_approved')"));
 });
 
 test("customer Jobcards aggregate quotes, bookings, Workcards, reports and invoices",async()=>{
  const page=await source("../src/app/portal/jobcards/[id]/page.tsx");
  const list=await source("../src/app/portal/jobcards/page.tsx");
- assert.match(page,/request_type","quote_request"/);
- assert.match(page,/quote_items/);
- assert.match(page,/appointments/);
- assert.match(page,/jobs/);
- assert.match(page,/job_work_entries/);
- assert.match(page,/invoices/);
- assert.match(page,/TicketConversation/);
- assert.match(list,/portal\\/jobcards/);
+ assert.ok(page.includes('eq("request_type","quote_request")'));
+ assert.ok(page.includes("quote_items"));
+ assert.ok(page.includes("appointments"));
+ assert.ok(page.includes("jobs"));
+ assert.ok(page.includes("job_work_entries"));
+ assert.ok(page.includes("invoices"));
+ assert.ok(page.includes("TicketConversation"));
+ assert.ok(list.includes("/portal/jobcards/"));
 });
 
 test("legacy Contact routes to a separate General Enquiry page",async()=>{
  const contact=await source("../src/app/contact/page.tsx");
  const general=await source("../src/app/general-enquiry/page.tsx");
  const form=await source("../src/components/general-enquiry-form.tsx");
- assert.match(contact,/redirect\\("\\/general-enquiry"\\)/);
- assert.match(general,/GeneralEnquiryForm/);
- assert.match(form,/requestType","public_enquiry"/);
- assert.match(form,/Request a quote for specific work/);
+ assert.ok(contact.includes('redirect("/general-enquiry")'));
+ assert.ok(general.includes("GeneralEnquiryForm"));
+ assert.ok(form.includes('form.set("requestType","public_enquiry")'));
+ assert.ok(form.includes("Request a quote for specific work"));
 });
 
 test("customer invoice is hidden until the final Jobcard is approved",async()=>{
  const component=await source("../src/components/customer-work-approval.tsx");
- assert.match(component,/invoice&&approvalStatus==="approved"/);
+ assert.ok(component.includes('invoice&&approvalStatus==="approved"'));
 });
