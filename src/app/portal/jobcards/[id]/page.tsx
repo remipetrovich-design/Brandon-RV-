@@ -27,7 +27,7 @@ export default async function JobcardDetailPage({params,searchParams}:{params:Pr
  const jobIds=(jobs??[]).map(x=>x.id);
  const [{data:entries},{data:invoices},{data:appointmentVehicle},{data:workPhotos}]=await Promise.all([
   jobIds.length?db.from("job_work_entries").select("id,job_id,entry_type,description,quantity,line_total,customer_visible").in("job_id",jobIds).eq("customer_visible",true).order("occurred_at"):Promise.resolve({data:[]}),
-  jobIds.length?db.from("invoices").select("id,job_id,invoice_number,total,status,issue_date,due_date,amount_paid,payments(id,amount,method,reference,paid_at,status),invoice_items(id,description,quantity,unit_price,line_total)").in("job_id",jobIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+  jobIds.length?db.from("invoices").select("id,job_id,invoice_number,subtotal,tax_amount,total,status,issue_date,due_date,amount_paid,payments(id,amount,method,reference,paid_at,status),invoice_items(id,description,quantity,unit_price,line_total)").in("job_id",jobIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
   !jobcard.vehicle_id&&appointmentIds.length?db.from("vehicles").select("make,model,year,vehicle_type,registration,vin").eq("customer_id",user.id).eq("id",(appointments??[]).find(x=>x.vehicle_id)?.vehicle_id??"00000000-0000-0000-0000-000000000000").maybeSingle():Promise.resolve({data:null}),
   jobIds.length?db.from("job_attachments").select("id,job_id,file_name,mime_type,storage_path").in("job_id",jobIds).eq("customer_visible",true).order("created_at",{ascending:false}):Promise.resolve({data:[]})
  ]);
