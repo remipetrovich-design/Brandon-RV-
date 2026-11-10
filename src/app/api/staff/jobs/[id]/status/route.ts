@@ -13,7 +13,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const db=database();const {data:staff}=await db.from("staff").select("id").eq("user_id",user.id).eq("business_id",membership.business_id).maybeSingle();
   if(!staff)return jsonError("Employee profile not found.",404);
   const canManage=await userHasPermission(user.id,"jobs.manage");
-  const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,job_number,title,customer_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+  const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
   if(!job)return jsonError("Work Order not found.",404);
   const {data:assignment}=await db.from("job_assignments").select("id,status").eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
   if(!canManage&&assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
@@ -26,7 +26,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.started",entity_type:"job",entity_id:id,details:{staff_id:staff.id}});
    return Response.json({success:true,status:"in_progress"});
   }
-  if(job.status==="completed"&&job.customer_approval_status==="pending"){
+  if(job.status==="completed"&&["pending","approved","legacy_approved"].includes(String(job.senior_approval_status))){
    const {data:existingInvoice}=await db.from("invoices").select("id,invoice_number,total,status").eq("job_id",id).maybeSingle();
    return Response.json({success:true,status:"completed",invoice:existingInvoice,alreadyFinished:true});
   }
@@ -53,7 +53,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const invoiceItems=items.map((x:any)=>({...x,invoice_id:invoice.id}));
   const {error:itemError}=await db.from("invoice_items").insert(invoiceItems);
   if(itemError){await db.from("invoices").delete().eq("id",invoice.id);return jsonError("Could not create invoice items. Work Order remains in progress.",500);}
-  const {error:updateError}=await db.from("jobs").update({status:"completed",completed_at:now,actual_end:now,work_summary:summary,customer_approval_status:"pending",final_report_created_at:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
+  const {error:updateError}=await db.from("jobs").update({status:"completed",completed_at:now,actual_end:now,work_summary:summary,worker_signed_off_by:user.id,worker_signed_off_at:now,senior_approval_status:"pending",senior_approved_by:null,senior_approved_at:null,senior_approval_note:null,customer_approval_status:"not_ready",customer_approved_at:null,final_report_created_at:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
   if(updateError){await db.from("invoices").delete().eq("id",invoice.id);return jsonError("Invoice was rolled back because the Work Order could not be completed.",500);}
   await db.from("job_assignments").update({status:"completed"}).eq("job_id",id).eq("status","accepted");
   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.finished_report_created",entity_type:"job",entity_id:id,details:{invoice_id:invoice.id,invoice_number:invoice.invoice_number,total,entry_count:entries?.length??0}});
