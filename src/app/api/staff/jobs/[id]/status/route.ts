@@ -1,4 +1,4 @@
-import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+import {currentUser,currentMembership,database,jsonError,sameOrigin} from "@/lib/auth";
 import {canStartWorkOrder,canFinishWorkOrder,calculateWorkOrderTotals} from "@/lib/work-order-lifecycle.mjs";
 export const runtime="nodejs";
 
@@ -12,15 +12,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!["start","finish"].includes(action))return jsonError("Choose start or finish.");
   const db=database();const {data:staff}=await db.from("staff").select("id").eq("user_id",user.id).eq("business_id",membership.business_id).maybeSingle();
   if(!staff)return jsonError("Employee profile not found.",404);
-  const canManage=await userHasPermission(user.id,"jobs.manage");
-  const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+    const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
   if(!job)return jsonError("Work Order not found.",404);
   const {data:assignment}=await db.from("job_assignments").select("id,status").eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
-  if(!canManage&&assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
+  if(assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
   const now=new Date().toISOString();
   if(action==="start"){
    if(job.status==="in_progress")return Response.json({success:true,status:"in_progress",alreadyStarted:true});
-   if(!canStartWorkOrder(job.status,assignment?.status,canManage))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
+   if(!canStartWorkOrder(job.status,assignment?.status,false))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
    const {error}=await db.from("jobs").update({status:"in_progress",actual_start:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
    if(error)return jsonError("Could not start Work Order.",500);
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.started",entity_type:"job",entity_id:id,details:{staff_id:staff.id}});
@@ -30,7 +29,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    const {data:existingInvoice}=await db.from("invoices").select("id,invoice_number,total,status").eq("job_id",id).maybeSingle();
    return Response.json({success:true,status:"completed",invoice:existingInvoice,alreadyFinished:true});
   }
-  if(!canFinishWorkOrder(job.status,assignment?.status,canManage))return jsonError("Only an in-progress Work Order with an accepted assignment can be finished.",409);
+  if(!canFinishWorkOrder(job.status,assignment?.status,false))return jsonError("Only an in-progress Work Order with an accepted assignment can be finished.",409);
   const summary=String(body.workSummary??"").trim().slice(0,8000);
   if(summary.length<10)return jsonError("Add a useful summary of the work completed before finishing the Work Order.");
   const {data:entries,error:entryError}=await db.from("job_work_entries").select("id,entry_type,description,quantity,unit_price,tax_rate,line_total").eq("job_id",id).eq("business_id",membership.business_id).order("occurred_at");
