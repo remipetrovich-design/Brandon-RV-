@@ -27,8 +27,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    else if(typeof value==="string")update[field]=value.trim().slice(0,5000)||null;
   }
   if(!Object.keys(update).length)return jsonError("No valid changes supplied.");
-  if(section==="quotes"&&update.status==="sent")update.issue_date=new Date().toISOString().slice(0,10);
   const db=database();
+  let quoteIssued=false;
+  if(section==="quotes"&&update.status==="sent"){
+   const {data:issued,error:issueError}=await db.rpc("issue_quote_for_jobcard",{p_quote_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id});
+   if(issueError){if(issueError.code==="P0001")return jsonError("This quote or Jobcard is no longer available for issue.",409);return jsonError("Could not issue quote. No changes were made.",500);}
+   if(!issued?.success)return jsonError("Could not confirm quote issue. No changes were made.",500);
+   quoteIssued=true;
+  }
   let appointment:any=null;let quote:any=null;
   if(section==="appointments"&&update.status==="confirmed"){
    const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email").eq("id",id).eq("business_id",membership.business_id).maybeSingle();appointment=result.data;
@@ -42,9 +48,13 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    update.confirmed_by=user.id;update.confirmed_at=new Date().toISOString();
   }
   update.updated_at=new Date().toISOString();
-  const {data:record,error}=await db.from(c.table).update(update).eq("id",id).eq("business_id",membership.business_id).select("id").maybeSingle();
-  if(error||!record)return jsonError("Could not update record. Check the record and your permissions.",500);
-  await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
+  let record:any={id};
+  if(!quoteIssued){
+   const result=await db.from(c.table).update(update).eq("id",id).eq("business_id",membership.business_id).select("id").maybeSingle();
+   if(result.error||!result.data)return jsonError("Could not update record. Check the record and your permissions.",500);
+   record=result.data;
+   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
+  }
   let jobCreated=false;
   if(section==="appointments"&&update.status==="confirmed"&&appointment&&quote){
    const {data:existingJob}=await db.from("jobs").select("id").eq("appointment_id",id).maybeSingle();
