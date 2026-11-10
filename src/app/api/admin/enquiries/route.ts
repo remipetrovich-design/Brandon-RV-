@@ -11,7 +11,8 @@ export async function GET(request:Request){
  let query=db.from("enquiries").select("id,request_number,request_type,contact_name,email,phone,location,vehicle_description,requested_service,description,preferred_contact,status,stage,source,internal_notes,created_at,updated_at,customer_id,user_id").eq("business_id",businessId).order("created_at",{ascending:false}).limit(250);
  if(type==="general")query=query.in("request_type",["public_enquiry","general_enquiry"]);
  else if(types.includes(type))query=query.eq("request_type",type);
- if(stages.includes(stage))query=query.eq("stage",stage);
+ if(stage==="archived")query=query.not("archived_at","is",null);
+ else {query=query.is("archived_at",null);if(stages.includes(stage))query=query.eq("stage",stage);}
  if(search)query=query.or("request_number.ilike.%"+search+"%,contact_name.ilike.%"+search+"%,email.ilike.%"+search+"%,phone.ilike.%"+search+"%,requested_service.ilike.%"+search+"%");
  const {data,error}=await query;if(error)return jsonError("Could not load enquiry records.",500);
  const ids=(data??[]).map(x=>x.id);
