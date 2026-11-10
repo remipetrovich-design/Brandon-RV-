@@ -9,8 +9,11 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  const {id}=await params;const token=new URL(request.url).searchParams.get("guestToken")??"";const {db,enquiry}=await guestTicket(id,token);if(!enquiry)return jsonError("Request not found or guest access expired.",404);
  const {data:quotes,error}=await db.from("quotes").select("id,quote_number,status,revision_number,issue_date,expiry_date,subtotal,tax_amount,total,notes,terms,quote_items(id,description,quantity,unit_price,line_total)").eq("enquiry_id",id).order("revision_number",{ascending:false});
  if(error)return jsonError("Could not load your quotes.",500);
- const {data:vehicle}=enquiry.vehicle_id?await db.from("vehicles").select("make,model,year,vehicle_type,registration").eq("id",enquiry.vehicle_id).maybeSingle():{data:null};
- return Response.json({jobcard:{id:enquiry.id,request_number:enquiry.request_number,requested_service:enquiry.requested_service,description:enquiry.description,vehicle_description:enquiry.vehicle_description,location:enquiry.location,preferred_contact:enquiry.preferred_contact,created_at:enquiry.created_at,stage:enquiry.stage,status:enquiry.status},vehicle,quotes:quotes??[]});
+ const [{data:vehicle},{data:appointments}]=await Promise.all([
+  enquiry.vehicle_id?db.from("vehicles").select("make,model,year,vehicle_type,registration").eq("id",enquiry.vehicle_id).maybeSingle():Promise.resolve({data:null}),
+  db.from("appointments").select("id,quote_id,status,preferred_start,starts_at,location").eq("enquiry_id",enquiry.id).order("created_at",{ascending:false})
+ ]);
+ return Response.json({appointments:appointments??[],jobcard:{id:enquiry.id,request_number:enquiry.request_number,requested_service:enquiry.requested_service,description:enquiry.description,vehicle_description:enquiry.vehicle_description,location:enquiry.location,preferred_contact:enquiry.preferred_contact,created_at:enquiry.created_at,stage:enquiry.stage,status:enquiry.status},vehicle,quotes:quotes??[]});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
