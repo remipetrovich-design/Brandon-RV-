@@ -58,7 +58,7 @@ export async function POST(request:Request){
   if(error||!quote)return jsonError("Could not create quote.",500);
   const {error:itemError}=await db.from("quote_items").insert(lines.map(item=>({...item,quote_id:quote.id})));
   if(itemError){await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not save quote lines. The draft was rolled back.",500);}
-  if(supersedesQuoteId)await db.from("quotes").update({status:"superseded",updated_at:new Date().toISOString()}).eq("id",supersedesQuoteId).eq("business_id",businessId);
+  if(supersedesQuoteId){const {error:supersedeError}=await db.from("quotes").update({status:"superseded",updated_at:new Date().toISOString()}).eq("id",supersedesQuoteId).eq("business_id",businessId);if(supersedeError){await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not supersede the previous quote revision. The new draft was rolled back.",500);}}
   const now=new Date().toISOString();
   await db.from("enquiries").update({status:"reviewing",stage:"quote_in_progress",updated_at:now}).eq("id",enquiry.id).eq("business_id",businessId);
   if(enquiry.stage!=="quote_in_progress")await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage,to_stage:"quote_in_progress",changed_by:access.user!.id,note:"Draft quote "+quote.quote_number+" prepared for senior review."});
