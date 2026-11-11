@@ -37,11 +37,12 @@ test('the installed product and installation identity are stable and product-spe
  assert.match(service,/installation_id/);
  assert.match(service,/randomUUID\(\)/);
 });
-test('the standalone module has bounded successful caching and per-key cache isolation',()=>{
- const client=read('../standalone-license-module/src/index.js');
+test('the woven application client preserves bounded successful caching and per-key cache isolation',()=>{
+ const client=read('../src/lib/license-manager-client.js');
  assert.match(client,/cacheValidForMs/);
- assert.match(client,/lastValid\.keyFingerprint/);
- assert.match(read('../standalone-license-module/test/license-client.test.js'),/reuses a recent successful validation only for the same licence key/);
+ assert.match(client,/lastValid\\.keyFingerprint/);
+ assert.match(client,/fingerprintKey/);
+ assert.match(client,/LICENSE_AUTHORITIES/);
 });
 test('application licence storage is not accessible to public Supabase roles',()=>{
  const migration=read('../supabase/migrations/20261112090000_application_license.sql');
@@ -73,11 +74,19 @@ test('admin navigation points to the monitor and licence entry remains separate'
 });
 
 
-test('Brandon RV runtime licensing is integrated into src/lib and never imports the standalone package',()=>{
+test('the portable client and enforcement helpers are woven into application runtime files',()=>{
  const adapter=read('../src/lib/brandon-license.ts');
  const runtime=read('../src/lib/license-manager-client.js');
- assert.match(adapter,/@\/lib\/license-manager-client\.js/);
- assert.doesNotMatch(adapter,/standalone-license-module/);
+ const types=read('../src/lib/license-manager-client.d.ts');
+ assert.match(adapter,/@\\/lib\\/license-manager-client\\.js/);
  assert.match(runtime,/createLicenseClient/);
+ assert.match(runtime,/export function requireFeature/);
+ assert.match(runtime,/export function withLicense/);
+ assert.match(runtime,/export function licenseMiddleware/);
+ assert.match(types,/requireFeature/);
+ assert.match(types,/withLicense/);
+ assert.match(types,/licenseMiddleware/);
+ assert.doesNotMatch(adapter,/standalone-license-module/);
+ assert.doesNotMatch(runtime,/standalone-license-module/);
  assert.doesNotMatch(read('../src/proxy.ts'),/standalone-license-module/);
 });
