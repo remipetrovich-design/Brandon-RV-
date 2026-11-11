@@ -2,6 +2,9 @@
 
 A portable, opt-in integration for independent applications. This folder has no OrbitFS runtime, product, customer, billing, or database dependency. It is deliberately not imported by V1 Base routes, startup, build, or existing licence flows. Copy it into another application when that application chooses to connect to the central License Manager.
 
+
+For reusable Next.js setup (server-only activation, encrypted storage, whole-app page/API guard, recovery routes and product-install checklist), see [`integrations/nextjs/README.md`](./integrations/nextjs/README.md). The client supports an optional `cacheValidForMs` setting for short-lived successful validation caching; cache entries are isolated by licence-key fingerprint.
+
 ## Central authority
 
 - MAIN API: https://incendiarynetworks.cc/api/v1
