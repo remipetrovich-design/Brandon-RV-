@@ -1,7 +1,7 @@
 import "server-only";
 import {createCipheriv,createDecipheriv,createHash,randomBytes,randomUUID} from "node:crypto";
 import {database} from "@/lib/auth";
-import {createLicenseClient,LicenseError} from "../../standalone-license-module/src/index.js";
+import {createLicenseClient,LicenseError} from "@/lib/license-manager-client.js";
 
 const PRODUCT_ID="brandon-rv";
 const CACHE_MS=60_000;
