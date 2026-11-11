@@ -1,4 +1,25 @@
-export const GLOBAL_ADMIN_ROLES = new Set(["owner", "website_developer"]);
+export const GLOBAL_ADMIN_ROLES = new Set([
+  "ceo_founder",
+  "website_development_specialist",
+  // Legacy aliases retained so existing sessions/accounts never lose access.
+  "owner",
+  "website_developer",
+]);
+
+export const BUILT_IN_STAFF_ROLES = [
+  "trial_apprentice",
+  "apprentice",
+  "senior_apprentice",
+  "team_leader",
+  "supervisor",
+  "office_admin",
+  "office_supervisor",
+  "office_manager",
+  "manager",
+  "senior_manager",
+  "website_development_specialist",
+  "ceo_founder",
+];
 
 export function isGlobalAdministrator(role) {
   return GLOBAL_ADMIN_ROLES.has(String(role ?? "").trim().toLowerCase());
