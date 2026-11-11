@@ -3,7 +3,7 @@ import {authorizePermission,database,digest,jsonError,normalizeEmail,sameOrigin}
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 import {sendBrandonRvTemplateEmail} from "@/lib/email";
 export const runtime="nodejs";
-const staffRoleKeys=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
+const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 export async function GET(){
  const access=await authorizePermission("staff.view");if(access.response)return access.response;
  const {data,error}=await database().from("staff_invitations").select("id,email,user_id,role_key,job_title,employment_type,start_date,expires_at,created_at").eq("business_id",access.membership!.business_id).is("accepted_at",null).is("revoked_at",null).gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false});
@@ -23,7 +23,7 @@ export async function POST(request:Request){
   const db=database(),businessId=access.membership!.business_id;
   const {data:role}=await db.from("user_roles").select("role_key,name").eq("role_key",roleKey).maybeSingle();
   if(!role||!staffRoleKeys.includes(roleKey))return jsonError("Select one of the available Brandon RV staff titles.");
-  if(["owner","website_developer"].includes(roleKey)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only a global administrator can invite this role.",403);
+  if(["ceo_founder","website_development_specialist"].includes(roleKey)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only a global administrator can invite this role.",403);
   const {data:user}=await db.from("users").select("id,user_role,employment_status,status,primary_group").eq("email",email).eq("business_id",businessId).maybeSingle();
   if(user&&(user.primary_group!=="customer"||user.status!=="active"))return jsonError("This account is not an active customer account.",409);
   if(user?.user_role&&user.employment_status!=="terminated")return jsonError("This customer already has staff access or an existing staff restriction.",409);
