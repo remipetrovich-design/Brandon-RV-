@@ -103,10 +103,22 @@ Use one shared shell, content width and spacing system across admin, customer an
 - Printable Jobcard and Workcard use an A4-friendly document layout with repeated headers, legible tables and sensible page breaks. Print hides navigation, controls and private notes from customer copies.
 
 ### Navigation
-- Admin navigation is grouped by daily work, finance and business configuration. Keep the active location obvious and labels stable.
+- Admin navigation has five responsibility groups: Operations (Enquiries & requests, Quotes, Workcards, Bookings & calendar); Customers & vehicles (Customers, Vehicles); Finance & purchasing (Invoices & payments, Expenses, Suppliers, Supplier orders); People & access (Employees, Workforce, User roles & permissions); Business setup (Business profile, Services & scope, Service areas, Website editor, Email templates, Integrations, Settings, Application licence).
+- Use one canonical Enquiries & requests destination. General enquiries, customer enquiries and quote requests are filters within that register, not duplicate sidebar entries.
+- Use the term **Workcards** in the interface. Workcard and Workorder remain one operational record.
+- Every navigation item is filtered by its corresponding permission. Hiding a link is a convenience only; each page and API mutation must independently enforce the same permission server-side.
 - Customer navigation prioritises Jobcards/requests, quotes, bookings, vehicles, documents and invoices. Do not force customers to navigate separate silos to understand one job.
 - Worker navigation prioritises Assigned Workcards, then time/leave tools permitted by role.
 - Each page has one canonical list/parent route and a clear back destination. Preserve search/filter state when returning from a detail page.
+
+### Permissions and roles
+- Permissions are grouped in the role editor by Customers & intake; Quotes, bookings & Workcards; Finance & purchasing; People & workforce; and Business configuration.
+- Ordinary roles receive only the permission keys explicitly assigned to that role. A missing role mapping means no access, not implicit read access.
+- Owner and Website Developer are reserved global administrator roles. Their unrestricted access is deliberate and cannot be reduced in the role editor.
+- Only Owner or Website Developer can create roles or change role permission definitions. Other authorised managers may manage staff within their granted staff permissions, but cannot grant themselves permissions.
+- Employee access requires an active employment record and a valid assigned role. Customer-only accounts have no staff workspace access; leave, suspended and terminated employees cannot use staff/admin routes.
+- The navigation is derived from permissions, but all page loaders, route handlers, server actions and record queries must enforce authorization and business/customer/assignment ownership independently.
+- Internal financial data, payroll, customer internal notes, supplier costs, private attachments and staff records require their own permissions and must never be exposed through a broader read permission.
 
 ## 9. Shared interaction behavior
 
