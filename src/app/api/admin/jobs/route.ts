@@ -13,7 +13,7 @@ export async function GET(request:Request){
  ]);
  if(error)return jsonError("Could not load accepted quotes.",500);
  const existing=new Map((jobs??[]).map(x=>[x.quote_id,x]));
- return Response.json({quotes:(quotes??[]).filter(q=>!existing.has(q.id)).map(q=>({...q,existingWorkcard:existing.get(q.id)??null})),staff:staff??[]});
+ return Response.json({quotes:(quotes??[]).filter(q=>!existing.has(q.id)),existingWorkcard:quoteId?existing.get(quoteId)??null:null,staff:staff??[]});
 }
 
 export async function POST(request:Request){
