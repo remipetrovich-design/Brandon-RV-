@@ -21,7 +21,7 @@ export default function LicenseManagerPanel(){
   <button type="button" className="license-refresh" onClick={()=>void refresh()} disabled={loading}>Refresh status</button>
   <footer>Brandon RV · Secure application licensing</footer>
  </section>
- <style jsx>{\`
+ <style jsx>{`
  .license-shell{min-height:calc(100vh - 180px);display:grid;place-items:center;padding:56px 20px;background:#f4f5f6}
  .license-card{width:min(100%,560px);background:#fff;border:1px solid #e4e7eb;border-radius:18px;padding:38px;box-shadow:0 18px 60px rgba(20,30,45,.08)}
  .license-brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.08em;font-size:13px;color:#25313d}
@@ -41,5 +41,5 @@ export default function LicenseManagerPanel(){
  .license-refresh{margin-top:20px;padding:0;border:0;background:none;color:#476176;text-decoration:underline;cursor:pointer;font-size:12px}
  footer{margin-top:30px;padding-top:18px;border-top:1px solid #edf0f2;color:#929ba4;font-size:11px}
  @media(max-width:520px){.license-card{padding:25px 20px}.license-shell{padding:24px 12px}}
- \`}</style></main>;
+ `}</style></main>;
 }
