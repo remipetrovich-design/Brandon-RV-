@@ -52,8 +52,8 @@ WITH baseline(permission_key) AS (
  SELECT unnest(ARRAY['appointments.view','assets.view','documents.view','enquiries.view','jobs.complete','jobs.view','leave.view','onboarding.view','time.clock','vehicles.view'])
 )
 INSERT INTO public.user_role_permissions(role_key,permission_key)
-SELECT role_key,baseline.permission_key
-FROM unnest(ARRAY['trial_apprentice','apprentice','senior_apprentice']) role_key
+SELECT roles.role_key,baseline.permission_key
+FROM unnest(ARRAY['trial_apprentice','apprentice','senior_apprentice']) AS roles(role_key)
 CROSS JOIN baseline
 JOIN public.permissions p ON p.permission_key=baseline.permission_key
 ON CONFLICT DO NOTHING;
@@ -72,8 +72,8 @@ ON CONFLICT DO NOTHING;
 
 -- Office roles cover customer intake, records, quotes and appointment administration.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
-SELECT role_key,p.permission_key
-FROM unnest(ARRAY['office_admin','office_supervisor']) role_key
+SELECT roles.role_key,p.permission_key
+FROM unnest(ARRAY['office_admin','office_supervisor']) AS roles(role_key)
 CROSS JOIN public.permissions p
 WHERE p.permission_key LIKE ANY(ARRAY['customers.%','vehicles.%','enquiries.%','quotes.%','appointments.%','documents.%','invoices.view','payments.view','suppliers.view'])
 ON CONFLICT DO NOTHING;
@@ -87,8 +87,8 @@ ON CONFLICT DO NOTHING;
 -- Management roles receive broad operational access, while executive roles are
 -- unrestricted in application authorization and cannot be permission-edited.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
-SELECT role_key,p.permission_key
-FROM unnest(ARRAY['office_manager','manager','senior_manager']) role_key
+SELECT roles.role_key,p.permission_key
+FROM unnest(ARRAY['office_manager','manager','senior_manager']) AS roles(role_key)
 CROSS JOIN public.permissions p
 WHERE p.permission_key NOT IN ('roles.manage')
 ON CONFLICT DO NOTHING;
