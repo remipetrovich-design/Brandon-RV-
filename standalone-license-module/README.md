@@ -3,7 +3,7 @@
 A portable, opt-in integration for independent applications. This folder has no OrbitFS runtime, product, customer, billing, or database dependency. It is deliberately not imported by V1 Base routes, startup, build, or existing licence flows. Copy it into another application when that application chooses to connect to the central License Manager.
 
 
-For reusable Next.js setup (server-only activation, encrypted storage, whole-app page/API guard, recovery routes and product-install checklist), see [`integrations/nextjs/README.md`](./integrations/nextjs/README.md). The client supports an optional `cacheValidForMs` setting for short-lived successful validation caching; cache entries are isolated by licence-key fingerprint.
+For reusable Next.js setup (server-only activation, encrypted storage, whole-app page/API guard, recovery routes and product-install checklist), see [`integrations/nextjs/README.md`](./integrations/nextjs/README.md). The client supports an optional `cacheValidForMs` setting for short-lived successful validation caching, capped by the central License Manager validation TTL. Cache entries are isolated by licence-key fingerprint. An application-supplied storage adapter can persist the last successful validation so the configured offline grace can work across serverless instances.
 
 ## Central authority
 
@@ -61,4 +61,4 @@ Never embed a License Manager administrative API token in a customer application
 
 ## Tests
 
-Run `npm test` from this folder. The module has no side effects until an application explicitly imports and configures it.
+Run `npm test` from this folder. The module has no side effects until an application explicitly imports and configures it. The repository's **Package standalone licence module** GitHub Actions workflow runs these tests and publishes a versioned ZIP artifact whenever this folder changes; download it from the workflow run's Artifacts section.
