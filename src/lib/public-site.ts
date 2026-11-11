@@ -1,4 +1,5 @@
 import "server-only";
+import {cache} from "react";
 import {database} from "@/lib/auth";
 export type PublicSitePage={title:string;meta_title:string|null;meta_description:string|null;content:Record<string,unknown>};
 export type PublicService={id:string;name:string;slug:string;category:string|null;description:string|null;scope_notes:string|null;price_from:number|null;pricing_label:string|null;sort_order:number};
@@ -7,7 +8,8 @@ export async function getPublishedServices():Promise<PublicService[]>{try{const 
 export async function getPublishedServiceAreas(){try{const db=database();const {data:business}=await db.from("businesses").select("id").eq("slug","brandon-rv").maybeSingle();if(!business)return [];const {data}=await db.from("service_areas").select("id,name,description,radius_km,travel_fee,suburbs,postcodes,sort_order").eq("business_id",business.id).eq("is_published",true).order("sort_order");return data??[];}catch{return [];}}
 export function contentText(content:Record<string,unknown>|undefined,key:string,fallback:string){const value=content?.[key];return typeof value==="string"&&value.trim()?value.trim():fallback;}
 export type PublicBusiness={name:string;brand_line:string|null;phone:string|null;city:string|null;region:string|null;status:string|null};
-export async function getPublicBusiness():Promise<PublicBusiness>{const fallback:PublicBusiness={name:"Brandon RV",brand_line:"From Factory Experience to Repairs On The Go",phone:"0407 189 087",city:"Tamworth",region:"NSW",status:"prelaunch"};try{const {data}=await database().from("businesses").select("name,brand_line,phone,city,region,status").eq("slug","brandon-rv").maybeSingle();return data?{...fallback,...data}:fallback;}catch{return fallback;}}
+const readPublicBusiness=cache(async():Promise<PublicBusiness>=>{const fallback:PublicBusiness={name:"Brandon RV",brand_line:"From Factory Experience to Repairs On The Go",phone:"0407 189 087",city:"Tamworth",region:"NSW",status:"prelaunch"};try{const {data}=await database().from("businesses").select("name,brand_line,phone,city,region,status").eq("slug","brandon-rv").maybeSingle();return data?{...fallback,...data}:fallback;}catch{return fallback;}});
+export async function getPublicBusiness():Promise<PublicBusiness>{return readPublicBusiness();}
 export type PublicBusinessSettings={accepting_enquiries:boolean;booking_notice_hours:number;operating_hours:string;customer_message:string};
 export async function getPublicBusinessSettings():Promise<PublicBusinessSettings>{
  const fallback:PublicBusinessSettings={accepting_enquiries:true,booking_notice_hours:24,operating_hours:"",customer_message:""};
