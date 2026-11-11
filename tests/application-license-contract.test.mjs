@@ -8,7 +8,10 @@ test('all Brandon RV routes are licence-gated except recovery and licence manage
  assert.match(proxy,/getApplicationLicenseState/);
  assert.match(proxy,/NextResponse\.redirect\(destination\)/);
  assert.match(proxy,/status:423/);
- for(const path of ['/license','/portal/sign-in','/portal/register','/portal/verify-email','/api/auth/']){
+ assert.match(proxy,/allowedAuthApis/);
+ assert.doesNotMatch(proxy,/portal\/register/);
+ assert.doesNotMatch(proxy,/api\/auth\/\//);
+ for(const path of ['/license','/portal/sign-in','/portal/verify-email','/admin/license','/api/auth/login','/api/admin/license']){
   assert.ok(proxy.includes(path),'missing allowed recovery path '+path);
  }
 });
@@ -44,4 +47,27 @@ test('application licence storage is not accessible to public Supabase roles',()
  const migration=read('../supabase/migrations/20261112090000_application_license.sql');
  assert.match(migration,/enable row level security/i);
  assert.match(migration,/revoke all on public\.application_license from anon, authenticated/i);
+});
+
+test('admin licence monitor can be used while the application is otherwise licence-blocked',()=>{
+ const proxy=read('../src/proxy.ts');
+ assert.match(proxy,/"\/admin\/license"/);
+ assert.match(proxy,/"\/api\/admin\/license"/);
+ const route=read('../src/app/api/admin/license/route.ts');
+ assert.match(route,/userHasPermission/);
+ assert.match(route,/forceRecheck:true/);
+});
+test('successful validation cache is persisted only server-side for configured offline grace',()=>{
+ const service=read('../src/lib/brandon-license.ts');
+ assert.match(service,/cached_validation/);
+ assert.match(service,/cacheValidForMs:forceRecheck\?0:CACHE_MS/);
+ assert.match(service,/storage:/);
+ const migration=read('../supabase/migrations/20261112100000_application_license_validation_cache.sql');
+ assert.match(migration,/add column if not exists cached_validation jsonb/i);
+});
+test('admin navigation points to the monitor and licence entry remains separate',()=>{
+ const layout=read('../src/app/admin/layout.tsx');
+ assert.match(layout,/href:"\/admin\/license"/);
+ const page=read('../src/app/license/page.tsx');
+ assert.match(page,/LicenseManagerPanel/);
 });
