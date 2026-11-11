@@ -7,7 +7,9 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {id}=await params,db=database(),businessId=access.membership!.business_id;
  const {data:enquiry,error}=await db.from("enquiries").select("*").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!enquiry)return jsonError("Enquiry not found.",404);
- const [{data:assignments},{data:history},{data:attachments}]=await Promise.all([
+ const [{data:customer},{data:vehicle},{data:assignments},{data:history},{data:attachments}]=await Promise.all([
+  enquiry.customer_id?db.from("customers").select("id,full_name,email,phone,address,suburb,state,postcode").eq("id",enquiry.customer_id).eq("business_id",businessId).maybeSingle():Promise.resolve({data:null}),
+  enquiry.vehicle_id?db.from("vehicles").select("id,make,model,year,vehicle_type,registration,vin,notes").eq("id",enquiry.vehicle_id).eq("business_id",businessId).maybeSingle():Promise.resolve({data:null}),
   db.from("enquiry_assignments").select("id,staff_id,assigned_by,assigned_at").eq("enquiry_id",id).is("unassigned_at",null),
   db.from("enquiry_stage_history").select("id,from_stage,to_stage,note,changed_by,created_at").eq("enquiry_id",id).order("created_at",{ascending:false}).limit(50),
   db.from("enquiry_attachments").select("id,file_name,mime_type,size_bytes,storage_path,created_at").eq("enquiry_id",id).order("created_at",{ascending:false})
@@ -20,7 +22,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const staffById=new Map((staff??[]).map(x=>[x.id,x]));
  const assigned=(assignments??[]).map(x=>({...x,staff:staffById.get(x.staff_id)}));
  const files=await Promise.all((attachments??[]).map(async file=>{const {data}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {id:file.id,file_name:file.file_name,mime_type:file.mime_type,size_bytes:file.size_bytes,created_at:file.created_at,url:data?.signedUrl??null};}));
- return Response.json({enquiry,assignments:assigned,staff:staffUsers??[],history:history??[],attachments:files});
+ return Response.json({enquiry,customer:customer??null,vehicle:vehicle??null,assignments:assigned,staff:staffUsers??[],history:history??[],attachments:files});
 }
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
