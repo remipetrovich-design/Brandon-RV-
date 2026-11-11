@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {redirect} from "next/navigation";
 import {currentUser,currentMembership,database,userHasPermissions} from "@/lib/auth";
+import {getAdminDashboardSnapshot} from "@/lib/admin-dashboard";
 import StaffTasks from "@/components/staff-tasks";
 import StaffWorkOrders from "@/components/staff-work-orders";
 import StaffTimeClock from "@/components/staff-time-clock";
@@ -11,23 +12,18 @@ export default async function AdminDashboard() {
  const keys=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","suppliers.view","business.settings.manage","website.manage","settings.manage"];
  const allowed=await userHasPermissions(user.id,keys);
  const db=database();const businessId=membership.business_id;
- const [enquiries,appointments,jobs,quotes,invoices,supplierOrders,businessResult,staffProfile]=await Promise.all([
-  allowed.has("enquiries.view")?db.from("enquiries").select("id",{count:"exact",head:true}).eq("business_id",businessId):Promise.resolve({count:null}),
-  allowed.has("appointments.view")?db.from("appointments").select("id",{count:"exact",head:true}).eq("business_id",businessId).in("status",["requested","confirmed","rescheduled"]):Promise.resolve({count:null}),
-  allowed.has("jobs.view")?db.from("jobs").select("id",{count:"exact",head:true}).eq("business_id",businessId).not("status","in","(completed,cancelled)"):Promise.resolve({count:null}),
-  allowed.has("quotes.view")?db.from("quotes").select("id",{count:"exact",head:true}).eq("business_id",businessId).eq("status","sent"):Promise.resolve({count:null}),
-  allowed.has("invoices.view")?db.from("invoices").select("id",{count:"exact",head:true}).eq("business_id",businessId):Promise.resolve({count:null}),
-  allowed.has("suppliers.view")?db.from("supplier_orders").select("id",{count:"exact",head:true}).eq("business_id",businessId).in("status",["draft","ordered","part_received"]):Promise.resolve({count:null}),
-  db.from("businesses").select("name,status,city,region").eq("id",businessId).maybeSingle(),
+ const [snapshot,staffProfile]=await Promise.all([
+  getAdminDashboardSnapshot(businessId),
   db.from("staff").select("id").eq("user_id",user.id).eq("business_id",businessId).maybeSingle()
  ]);
+ const {counts,business}=snapshot;
  const stats=[
-  {label:"NEW ENQUIRIES",value:enquiries.count,detail:"Customer requests to review",href:"/admin/enquiries",permission:"enquiries.view"},
-  {label:"BOOKING REQUESTS",value:appointments.count,detail:"Requested and confirmed visits",href:"/admin/appointments",permission:"appointments.view"},
-  {label:"OPEN WORKCARDS",value:jobs.count,detail:"Jobs not yet closed",href:"/admin/jobs",permission:"jobs.view"},
-  {label:"QUOTES TO REVIEW",value:quotes.count,detail:"Quotes awaiting a response",href:"/admin/quotes",permission:"quotes.view"},
-  {label:"INVOICES",value:invoices.count,detail:"Invoices recorded",href:"/admin/invoices",permission:"invoices.view"},
-  {label:"PARTS ORDERS",value:supplierOrders.count,detail:"Orders still being processed",href:"/admin/supplier-orders",permission:"suppliers.view"}
+  {label:"NEW ENQUIRIES",value:counts.enquiries,detail:"Customer requests to review",href:"/admin/enquiries",permission:"enquiries.view"},
+  {label:"BOOKING REQUESTS",value:counts.appointments,detail:"Requested and confirmed visits",href:"/admin/appointments",permission:"appointments.view"},
+  {label:"OPEN WORKCARDS",value:counts.jobs,detail:"Jobs not yet closed",href:"/admin/jobs",permission:"jobs.view"},
+  {label:"QUOTES TO REVIEW",value:counts.quotes,detail:"Quotes awaiting a response",href:"/admin/quotes",permission:"quotes.view"},
+  {label:"INVOICES",value:counts.invoices,detail:"Invoices recorded",href:"/admin/invoices",permission:"invoices.view"},
+  {label:"PARTS ORDERS",value:counts.supplierOrders,detail:"Orders still being processed",href:"/admin/supplier-orders",permission:"suppliers.view"}
  ].filter(item=>allowed.has(item.permission));
  const quickLinks=[
   {label:"Enquiries & requests",detail:"Review public contact forms, general enquiries, customer tickets and quote requests in one register",href:"/admin/enquiries",permission:"enquiries.view"},
@@ -44,7 +40,7 @@ export default async function AdminDashboard() {
   {label:"Website content",href:"/admin/website",permission:"website.manage"},
   {label:"Business settings",href:"/admin/settings",permission:"settings.manage"}
  ].filter(item=>allowed.has(item.permission));
- const business=businessResult.data;const prelaunch=business?.status==="prelaunch";
+ const prelaunch=business?.status==="prelaunch";
  return <main className="portal-page brv-admin-dashboard"><div className="shell portal-shell" style={{display:"block",maxWidth:1320}}>
   <div className="portal-welcome brv-admin-welcome"><div><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS WORKSPACE</p><h1>Business <em>overview.</em></h1><p>{business?.name??"Brandon RV"} · {[business?.city,business?.region].filter(Boolean).join(", ")||"Tamworth NSW"}</p></div><span className={"brv-admin-status"+(prelaunch?" prelaunch":"")}>{business?.status??"Business workspace"}</span></div>
   {prelaunch&&<section className="brv-admin-launch-notice"><span>PRE-LAUNCH</span><div><strong>Business setup is still in progress.</strong><p>Confirm the business details, approved service menu, service area and website content before publishing or accepting live work.</p></div>{setupLinks.length>0&&<Link href={setupLinks[0].href}>Continue setup →</Link>}</section>}
