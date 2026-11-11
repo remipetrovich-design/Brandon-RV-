@@ -22,7 +22,7 @@ export async function POST(request:Request){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)||Number.isNaN(Date.parse(startDate)))return jsonError("Enter a valid start date.");
   const db=database(),businessId=access.membership!.business_id;
   const {data:role}=await db.from("user_roles").select("role_key,name").eq("role_key",roleKey).maybeSingle();
-  if(!role||!staffRoleKeys.includes(roleKey))return jsonError("Select one of the available Brandon RV staff titles.");
+  if(!role||roleKey==="customer")return jsonError("Select a valid non-customer staff role.");
   if(["ceo_founder","website_development_specialist"].includes(roleKey)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only a global administrator can invite this role.",403);
   const {data:user}=await db.from("users").select("id,user_role,employment_status,status,primary_group").eq("email",email).eq("business_id",businessId).maybeSingle();
   if(user&&(user.primary_group!=="customer"||user.status!=="active"))return jsonError("This account is not an active customer account.",409);
