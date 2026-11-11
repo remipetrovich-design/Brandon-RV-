@@ -61,7 +61,7 @@ ON CONFLICT DO NOTHING;
 -- Team leaders receive the worker baseline plus coordination and read access.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 SELECT 'team_leader',p.permission_key FROM public.permissions p
-WHERE p.permission_key IN ('appointments.manage','jobs.assign','jobs.manage','staff.view','time.approve','assets.view','reports.view')
+WHERE p.permission_key IN ('appointments.view','appointments.manage','jobs.view','jobs.assign','jobs.manage','staff.view','time.approve','assets.view','reports.view')
 ON CONFLICT DO NOTHING;
 
 -- Supervisors can manage day-to-day workforce and workshop processes.
