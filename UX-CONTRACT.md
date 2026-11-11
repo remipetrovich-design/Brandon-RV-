@@ -16,7 +16,7 @@ Avoid duplicate parallel records and avoid a destructive rewrite.
 
 - **Jobcard (customer master record):** use the existing `enquiries` record as the Jobcard for every Request a Quote submission. Keep its ID and request number stable from submission to archive. It owns the customer/guest identity, vehicle, request, status, messages, quote links, booking links, customer-visible progress and final handover summary. General enquiries remain enquiries and do not become Jobcards.
 - **Quote:** reuse `quotes` and `quote_items`. Revisions are separately numbered, linked to the same Jobcard and immutable once issued or answered. A response always identifies the exact revision.
-- **Workcard (staff execution record):** reuse the existing `jobs` record as the Workcard, retaining the database name for compatibility. Create it only after a quote is accepted and the booking is confirmed. Link it to its Jobcard through the accepted quote/enquiry relationship and confirmed appointment. Do not create an unassigned Workcard before the booking gate.
+- **Workcard / Workorder (one staff execution record):** these are two names for the same thing, not separate records or workflows. Reuse the existing `jobs` record and keep the database/API naming for compatibility. Create exactly one Workcard from the accepted quote while the customer Jobcard is open. Link it to the Jobcard through the quote/enquiry relationship. The Workcard is reviewed and approved for assignment before a worker is assigned. The assigned worker accepts it, then coordinates a preferred booking. Management confirms the booking and links it to that same Workcard. Never create another `jobs` record when a booking is confirmed.
 - **Invoice/payment:** reuse `invoices` and `payments`; preserve provider-confirmed payment and authorised manual reconciliation records.
 - **Messages, attachments, history and audit:** reuse `customer_messages`, `enquiry_attachments`, `enquiry_stage_history` and `audit_events`. Internal notes, worker-only instructions, supplier costs and private attachments never appear in customer views.
 
@@ -49,7 +49,7 @@ From Customer decision:
 - **Declined:** mark the quote declined, close and archive the Jobcard, revoke guest access immediately, preserve all records and audit history. Decline reason is optional. The customer can still view the archived outcome through their account/history; the guest access link is no longer usable after closure.
 - **Expired:** record expiry distinctly from customer rejection; close/archive only under the agreed expiry policy and notify the customer.
 
-Only an accepted, current quote may proceed to a confirmed booking. Booking requires an agreed date, start/end time, actual customer-site location, access conditions and a staff confirmation. Do not represent a preferred date or requested appointment as confirmed.
+Only an accepted, current quote may proceed to Workcard creation. The Workcard can exist before a booking is arranged. Booking requires an agreed date, start/end time, actual customer-site location, access conditions and management confirmation. Do not represent a preferred date or requested appointment as confirmed.
 
 ## 5. Workcard state flow
 
@@ -126,7 +126,7 @@ A workflow is not complete because it typechecks or builds. Before release, veri
 - Correct access isolation for customers and worker assignments.
 - Every state transition, including decline/archive, expiry, request changes, variation rejection, cancellation and reopening.
 - Duplicate submissions, concurrent quote responses, stale data and server failures.
-- No Workcard before accepted quote + confirmed booking; no work before worker assignment/acceptance.
+- Exactly one Workcard per accepted quote; Workcard creation does not wait for booking; booking confirmation links to the existing Workcard and never creates a duplicate; no work starts before setup approval, worker assignment/acceptance and confirmed booking.
 - No customer-visible internal notes, supplier costs or private files.
 - Customer and staff print output, A4 page breaks and private-field exclusion.
 - Browser-rendered desktop, tablet and mobile widths; no overflow, uneven columns, clipped forms or overlapping actions.
