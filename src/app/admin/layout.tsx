@@ -29,7 +29,6 @@ const navigation:AdminNavGroup[]=[
   {label:"User roles & permissions",href:"/admin/roles",permission:"roles.manage",icon:"access"}
  ]},
  {title:"Business setup",items:[
-  {label:"Business profile",href:"/admin/business-profile",permission:"business.settings.manage",icon:"business"},
   {label:"Services & scope",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
   {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
   {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"website"},
