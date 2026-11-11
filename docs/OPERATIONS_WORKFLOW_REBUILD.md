@@ -65,24 +65,24 @@ Implemented on the draft branch:
 - A Workcard is created only after an accepted quote and confirmed booking. Management assigns workers; workers must accept the assignment before starting or recording work. Assignment edits preserve accepted assignments.
 - Staff Workcards use a compact one-at-a-time detail view. Workers can record labour, parts, non-billable notes and tests/checks, upload private photos, explicitly choose which photos are customer-visible, and print the submitted Workcard. Non-billable tests and notes are excluded from invoice totals.
 - Worker completion records a sign-off. A different authorised senior staff member from the worker who signed off can approve the Workcard or return it for correction. Returning it reopens the Workcard, records the reason and removes the draft invoice. The final report is not shown to the customer until senior approval.
-- The customer can approve or request changes to the final report. Draft invoice details remain hidden until customer approval; the itemised invoice is then issued and shown in the Jobcard.
+- The customer can approve or request changes to the final report. Customer decision and invoice issue are one database transaction for account and guest users; a failure cannot leave an approved Jobcard with an unissued invoice. Draft invoice details remain hidden until customer approval; the itemised invoice, GST and payments are then shown in the Jobcard.
 - Admin enquiry detail panels are aligned in a two-column supporting layout. Workcard and quote controls are collapsed and lazy-loaded; the staff Workcard list opens one detailed record at a time. The public site styles remain separate. The Jobcard includes responsive and A4 print styling.
 
 Still required before the workflow can be called complete:
 - A formal variation workflow is not implemented yet. The worker must be able to request a variation, senior staff must review it, the customer must approve/decline the cost and scope, and the Workcard must prevent the extra work until approval. The current quote API deliberately blocks revising an accepted quote rather than silently changing the agreed scope.
-- Successful closeout archive rules after final customer approval, invoice issue and payment need to be completed. Declined requests already archive and revoke guest access.
-- Final customer approval and invoice issuance still need transaction-level failure/concurrency hardening; quote decisions and senior review are already database-transactional.
-- Guest and signed-in workflows need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior.
+- Successful closeout now records payments transactionally. A fully paid invoice closes and archives its quote-request Jobcard, records the stage-history and audit event, and revokes the guest access token. Part-paid invoices remain open.
+- Final customer approval and invoice issuance are transactionally locked together; payment recording and successful-closeout archive are also transactional.
+- Guest and signed-in workflows still need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior. The repository CI does not apply or execute the SQL migrations against a live database.
 - The A4 print output and all page widths/spacing still need browser-rendered visual QA at desktop, tablet and mobile breakpoints. The CSS and type/build checks do not by themselves prove every page looks correct in a live browser.
 - Existing completed Workcards are grandfathered as legacy-approved and clearly labelled as records without a separate historical senior sign-off.
 
 ## Delivery order
 
-- P0 — compact shared UI, split General Enquiry and Request a Quote, remove redundant controls and preserve existing data.
-- P1 — customer Jobcard master, itemised quote revisions, senior quote approval, customer decision and confirmed-booking gate.
-- P2 — Workcard assignment, worker execution, photos/tests, worker sign-off and separate senior review.
-- P3 — formal variations, customer final approval, invoice issue, payment reconciliation and successful-closeout archive.
-- P4 — browser-rendered page QA, A4 print verification, role isolation, failure/concurrency tests and migration validation.
+- P0 — compact shared UI, split General Enquiry and Request a Quote, remove redundant controls and preserve existing data. Implemented on this branch.
+- P1 — customer Jobcard master, itemised quote revisions, senior quote approval, customer accept/decline and confirmed-booking gate. Implemented on this branch.
+- P2 — Workcard assignment, worker execution, photos/tests, worker sign-off and independent senior review. Implemented on this branch.
+- P3 — customer final approval, invoice issue, payment recording and paid-closeout archive. Implemented transactionally on this branch.
+- P4 — formal variations, browser-rendered desktop/tablet/mobile QA, A4 print verification, role isolation, failure/concurrency tests and migration validation. Still required before production release.
 
 ## Non-negotiable safeguards
 
