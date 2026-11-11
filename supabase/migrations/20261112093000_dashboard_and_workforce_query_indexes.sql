@@ -23,8 +23,6 @@ CREATE INDEX IF NOT EXISTS job_assignments_business_staff_status_date_idx
   ON public.job_assignments (business_id, staff_id, status, assigned_at DESC);
 CREATE INDEX IF NOT EXISTS job_work_entries_business_job_occurred_idx
   ON public.job_work_entries (business_id, job_id, occurred_at DESC);
-CREATE INDEX IF NOT EXISTS staff_business_user_idx
-  ON public.staff (business_id, user_id);
 CREATE INDEX IF NOT EXISTS time_entries_staff_open_idx
   ON public.time_entries (staff_id)
   WHERE ended_at IS NULL;
