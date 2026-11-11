@@ -4,7 +4,7 @@ type Enquiry={id:string;request_number:string;request_type:string;contact_name:s
 type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string};
 type QuoteLine={id:number;description:string;quantity:string;unitPrice:string};
 const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(value);
-export default function AdminCreateQuote({initialEnquiryId=""}:{initialEnquiryId?:string}){
+export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initialEnquiryId?:string;onCreated?:()=>void}){
  const [enquiries,setEnquiries]=useState<Enquiry[]>([]);
  const [priorQuotes,setPriorQuotes]=useState<PriorQuote[]>([]);
  const [enquiryId,setEnquiryId]=useState(initialEnquiryId);
@@ -32,7 +32,7 @@ export default function AdminCreateQuote({initialEnquiryId=""}:{initialEnquiryId
    const r=await fetch("/api/admin/quotes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enquiryId,supersedesQuoteId:supersedesQuoteId||null,items:items.map(item=>({description:item.description,quantity:Number(item.quantity),unitPrice:Number(item.unitPrice)})),taxRate:Number(taxRate),expiryDate:expiryDate||null,notes,terms})});
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create quote.");return;}
    setNotice("Draft quote "+d.quote.quote_number+" created with "+items.length+" line(s). Senior review is required before issue.");
-   setItems([{id:1,description:"",quantity:"1",unitPrice:""}]);setNextLineId(2);setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");
+   setItems([{id:1,description:"",quantity:"1",unitPrice:""}]);setNextLineId(2);setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");onCreated?.();
   }catch{setNotice("Could not create quote.");}
   finally{setBusy(false);}
  }
