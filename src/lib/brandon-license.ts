@@ -24,18 +24,36 @@ function decrypt(row:LicenseRecord){
  return Buffer.concat([decipher.update(Buffer.from(row.encrypted_license_key,"base64")),decipher.final()]).toString("utf8");
 }
 const clients=new Map<string,ReturnType<typeof createLicenseClient>>();
-function clientFor(installationId:string){
- let client=clients.get(installationId);
+function clientFor(installationId:string,forceRecheck=false){
+ let client=forceRecheck?undefined:clients.get(installationId);
  if(!client){
-  client=createLicenseClient({product:PRODUCT_ID,component:PRODUCT_ID,installationId,cacheValidForMs:CACHE_MS,timeoutMs:7000});
-  clients.set(installationId,client);
+  const db=database();
+  client=createLicenseClient({
+   product:PRODUCT_ID,component:PRODUCT_ID,installationId,
+   cacheValidForMs:forceRecheck?0:CACHE_MS,timeoutMs:7000,
+   storage:{
+    async get(){
+     const {data,error}=await db.from("application_license").select("cached_validation").eq("id","primary").maybeSingle();
+     if(error)throw error;
+     return data?.cached_validation||null;
+    },
+    async set(_key,value){
+     const {error}=await db.from("application_license").update({
+      cached_validation:value,last_validated_at:new Date(Number(value.checkedAt||Date.now())).toISOString(),
+      last_status:"valid",last_error_code:null,updated_at:new Date().toISOString()
+     }).eq("id","primary");
+     if(error)throw error;
+    }
+   }
+  });
+  if(!forceRecheck)clients.set(installationId,client);
  }
  return client;
 }
 function safeState(result:any):LicenseState{
  return {valid:true,code:String(result.code||"LICENSE_VALID"),message:result.offlineGrace?"Licence active (offline grace).":"Licence active.",product:PRODUCT_ID,installationId:result.installationId,authority:result.authority,expiresAt:result.expires_at||result.expiresAt||null,entitlements:result.entitlements||{},offlineGrace:result.offlineGrace===true};
 }
-export async function getApplicationLicenseState():Promise<LicenseState>{
+export async function getApplicationLicenseState(options:{forceRecheck?:boolean}={}):Promise<LicenseState>{
  try{
   const {data,error}=await database().from("application_license").select("id,product_id,installation_id,encrypted_license_key,encryption_iv,encryption_tag").eq("id","primary").maybeSingle();
   if(error)throw error;
@@ -43,7 +61,7 @@ export async function getApplicationLicenseState():Promise<LicenseState>{
   const row=data as LicenseRecord;
   if(row.product_id!==PRODUCT_ID)return {valid:false,code:"LICENSE_PRODUCT_MISMATCH",message:"The installed licence belongs to a different product.",product:PRODUCT_ID};
   const key=decrypt(row);
-  const result=await clientFor(row.installation_id).enforce({licenseKey:key,productVersion:process.env.BRANDON_RV_VERSION||"1.0.0"});
+  const result=await clientFor(row.installation_id,options.forceRecheck===true).enforce({licenseKey:key,productVersion:process.env.BRANDON_RV_VERSION||"1.0.0"});
   return safeState(result);
  }catch(error:any){
   const code=String(error?.code||"LICENSING_UNAVAILABLE");
@@ -58,7 +76,7 @@ export async function installApplicationLicense(licenseKey:string){
  const {data:existing,error:readError}=await db.from("application_license").select("installation_id").eq("id","primary").maybeSingle();
  if(readError)throw readError;
  const installationId=existing?.installation_id||randomUUID();
- const result=await clientFor(installationId).enforce({licenseKey:key,productVersion:process.env.BRANDON_RV_VERSION||"1.0.0",action:"activate"});
+ const result=await clientFor(installationId,true).enforce({licenseKey:key,productVersion:process.env.BRANDON_RV_VERSION||"1.0.0",action:"activate"});
  const encrypted=encrypt(key);
  const {error}=await db.from("application_license").upsert({id:"primary",product_id:PRODUCT_ID,installation_id:installationId,...encrypted,last_validated_at:new Date().toISOString(),last_status:"valid",last_error_code:null,updated_at:new Date().toISOString()},{onConflict:"id"});
  if(error)throw error;
