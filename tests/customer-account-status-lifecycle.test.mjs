@@ -38,3 +38,16 @@ test("unverified is system-controlled and cannot be manually selected",()=>{
  assert.match(api,/\["active","suspended","banned"\]/);
  assert.doesNotMatch(api,/\["unverified","active","suspended","banned"\]/);
 });
+
+test("login distinguishes a valid password on an unverified account from an incorrect password",()=>{
+ const s=read("../src/app/api/auth/login/route.ts");
+ assert.match(s,/const passwordValid=!!user&&await passwordMatches\(password,user\.password_hash\)/);
+ assert.match(s,/user\.status==="unverified"/);
+ assert.match(s,/Please verify your email before signing in/);
+ assert.match(s,/user\.status!=="active"/);
+});
+test("manual email verification updates the customer account group",()=>{
+ const s=read("../src/app/api/admin/customers/\[id\]/verify-email/route.ts");
+ assert.match(s,/update\(\{email_verified_at:verifiedAt,status:"active",primary_group:"customer"/);
+ assert.match(s,/eq\("primary_group","customer"\)\.eq\("status","unverified"\)\.select/);
+});
