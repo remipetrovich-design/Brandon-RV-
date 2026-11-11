@@ -119,6 +119,12 @@ export function createLicenseClient(options = {}) {
 
   async function validate(input = {}) {
     const key = String(input.licenseKey || '').trim();
+    const cacheMs = Math.max(0, Number(options.cacheValidForMs || 0));
+    if (cacheMs > 0 && lastValid && lastValid.valid === true && lastValid.licenseKeyFingerprint &&
+        Date.now() - Number(lastValid.checkedAt || 0) < cacheMs) {
+      const requestedFingerprint = await fingerprintKey(key);
+      if (requestedFingerprint && requestedFingerprint === lastValid.keyFingerprint) return lastValid;
+    }
     const action = input.action || 'validate';
     if (!key || key.length > 256) throw new LicenseError('A licence key is required.', { code: 'LICENSE_KEY_REQUIRED', status: 400 });
     if (!['validate', 'activate', 'check_in'].includes(action)) throw new LicenseError('Unsupported validation action.', { code: 'INVALID_ACTION', status: 400 });
