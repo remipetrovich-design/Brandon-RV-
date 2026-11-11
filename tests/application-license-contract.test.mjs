@@ -71,3 +71,13 @@ test('admin navigation points to the monitor and licence entry remains separate'
  const page=read('../src/app/license/page.tsx');
  assert.match(page,/LicenseManagerPanel/);
 });
+
+
+test('Brandon RV runtime licensing is integrated into src/lib and never imports the standalone package',()=>{
+ const adapter=read('../src/lib/brandon-license.ts');
+ const runtime=read('../src/lib/license-manager-client.js');
+ assert.match(adapter,/@\/lib\/license-manager-client\.js/);
+ assert.doesNotMatch(adapter,/standalone-license-module/);
+ assert.match(runtime,/createLicenseClient/);
+ assert.doesNotMatch(read('../src/proxy.ts'),/standalone-license-module/);
+});
