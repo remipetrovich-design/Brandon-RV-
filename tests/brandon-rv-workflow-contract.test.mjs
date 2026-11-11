@@ -217,6 +217,7 @@ test("account and guest final Workcard decisions issue the invoice in the same d
  assert.ok(migration.includes("REVOKE ALL ON FUNCTION public.respond_to_completed_workcard"));
  assert.ok(account.includes('rpc("respond_to_completed_workcard"'));
  assert.ok(guest.includes('rpc("respond_to_completed_workcard"'));
+ assert.ok(guest.includes("invoice_number,subtotal,tax_amount,total,status"));
  assert.ok(!account.includes('.from("invoices").update'));
  assert.ok(!guest.includes('.from("invoices").update'));
 });
