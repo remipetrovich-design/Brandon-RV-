@@ -1,11 +1,37 @@
 import {redirect} from "next/navigation";
 import {currentUser,currentMembership,userHasPermissions} from "@/lib/auth";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
+import "./admin-density.css";
 export const dynamic="force-dynamic";
 const navigation:AdminNavGroup[]=[
- {title:"Service workflow",items:[{label:"Enquiries & requests",href:"/admin/enquiries",permission:"enquiries.view",icon:"inbox"},{label:"Customers",href:"/admin/customers",permission:"customers.view",icon:"users"},{label:"Vehicles",href:"/admin/vehicles",permission:"vehicles.view",icon:"vehicle"},{label:"Appointments & calendar",href:"/admin/appointments",permission:"appointments.view",icon:"calendar"},{label:"Work orders",href:"/admin/jobs",permission:"jobs.view",icon:"jobs"},{label:"Quotes",href:"/admin/quotes",permission:"quotes.view",icon:"quote"}]},
- {title:"Finance & suppliers",items:[{label:"Invoices & payments",href:"/admin/invoices",permission:"invoices.view",icon:"finance"},{label:"Suppliers",href:"/admin/suppliers",permission:"suppliers.view",icon:"supplier"},{label:"Supplier orders",href:"/admin/supplier-orders",permission:"suppliers.view",icon:"supplier"},{label:"Expenses",href:"/admin/expenses",permission:"expenses.view",icon:"expense"}]},
- {title:"Team & business",items:[{label:"Employees",href:"/admin/staff",permission:"staff.view",icon:"staff"},{label:"Workforce",href:"/admin/workforce",permission:"time.clock",icon:"calendar"},{label:"User roles & permissions",href:"/admin/roles",permission:"roles.manage",icon:"access"},{label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"website"},{label:"Services",href:"/admin/services",permission:"business.settings.manage",icon:"services"},{label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},{label:"Settings",href:"/admin/settings",permission:"business.settings.manage",icon:"settings"},{label:"Email templates",href:"/admin/email-templates",permission:"business.settings.manage",icon:"settings"},{label:"Integrations",href:"/admin/integrations",permission:"business.settings.manage",icon:"business"}]}
+ {title:"Service workflow",items:[
+  {label:"General enquiries",href:"/admin/general-enquiries",permission:"enquiries.view",icon:"inbox"},
+  {label:"Quote requests",href:"/admin/quote-requests",permission:"enquiries.view",icon:"quote"},
+  {label:"Customer enquiries",href:"/admin/customer-enquiries",permission:"enquiries.view",icon:"users"},
+  {label:"All intake",href:"/admin/enquiries",permission:"enquiries.view",icon:"inbox"},
+  {label:"Customers",href:"/admin/customers",permission:"customers.view",icon:"users"},
+  {label:"Vehicles",href:"/admin/vehicles",permission:"vehicles.view",icon:"vehicle"},
+  {label:"Appointments & calendar",href:"/admin/appointments",permission:"appointments.view",icon:"calendar"},
+  {label:"Work orders",href:"/admin/jobs",permission:"jobs.view",icon:"jobs"},
+  {label:"Quotes",href:"/admin/quotes",permission:"quotes.view",icon:"quote"}
+ ]},
+ {title:"Finance & suppliers",items:[
+  {label:"Invoices & payments",href:"/admin/invoices",permission:"invoices.view",icon:"finance"},
+  {label:"Suppliers",href:"/admin/suppliers",permission:"suppliers.view",icon:"supplier"},
+  {label:"Supplier orders",href:"/admin/supplier-orders",permission:"suppliers.view",icon:"supplier"},
+  {label:"Expenses",href:"/admin/expenses",permission:"expenses.view",icon:"expense"}
+ ]},
+ {title:"Team & business",items:[
+  {label:"Employees",href:"/admin/staff",permission:"staff.view",icon:"staff"},
+  {label:"Workforce",href:"/admin/workforce",permission:"time.clock",icon:"calendar"},
+  {label:"User roles & permissions",href:"/admin/roles",permission:"roles.manage",icon:"access"},
+  {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"website"},
+  {label:"Services",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
+  {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
+  {label:"Settings",href:"/admin/settings",permission:"business.settings.manage",icon:"settings"},
+  {label:"Email templates",href:"/admin/email-templates",permission:"business.settings.manage",icon:"settings"},
+  {label:"Integrations",href:"/admin/integrations",permission:"business.settings.manage",icon:"business"}
+ ]}
 ];
 export default async function AdminLayout({children}:{children:React.ReactNode}) {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");

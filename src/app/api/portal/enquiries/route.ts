@@ -4,7 +4,7 @@ export const runtime="nodejs";
 const makeReference=()=> "BRV-CE-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+randomBytes(3).toString("hex").toUpperCase();
 export async function GET(){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
- const db=database();const {data,error}=await db.from("enquiries").select("id,request_number,request_type,requested_service,description,status,created_at,vehicle_description,location,preferred_contact").eq("user_id",user.id).in("request_type",["customer_enquiry","quote_request"]).order("created_at",{ascending:false});
+ const db=database();const {data,error}=await db.from("enquiries").select("id,request_number,request_type,requested_service,description,status,created_at,vehicle_description,location,preferred_contact").eq("user_id",user.id).eq("request_type","customer_enquiry").order("created_at",{ascending:false});
  if(error)return jsonError("Could not load your enquiries.",500);return Response.json({enquiries:data??[]});
 }
 export async function POST(request:Request){

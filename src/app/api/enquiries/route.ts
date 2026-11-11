@@ -3,7 +3,7 @@ import {currentUser,database,normalizeEmail,jsonError,sameOrigin,digest} from "@
 import {sendBrandonRvTemplateEmail,sendEmail} from "@/lib/email";
 export const runtime="nodejs";
 const allowedTypes=new Set(["image/jpeg","image/png","image/webp","application/pdf"]);
-const requestNumber=()=> "BRV-RQ-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+randomBytes(3).toString("hex").toUpperCase();
+const requestNumber=(type:string)=> (type==="public_enquiry"||type==="general_enquiry"?"BRV-GEN-":"BRV-RQ-")+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+randomBytes(3).toString("hex").toUpperCase();
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  try{
@@ -13,8 +13,8 @@ export async function POST(request:Request){
   const submittedName=(first+" "+last).trim();const submittedEmail=String(form.get("email")??"");
   const submittedPhone=String(form.get("phone")??"").trim();const user=await currentUser();
   const account=user?.account_type==="customer"?user:null;
-  const name=account?.full_name??submittedName;const email=normalizeEmail(account?.email??submittedEmail);
-  const phone=String(account?.phone??submittedPhone).trim();
+  const name=String(account?.full_name??"").trim()||submittedName;const email=normalizeEmail(String(account?.email??"").trim()||submittedEmail);
+  const phone=String(account?.phone??"").trim()||submittedPhone;
   if(name.length<3||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||phone.length<6||phone.length>40)return jsonError("Enter valid contact details.");
   const db=database();const since=new Date(Date.now()-15*60*1000).toISOString();
   const {count}=await db.from("enquiries").select("id",{count:"exact",head:true}).eq("email",email).gte("created_at",since);
@@ -24,14 +24,14 @@ export async function POST(request:Request){
   const {data:businessSettings}=await db.from("business_settings").select("settings").eq("business_id",business.id).maybeSingle();
   const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,unknown>:{};
   if(configured.accepting_enquiries===false)return jsonError("Brandon RV is not accepting new enquiries at the moment. Please contact the business directly.",503);
-  const reference=requestNumber();let guestToken:string|null=null;
+  const reference=requestNumber(requestType);let guestToken:string|null=null;
   if(requestType==="general_enquiry"||requestType==="public_enquiry"){
    const description=String(form.get("message")??"").trim();
    if(description.length<5||description.length>5000)return jsonError("Enter a message between 5 and 5,000 characters.");
    const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,requested_service:requestType==="public_enquiry"?"Public Contact form":"General enquiry",description,preferred_contact:"email",status:"new",source:requestType==="public_enquiry"?"contact_page":"website",request_type:requestType,request_number:reference}).select("id").single();
    if(error||!enquiry)return jsonError("Could not submit your enquiry. Please try again.",500);
    await sendBrandonRvTemplateEmail({templateId:"enquiry_received",sender:"noreply",to:email,variables:{firstname:first,lastname:last,enquiry_number:reference,service:"General enquiry",vehicle:"",suburb:"",enquiry_url:process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}});
-   return Response.json({success:true,referenceNumber:reference,message:"Your public enquiry has been sent. It is not a quote request or booking."},{status:201});
+   return Response.json({success:true,referenceNumber:reference,message:"Your general enquiry has been sent. It is not a quote request or booking."},{status:201});
   }
   const vehicleType=String(form.get("vehicleType")??"").trim();const vehicle=String(form.get("vehicle")??"").trim();
   const year=String(form.get("year")??"").trim();const requestedVehicleId=String(form.get("vehicleId")??"").trim();const location=String(form.get("location")??"").trim();

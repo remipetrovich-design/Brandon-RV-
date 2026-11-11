@@ -1,4 +1,4 @@
-import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+import {currentUser,currentMembership,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 
 async function accessJob(jobId:string,userId:string,businessId:string){
@@ -9,8 +9,7 @@ async function accessJob(jobId:string,userId:string,businessId:string){
   db.from("jobs").select("id,status,customer_approval_status").eq("id",jobId).eq("business_id",businessId).maybeSingle(),
   db.from("job_assignments").select("id,status").eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle()
  ]);
- const canManage=await userHasPermission(userId,"jobs.manage");
- return {db,staff,job,allowed:canManage||assignment?.status==="accepted",assignment};
+ return {db,staff,job,allowed:assignment?.status==="accepted",assignment};
 }
 
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
@@ -36,14 +35,15 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const description=String(body.description??"").trim().slice(0,2000);
   const quantity=Number(body.quantity??1),unitPrice=Number(body.unitPrice??0);
   const customerVisible=body.customerVisible!==false;
-  if(!["labour","parts","note"].includes(entryType)||description.length<2)return jsonError("Enter a valid work entry.");
+  if(!["labour","parts","note","test"].includes(entryType)||description.length<2)return jsonError("Enter a valid work entry.");
   if(!Number.isFinite(quantity)||quantity<=0||quantity>10000||!Number.isFinite(unitPrice)||unitPrice<0||unitPrice>10000000)return jsonError("Enter valid quantity and price values.");
   const {data:businessSettings}=await access.db.from("business_settings").select("settings").eq("business_id",membership.business_id).maybeSingle();
   const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
   const pricing=configured.pricing&&typeof configured.pricing==="object"?configured.pricing:{};
   const gstStatus=String(pricing.gst_status??"not_configured"),configuredGstRate=Number(pricing.gst_rate??10);
-  const taxRate=entryType==="note"?0:gstStatus==="registered"?configuredGstRate:0;
-  const lineTotal=entryType==="note"?0:Number((quantity*unitPrice).toFixed(2));
+  const nonBillable=["note","test"].includes(entryType);
+  const taxRate=nonBillable?0:gstStatus==="registered"?configuredGstRate:0;
+  const lineTotal=nonBillable?0:Number((quantity*unitPrice).toFixed(2));
   const {data:entry,error}=await access.db.from("job_work_entries").insert({
    business_id:membership.business_id,job_id:id,staff_id:access.staff?.id??null,created_by:user.id,
    entry_type:entryType,description,quantity,unit_price:unitPrice,tax_rate:taxRate,line_total:lineTotal,

@@ -22,10 +22,11 @@ test("only an accepted worker can finish an in-progress Work Order",()=>{
  assert.equal(canFinishWorkOrder("in_progress","assigned",true),true);
 });
 
-test("invoice totals include labour and parts but exclude non-billable notes",()=>{
+test("invoice totals include labour and parts but exclude notes and tests",()=>{
  assert.deepEqual(calculateWorkOrderTotals([
   {entry_type:"labour",line_total:200,tax_rate:10},
   {entry_type:"parts",line_total:50,tax_rate:10},
-  {entry_type:"note",line_total:0,tax_rate:0}
+  {entry_type:"note",line_total:0,tax_rate:0},
+  {entry_type:"test",line_total:0,tax_rate:0}
  ]),{subtotal:250,taxAmount:25,total:275});
 });

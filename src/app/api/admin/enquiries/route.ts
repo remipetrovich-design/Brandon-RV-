@@ -9,16 +9,26 @@ export async function GET(request:Request){
  const db=database(),businessId=access.membership!.business_id,url=new URL(request.url);
  const type=url.searchParams.get("type")??"all",stage=url.searchParams.get("stage")??"all",search=(url.searchParams.get("q")??"").replace(/[^a-zA-Z0-9@._+ -]/g,"").trim().slice(0,120);
  let query=db.from("enquiries").select("id,request_number,request_type,contact_name,email,phone,location,vehicle_description,requested_service,description,preferred_contact,status,stage,source,internal_notes,created_at,updated_at,customer_id,user_id").eq("business_id",businessId).order("created_at",{ascending:false}).limit(250);
- if(types.includes(type))query=query.eq("request_type",type);
- if(stages.includes(stage))query=query.eq("stage",stage);
+ if(type==="general")query=query.in("request_type",["public_enquiry","general_enquiry"]);
+ else if(types.includes(type))query=query.eq("request_type",type);
+ if(stage==="archived")query=query.not("archived_at","is",null);
+ else {query=query.is("archived_at",null);if(stages.includes(stage))query=query.eq("stage",stage);}
  if(search)query=query.or("request_number.ilike.%"+search+"%,contact_name.ilike.%"+search+"%,email.ilike.%"+search+"%,phone.ilike.%"+search+"%,requested_service.ilike.%"+search+"%");
  const {data,error}=await query;if(error)return jsonError("Could not load enquiry records.",500);
  const ids=(data??[]).map(x=>x.id);
- const [{data:assignments},{data:activeStaff}]=await Promise.all([ids.length?db.from("enquiry_assignments").select("enquiry_id,staff_id,assigned_at").in("enquiry_id",ids).is("unassigned_at",null):Promise.resolve({data:[]}),db.from("staff").select("id,full_name,email,job_title").eq("business_id",businessId).eq("employment_status","active").order("full_name")]);
- const staffIds=[...new Set((assignments??[]).map(x=>x.staff_id))];
- const {data:staff}=staffIds.length?await db.from("staff").select("id,full_name,email,job_title").eq("business_id",businessId).in("id",staffIds):{data:[]};
- const staffById=new Map((staff??[]).map(x=>[x.id,x]));
- const rows=(data??[]).map(row=>({...row,assigned_staff:(assignments??[]).filter(a=>a.enquiry_id===row.id).map(a=>({...staffById.get(a.staff_id),assigned_at:a.assigned_at})).filter(x=>x.id)}));
+ const [{data:assignments},{data:staffRecords}]=await Promise.all([
+  ids.length?db.from("enquiry_assignments").select("enquiry_id,staff_id,assigned_at").in("enquiry_id",ids).is("unassigned_at",null):Promise.resolve({data:[]}),
+  db.from("staff").select("id,full_name,email,job_title,employment_status").eq("business_id",businessId).order("full_name")
+ ]);
+ const activeStaff=(staffRecords??[]).filter(x=>x.employment_status==="active");
+ const staffById=new Map((staffRecords??[]).map(x=>[x.id,x]));
+ const assignmentsByEnquiry=new Map<string,{id:string;full_name:string;job_title:string|null;assigned_at:string}[]>();
+ for(const assignment of assignments??[]){
+  const staff=staffById.get(assignment.staff_id);if(!staff)continue;
+  const list=assignmentsByEnquiry.get(assignment.enquiry_id)??[];
+  list.push({...staff,assigned_at:assignment.assigned_at});assignmentsByEnquiry.set(assignment.enquiry_id,list);
+ }
+ const rows=(data??[]).map(row=>({...row,assigned_staff:assignmentsByEnquiry.get(row.id)??[]}));
  return Response.json({enquiries:rows,staff:activeStaff??[],stages,types});
 }
 export async function POST(request:Request){
@@ -40,8 +50,7 @@ export async function POST(request:Request){
    location:String(body.location??"").trim().slice(0,200)||null,vehicle_description:String(body.vehicle_description??"").trim().slice(0,300)||null,
    requested_service:String(body.requested_service??"").trim().slice(0,200)||null,description,
    preferred_contact:["email","phone","sms"].includes(String(body.preferred_contact))?String(body.preferred_contact):"email",
-   source:"admin",status:legacyStatus(stage),stage,internal_notes:String(body.internal_notes??"").trim().slice(0,5000)||null,
-
+   source:"admin",status:legacyStatus(stage),stage,internal_notes:String(body.internal_notes??"").trim().slice(0,5000)||null
   }).select("id,request_number,request_type,stage").single();
   if(error||!record)return jsonError("Could not create the enquiry record.",500);
   if(staffIds.length){const {error:assignError}=await db.from("enquiry_assignments").insert(staffIds.map((staff_id:string)=>({business_id:businessId,enquiry_id:record.id,staff_id,assigned_by:access.user!.id})));if(assignError){await db.from("enquiries").delete().eq("id",record.id).eq("business_id",businessId);return jsonError("Could not assign staff. The enquiry was not saved.",500);}}

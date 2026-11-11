@@ -1,0 +1,194 @@
+/* Brandon RV admin: compact operational density. Keep the public site styling untouched. */
+.brv-admin-frame {
+  --admin-space-1: 4px;
+  --admin-space-2: 8px;
+  --admin-space-3: 12px;
+  --admin-space-4: 16px;
+  --admin-control-height: 36px;
+  --admin-radius: 8px;
+  color: #172f46;
+}
+.brv-admin-frame .brv-admin-sidebar { width: 236px; }
+.brv-admin-frame .brv-admin-main { min-width: 0; }
+.brv-admin-frame .brv-admin-topbar { min-height: 54px; padding-inline: 20px; }
+.brv-admin-frame .brv-admin-content { padding: 20px clamp(18px, 2vw, 28px) 32px; }
+.brv-admin-frame .portal-page { min-height: 0; background: transparent; }
+.brv-admin-frame .portal-shell { width: 100%; max-width: 1440px !important; padding: 8px 0 28px; }
+.brv-admin-frame .portal-page-heading { margin: 0 0 18px; }
+.brv-admin-frame .portal-page-heading h1 { margin: 2px 0 5px; font-size: clamp(25px, 2.2vw, 32px); line-height: 1.12; letter-spacing: -.04em; }
+.brv-admin-frame .portal-page-heading > p:last-child { margin: 0; font-size: 12px; line-height: 1.55; }
+.brv-admin-frame .portal-panel { padding: 16px; border: 1px solid #dce5ee; border-radius: 10px; box-shadow: 0 3px 12px rgba(16, 40, 63, .035); }
+.brv-admin-frame .portal-panel + .portal-panel { margin-top: 12px; }
+.brv-admin-frame .portal-panel-heading { gap: 12px; margin-bottom: 12px; }
+.brv-admin-frame .portal-panel-heading h2 { margin: 3px 0 2px; font-size: 17px; line-height: 1.25; }
+.brv-admin-frame .portal-panel-heading p { margin: 4px 0 0; font-size: 11px; line-height: 1.5; }
+.brv-admin-frame .panel-kicker { font-size: 9px; letter-spacing: .1em; }
+.brv-admin-frame .button { min-height: var(--admin-control-height); padding: 0 12px; border-radius: 7px; font-size: 11px; line-height: 1.2; box-shadow: none; }
+.brv-admin-frame .button:hover { transform: none; box-shadow: 0 2px 7px rgba(16, 40, 63, .09); }
+.brv-admin-frame .form-grid { gap: 10px 12px; }
+.brv-admin-frame .auth-form label,
+.brv-admin-frame .portal-panel label,
+.brv-admin-frame .brv-enquiry-manager label { gap: 5px; font-size: 10px; }
+.brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .auth-form select,
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .portal-panel select,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager input,
+.brv-admin-frame .brv-enquiry-manager select,
+.brv-admin-frame .brv-enquiry-manager textarea {
+  min-height: var(--admin-control-height);
+  padding: 7px 9px;
+  border: 1px solid #d5e0ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #183047;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager textarea { min-height: 76px; resize: none; }
+.brv-admin-frame .activity-list { gap: 0; }
+.brv-admin-frame .activity-item { gap: 12px; padding: 11px 0; border-bottom: 1px solid #e8eef3; }
+.brv-admin-frame .activity-item:last-child { border-bottom: 0; }
+.brv-admin-frame .activity-date { min-width: 88px; font-size: 10px; }
+.brv-admin-frame .activity-copy { gap: 4px; min-width: 0; }
+.brv-admin-frame .activity-copy strong { font-size: 12px; }
+.brv-admin-frame .activity-copy > span,
+.brv-admin-frame .activity-copy small { font-size: 10px; line-height: 1.45; }
+.brv-admin-frame .brv-enquiry-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 13px; padding-bottom: 9px; border-bottom: 1px solid #e5ebf1; }
+.brv-admin-frame .brv-enquiry-tabs button { min-height: 31px; padding: 0 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #5e7185; font-size: 10px; font-weight: 700; cursor: pointer; }
+.brv-admin-frame .brv-enquiry-tabs button:hover { background: #f1f6fb; color: #155fa8; }
+.brv-admin-frame .brv-enquiry-tabs button.active { border-color: #c8dced; background: #eaf3fb; color: #155fa8; }
+.brv-admin-frame .brv-enquiry-filters { display: grid; grid-template-columns: minmax(220px, 1.5fr) minmax(150px, .7fr) auto; align-items: end; gap: 10px; margin-bottom: 12px; }
+.brv-admin-frame .brv-enquiry-filters label { display: flex; flex-direction: column; gap: 5px; color: #52677c; font-size: 10px; font-weight: 700; }
+.brv-admin-frame .brv-enquiry-filters .button { min-width: 94px; }
+.brv-admin-frame .brv-enquiry-create { margin-top: 14px; padding: 14px; border: 1px solid #dce5ee; border-radius: 8px; background: #f8fafc; }
+.brv-admin-frame .brv-enquiry-create h3 { margin: 4px 0 12px; font-size: 15px; }
+.brv-admin-frame .brv-enquiry-create > label { margin-top: 10px; }
+.brv-admin-frame .portal-stat-grid { gap: 10px; }
+.brv-admin-frame .portal-stat-grid > article,
+.brv-admin-frame .portal-stat-grid > a { min-height: 112px; padding: 13px; border-radius: 9px; box-shadow: none; }
+.brv-admin-frame .portal-stat-grid strong { font-size: 24px; }
+.brv-admin-frame .portal-shortcuts { gap: 9px; }
+.brv-admin-frame .portal-shortcuts > a { min-height: 78px; padding: 12px; border-radius: 8px; box-shadow: none; }
+.brv-admin-frame .brv-admin-section-heading { margin: 20px 0 10px; }
+.brv-admin-frame .brv-admin-section-heading h2 { margin: 2px 0 0; font-size: 17px; }
+.brv-admin-frame :focus-visible { outline: 2px solid #2b82ce; outline-offset: 2px; }
+@media (max-width: 850px) {
+  .brv-admin-frame .brv-admin-sidebar { width: 260px; }
+  .brv-admin-frame .brv-admin-content { padding: 16px; }
+}
+@media (max-width: 640px) {
+  .brv-admin-frame .brv-enquiry-filters { grid-template-columns: 1fr; }
+  .brv-admin-frame .portal-panel { padding: 13px; }
+  .brv-admin-frame .activity-item { align-items: flex-start; flex-direction: column; }
+  .brv-admin-frame .activity-date { min-width: 0; }
+}
+
+.brv-admin-frame .brv-enquiry-row-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.brv-admin-frame .brv-enquiry-quick-action { display:inline-flex; min-height:30px; align-items:center; padding:0 9px; border:1px solid #bcd4e8; border-radius:6px; background:#f4f9fd; color:#155fa8; font-size:10px; font-weight:750; white-space:nowrap; }
+.brv-admin-frame .brv-enquiry-quick-action:hover { border-color:#8eb7db; background:#eaf3fb; }
+
+
+/* Detail pages keep the editor full width and pair the supporting history panels. */
+.brv-admin-frame .brv-enquiry-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+.brv-admin-frame .brv-enquiry-editor > form { grid-column: 1 / -1; min-width: 0; }
+.brv-admin-frame .brv-enquiry-editor > section { min-width: 0; margin-top: 0; }
+.brv-admin-frame .brv-enquiry-editor > section h2 { margin: 5px 0 10px; font-size: 15px; }
+.brv-admin-frame .brv-admin-job-tools {
+  min-width: 180px;
+  border: 1px solid #dce5ee;
+  border-radius: 7px;
+  background: #fff;
+}
+.brv-admin-frame .brv-admin-job-tools > summary {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  color: #31516d;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.brv-admin-frame .brv-admin-job-tools[open] { grid-column: 1 / -1; }
+.brv-admin-frame .brv-admin-job-tools-content { padding: 10px; border-top: 1px solid #e6edf3; }
+.brv-admin-frame .brv-admin-job-assignees { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 6px; }
+.brv-admin-frame .brv-admin-job-assignees label { display:flex; align-items:center; gap:7px; padding:6px 8px; border:1px solid #e3eaf0; border-radius:6px; }
+.brv-admin-frame .brv-admin-job-assignees small { display:block; color:#718398; font-size:9px; }
+.brv-admin-frame .brv-admin-job-tools-content h3 { margin:10px 0 7px; font-size:13px; }
+@media (max-width: 850px) {
+  .brv-admin-frame .brv-enquiry-editor { grid-template-columns: minmax(0,1fr); }
+  .brv-admin-frame .brv-enquiry-editor > form { grid-column: auto; }
+}
+
+.brv-admin-frame .brv-senior-review { display:grid; gap:9px; margin:12px 0; padding:12px; border:1px solid #d4e1ec; border-radius:7px; background:#f6f9fc; }
+.brv-admin-frame .brv-senior-review h3 { margin:0; font-size:13px; }
+.brv-admin-frame .brv-senior-review p { margin:0; color:#526a80; font-size:11px; line-height:1.5; }
+.brv-admin-frame .brv-senior-review label { display:grid; gap:5px; font-size:11px; font-weight:650; }
+.brv-admin-frame .brv-senior-review textarea { min-height:62px; resize:vertical; }
+.brv-admin-frame .brv-senior-review-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.brv-admin-frame .brv-senior-review-actions .button { min-height:34px; padding:0 10px; font-size:11px; }
+
+
+/* Workcard rows use a stable grid so expanded controls never squeeze into a narrow flex column. */
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px 12px;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-date { grid-column:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-copy { grid-column:2; min-width:0; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:3; grid-row:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools {
+  grid-column:2 / -1;
+  width:100%;
+  min-width:0;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools[open] { grid-column:2 / -1; }
+@media (max-width: 700px) {
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) {
+    grid-template-columns:minmax(0,1fr) auto;
+  }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-date { grid-column:1 / -1; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-copy { grid-column:1 / -1; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:1; grid-row:auto; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools { grid-column:1 / -1; }
+}
+
+
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px 12px;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-date { grid-column:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-copy { grid-column:2; min-width:0; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:3; grid-row:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:2 / -1; width:100%; min-width:0; }
+.brv-admin-frame .brv-admin-quote-tools { border:1px solid #dce5ee; border-radius:7px; background:#fff; }
+.brv-admin-frame .brv-admin-quote-tools > summary { min-height:32px; display:flex; align-items:center; padding:0 9px; color:#31516d; font-size:10px; font-weight:750; cursor:pointer; list-style-position:inside; }
+.brv-admin-frame .brv-admin-quote-tools-content { display:grid; gap:8px; padding:10px; border-top:1px solid #e6edf3; }
+.brv-admin-frame .brv-admin-quote-status { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:11px; text-transform:capitalize; }
+.brv-admin-frame .brv-admin-quote-tools-content label { display:grid; gap:5px; font-size:11px; font-weight:650; }
+.brv-admin-frame .brv-admin-quote-tools-content textarea { min-height:62px; resize:vertical; }
+.brv-admin-frame .brv-admin-quote-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.brv-admin-frame .brv-admin-quote-actions .button { min-height:34px; padding:0 10px; font-size:11px; }
+@media (max-width:700px) {
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) { grid-template-columns:minmax(0,1fr) auto; }
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-date,
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-copy,
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:1 / -1; }
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:1; grid-row:auto; }
+}
