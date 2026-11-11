@@ -20,11 +20,18 @@ export default async function JobcardDetailPage({params,searchParams}:{params:Pr
  ]);
  if(quoteError||appointmentError||attachmentError)throw new Error("Could not load the complete Jobcard.");
  const appointmentIds=(appointments??[]).map(x=>x.id);
- const [{data:jobs},{data:vehicle}]=await Promise.all([
-  appointmentIds.length?db.from("jobs").select("id,job_number,title,status,work_summary,customer_approval_status,senior_approval_status,senior_approval_note,worker_signed_off_at,completed_at,scheduled_start,appointment_id,quote_id,customer_visible_notes").eq("user_id",user.id).in("appointment_id",appointmentIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+ const quoteIds=(quotes??[]).map(x=>x.id);
+ const jobSelect="id,job_number,title,status,work_summary,customer_approval_status,senior_approval_status,senior_approval_note,worker_signed_off_at,completed_at,scheduled_start,appointment_id,quote_id,customer_visible_notes";
+ const [quoteLinkedJobs,appointmentLinkedJobs,vehicleResult]=await Promise.all([
+  quoteIds.length?db.from("jobs").select(jobSelect).eq("user_id",user.id).in("quote_id",quoteIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+  appointmentIds.length?db.from("jobs").select(jobSelect).eq("user_id",user.id).in("appointment_id",appointmentIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
   jobcard.vehicle_id?db.from("vehicles").select("make,model,year,vehicle_type,registration,vin").eq("id",jobcard.vehicle_id).eq("customer_id",user.id).maybeSingle():Promise.resolve({data:null})
  ]);
- const jobIds=(jobs??[]).map(x=>x.id);
+ const jobsById=new Map<string,any>();
+ for(const job of [...(quoteLinkedJobs.data??[]),...(appointmentLinkedJobs.data??[])])jobsById.set(job.id,job);
+ const jobs=[...jobsById.values()];
+ const vehicle=vehicleResult.data;
+ const jobIds=jobs.map(x=>x.id);
  const [{data:entries},{data:invoices},{data:appointmentVehicle},{data:workPhotos}]=await Promise.all([
   jobIds.length?db.from("job_work_entries").select("id,job_id,entry_type,description,quantity,line_total,customer_visible").in("job_id",jobIds).eq("customer_visible",true).order("occurred_at"):Promise.resolve({data:[]}),
   jobIds.length?db.from("invoices").select("id,job_id,invoice_number,subtotal,tax_amount,total,status,issue_date,due_date,amount_paid,payments(id,amount,method,reference,paid_at,status),invoice_items(id,description,quantity,unit_price,line_total)").in("job_id",jobIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
@@ -32,7 +39,7 @@ export default async function JobcardDetailPage({params,searchParams}:{params:Pr
   jobIds.length?db.from("job_attachments").select("id,job_id,file_name,mime_type,storage_path").in("job_id",jobIds).eq("customer_visible",true).order("created_at",{ascending:false}):Promise.resolve({data:[]})
  ]);
  const signedAttachments=await Promise.all((attachments??[]).map(async file=>{const {data}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:data?.signedUrl??null};}));
- const quoteRows=quotes??[],bookingRows=appointments??[],jobRows=jobs??[];
+ const quoteRows=quotes??[],bookingRows=appointments??[],jobRows=jobs;
  const invoiceByJob=new Map((invoices??[]).map(x=>[x.job_id,x]));
  const entriesByJob=new Map<string,any[]>();
  for(const entry of entries??[]){const rows=entriesByJob.get(entry.job_id)??[];rows.push(entry);entriesByJob.set(entry.job_id,rows);}
@@ -60,7 +67,7 @@ export default async function JobcardDetailPage({params,searchParams}:{params:Pr
   </section>
   <section className="brv-jobcard-section"><div className="brv-jobcard-section-heading"><span>03</span><div><h2>Booking & Workcard</h2><p>Requested visits, confirmed appointments and work progress.</p></div></div>
    {bookingRows.length?bookingRows.map(a=><article className="brv-jobcard-booking" key={a.id}><div><strong>{a.status==="confirmed"?"Confirmed booking":a.status==="requested"?"Booking request":pretty(a.status)}</strong><span>{a.starts_at?new Date(a.starts_at).toLocaleString("en-AU"):a.preferred_start?new Date(a.preferred_start).toLocaleString("en-AU"):"Date to be arranged"}{a.ends_at?" – "+new Date(a.ends_at).toLocaleTimeString("en-AU"):""}</span><small>{a.location||"Service location to be confirmed"}</small></div><span className="status-pill">{pretty(a.status)}</span></article>):<p className="panel-footnote">No booking has been requested yet. Accept a quote first, then request a preferred visit time.</p>}
-   {jobRows.length?jobRows.map(j=>{const invoice=invoiceByJob.get(j.id)??null;return <div className="brv-jobcard-workcard" key={j.id}><div className="brv-jobcard-workcard-head"><div><strong>Workcard {j.job_number}</strong><small>{pretty(j.status)}{j.scheduled_start?" · "+new Date(j.scheduled_start).toLocaleDateString("en-AU"):""}</small></div><span className="status-pill">{j.senior_approval_status==="pending"?"Senior review":pretty(j.senior_approval_status||j.status)}</span></div><p>{j.customer_visible_notes||"Work updates will appear here as they are shared."}</p><CustomerWorkApproval jobId={j.id} jobNumber={j.job_number} summary={j.work_summary} approvalStatus={j.customer_approval_status??"not_ready"} seniorApprovalStatus={j.senior_approval_status} entries={entriesByJob.get(j.id)??[]} attachments={photosByJob.get(j.id)??[]} invoice={invoice?{...invoice,items:invoice.invoice_items??[]}:null} booking={bookingRows.find(a=>a.id===j.appointment_id)??null} quote={quoteRows.find(q=>q.id===j.quote_id)??null} vehicle={selectedVehicle}/></div>; }):<p className="panel-footnote">A staff Workcard is created only after the quote is accepted and the booking is confirmed.</p>}
+   {jobRows.length?jobRows.map(j=>{const invoice=invoiceByJob.get(j.id)??null;return <div className="brv-jobcard-workcard" key={j.id}><div className="brv-jobcard-workcard-head"><div><strong>Workcard {j.job_number}</strong><small>{pretty(j.status)}{j.scheduled_start?" · "+new Date(j.scheduled_start).toLocaleDateString("en-AU"):""}</small></div><span className="status-pill">{j.senior_approval_status==="pending"?"Senior review":pretty(j.senior_approval_status||j.status)}</span></div><p>{j.customer_visible_notes||"Work updates will appear here as they are shared."}</p><CustomerWorkApproval jobId={j.id} jobNumber={j.job_number} summary={j.work_summary} approvalStatus={j.customer_approval_status??"not_ready"} seniorApprovalStatus={j.senior_approval_status} entries={entriesByJob.get(j.id)??[]} attachments={photosByJob.get(j.id)??[]} invoice={invoice?{...invoice,items:invoice.invoice_items??[]}:null} booking={bookingRows.find(a=>a.id===j.appointment_id)??null} quote={quoteRows.find(q=>q.id===j.quote_id)??null} vehicle={selectedVehicle}/></div>; }):<p className="panel-footnote">After you accept a quote, Brandon RV prepares and reviews the Workcard. Your visit is scheduled and confirmed separately.</p>}
   </section>
   <section className="brv-jobcard-section brv-jobcard-messages"><div className="brv-jobcard-section-heading"><span>04</span><div><h2>Discussion & updates</h2><p>Messages about this Jobcard stay in one thread.</p></div></div><TicketConversation ticketId={id}/></section>
   <footer className="brv-jobcard-footer"><span>Brandon RV · Tamworth NSW</span><span>{jobcard.request_number} · Updated {new Date(jobcard.updated_at).toLocaleDateString("en-AU")}</span></footer>

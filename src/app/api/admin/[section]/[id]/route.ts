@@ -55,16 +55,26 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    record=result.data;
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
   }
-  let jobCreated=false;
+  let workcardLinked=false;
   if(section==="appointments"&&update.status==="confirmed"&&appointment&&quote){
-   const {data:existingJob}=await db.from("jobs").select("id").eq("appointment_id",id).maybeSingle();
-   if(!existingJob){
-    const {data:items}=await db.from("quote_items").select("description").eq("quote_id",quote.id).order("sort_order");
-    const title=items?.[0]?.description??("Work for quote "+quote.quote_number);
-    const {data:job,error:jobError}=await db.from("jobs").insert({business_id:membership.business_id,customer_id:appointment.customer_id,user_id:appointment.user_id,guest_name:appointment.guest_name??null,guest_email:appointment.guest_email??null,appointment_id:id,quote_id:quote.id,job_number:"BRV-"+Date.now().toString(36).toUpperCase(),title,scope_of_work:(items??[]).map((x:any)=>x.description).join("\\n"),status:"pending",scheduled_start:update.starts_at,scheduled_end:update.ends_at}).select("id,job_number").single();
-    if(jobError||!job){await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);return jsonError("Booking could not be confirmed because its Work Order could not be created.",500);}
-    jobCreated=true;await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.created_from_booking",entity_type:"job",entity_id:job.id,details:{job_number:job.job_number,appointment_id:id,quote_id:quote.id}});
+   const {data:workcardByQuote}=await db.from("jobs").select("id,job_number,appointment_id").eq("business_id",membership.business_id).eq("quote_id",quote.id).maybeSingle();
+   const {data:legacyWorkcard}=workcardByQuote?{data:null}:await db.from("jobs").select("id,job_number,appointment_id").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
+   const workcard=workcardByQuote??legacyWorkcard;
+   if(!workcard){
+    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
+    return jsonError("Create the Workcard from the accepted quote before confirming its booking.",409);
    }
+   if(workcard.appointment_id&&workcard.appointment_id!==id){
+    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
+    return jsonError("This Workcard is already linked to another booking. Update the existing booking instead.",409);
+   }
+   const {error:linkError}=await db.from("jobs").update({appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,status:"scheduled",updated_at:new Date().toISOString()}).eq("id",workcard.id).eq("business_id",membership.business_id);
+   if(linkError){
+    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
+    return jsonError("Booking could not be confirmed because the existing Workcard could not be updated.",500);
+   }
+   workcardLinked=true;
+   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"workcard.booking_confirmed",entity_type:"job",entity_id:workcard.id,details:{job_number:workcard.job_number,appointment_id:id,quote_id:quote.id}});
   }
   let emailSent=false;
   if(section==="quotes"&&update.status==="sent"){
@@ -87,6 +97,6 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
     emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV invoice "+invoice.invoice_number,html:`<p>Hi ${safeName},</p><p>Your Brandon RV invoice ${invoice.invoice_number} has been issued.</p><p>Amount due: <strong>$${Number(invoice.total).toFixed(2)} AUD</strong></p><p>Due date: ${invoice.due_date??"As shown on your invoice"}</p><p>View your invoice in the customer portal: <a href="${base}/portal/invoices">View invoices</a></p>`});
    }
   }
-  return Response.json({success:true,emailSent,jobCreated});
+  return Response.json({success:true,emailSent,workcardLinked});
  }catch{return jsonError("Could not update record.",500);}
 }

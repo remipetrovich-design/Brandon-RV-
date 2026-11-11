@@ -7,8 +7,9 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  const {id}=await params;const db=database();
  const {data:staff}=await db.from("staff").select("id").eq("user_id",user.id).eq("business_id",membership.business_id).maybeSingle();
  if(!staff)return jsonError("Employee profile not found.",404);
- const {data:job}=await db.from("jobs").select("id,status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
- if(!job)return jsonError("Work Order not found.",404);
+ const {data:job}=await db.from("jobs").select("id,status,workcard_review_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+ if(!job)return jsonError("Workcard not found.",404);
+ if(!["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")))return jsonError("This Workcard is not ready to be accepted. Senior setup review is still required.",409);
  const {data:assignment}=await db.from("job_assignments").select("id,status").eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
  if(!assignment||assignment.status==="removed")return jsonError("This Work Order has not been assigned to you.",403);
  if(assignment.status==="accepted")return Response.json({success:true,alreadyAccepted:true});

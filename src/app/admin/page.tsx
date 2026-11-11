@@ -24,7 +24,7 @@ export default async function AdminDashboard() {
  const stats=[
   {label:"NEW ENQUIRIES",value:enquiries.count,detail:"Customer requests to review",href:"/admin/enquiries",permission:"enquiries.view"},
   {label:"BOOKING REQUESTS",value:appointments.count,detail:"Requested and confirmed visits",href:"/admin/appointments",permission:"appointments.view"},
-  {label:"OPEN WORK ORDERS",value:jobs.count,detail:"Jobs not yet closed",href:"/admin/jobs",permission:"jobs.view"},
+  {label:"OPEN WORKCARDS",value:jobs.count,detail:"Jobs not yet closed",href:"/admin/jobs",permission:"jobs.view"},
   {label:"QUOTES TO REVIEW",value:quotes.count,detail:"Quotes awaiting a response",href:"/admin/quotes",permission:"quotes.view"},
   {label:"INVOICES",value:invoices.count,detail:"Invoices recorded",href:"/admin/invoices",permission:"invoices.view"},
   {label:"PARTS ORDERS",value:supplierOrders.count,detail:"Orders still being processed",href:"/admin/supplier-orders",permission:"suppliers.view"}
@@ -32,7 +32,7 @@ export default async function AdminDashboard() {
  const quickLinks=[
   {label:"Enquiries & requests",detail:"Review public contact forms, general enquiries, customer tickets and quote requests in one register",href:"/admin/enquiries",permission:"enquiries.view"},
   {label:"Manage appointments",detail:"Review requests and schedule visits",href:"/admin/appointments",permission:"appointments.view"},
-  {label:"Manage work orders",detail:"Track approved work and progress",href:"/admin/jobs",permission:"jobs.view"},
+  {label:"Manage Workcards",detail:"Track approved Workcards and progress",href:"/admin/jobs",permission:"jobs.view"},
   {label:"Prepare a quote",detail:"Create and send an itemised quote",href:"/admin/quotes",permission:"quotes.view"},
   {label:"Invoices & payments",detail:"Issue invoices and record payments",href:"/admin/invoices",permission:"invoices.view"},
   {label:"Supplier orders",detail:"Track parts, delivery and supplier costs",href:"/admin/supplier-orders",permission:"suppliers.view"}

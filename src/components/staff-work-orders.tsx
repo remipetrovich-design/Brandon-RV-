@@ -14,18 +14,21 @@ export default function StaffWorkOrders(){
  const [summaries,setSummaries]=useState<Record<string,string>>({});
  const [attachments,setAttachments]=useState<Record<string,Attachment[]>>({});
  const [photoVisibility,setPhotoVisibility]=useState<Record<string,boolean>>({});
+ const [bookingForms,setBookingForms]=useState<Record<string,{preferredStart:string;location:string;notes:string}>>({});
 
  async function load(){
   try{
    const r=await fetch("/api/staff/jobs",{cache:"no-store"});
    const d=await r.json();
    if(!r.ok){setNotice(d.error??"Could not load Workcards.");return;}
-   setOrders((d.workOrders??[]).map((x:any)=>({...x.job,assignment_status:x.status,entries:x.entries??[]})));
+   setOrders((d.workcards??[]).map((x:any)=>({...x.job,assignment_status:x.status,entries:x.entries??[]})));
   }catch{setNotice("Could not load Workcards.");}
  }
  useEffect(()=>{void load();},[]);
 
  function form(id:string){return entryForms[id]??{entryType:"labour",description:"",quantity:"1",unitPrice:"",customerVisible:true};}
+ function bookingForm(id:string){return bookingForms[id]??{preferredStart:"",location:"",notes:""};}
+ async function requestBooking(e:FormEvent<HTMLFormElement>,id:string){e.preventDefault();const f=bookingForm(id);if(!f.preferredStart||!f.location.trim()){setNotice("Choose a preferred date and enter the customer-site location.");return;}const ok=await action("/api/staff/jobs/"+id+"/booking-request",{preferredStart:new Date(f.preferredStart).toISOString(),location:f.location,notes:f.notes});if(ok)setBookingForms(v=>({...v,[id]:{...bookingForm(id),preferredStart:"",notes:""}}));}
  async function loadAttachments(id:string){try{const r=await fetch("/api/staff/jobs/"+id+"/attachments",{cache:"no-store"});const d=await r.json();if(r.ok)setAttachments(v=>({...v,[id]:d.attachments??[]}));}catch{setNotice("Could not load Workcard photos.");}}
  async function uploadPhotos(e:FormEvent<HTMLFormElement>,id:string){e.preventDefault();const form=e.currentTarget;const data=new FormData(form);data.set("customerVisible",String(photoVisibility[id]??false));setBusy(true);setNotice("");try{const r=await fetch("/api/staff/jobs/"+id+"/attachments",{method:"POST",body:data});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not upload photos.");return;}setAttachments(v=>({...v,[id]:[...(v[id]??[]),...(d.attachments??[])]}));form.reset();setNotice("Workcard photos uploaded.");}catch{setNotice("Could not upload photos.");}finally{setBusy(false);}}
  async function action(url:string,body:any,method="POST"){
@@ -55,7 +58,7 @@ export default function StaffWorkOrders(){
    </div>
    {expandedId===job.id&&<div className="brv-workcard-detail" id={"workcard-detail-"+job.id}><div className="brv-workcard-detail-actions"><button className="button button-secondary" type="button" onClick={()=>window.print()}>Print Workcard</button></div>
     {job.scope_of_work&&<div className="brv-workcard-scope"><span className="panel-kicker">APPROVED SCOPE</span><p>{job.scope_of_work}</p></div>}
-    {(job.status==="pending"||job.status==="scheduled")&&<div className="brv-workcard-next"><p>{job.assignment_status==="assigned"?"This Workcard is assigned to you. Accept it before starting.":"Accept the assignment before recording work."}</p>{job.assignment_status==="assigned"?<button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/accept",{})}>Accept assignment</button>:<button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/status",{action:"start"},"PATCH")}>Start Workcard / mark arrived</button>}</div>}
+    {(job.status==="pending"||job.status==="scheduled")&&<div className="brv-workcard-next">{job.assignment_status==="assigned"?<><p>This Workcard is assigned to you. Accept it before arranging the booking.</p><button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/accept",{})}>Accept assignment</button></>:!job.scheduled_start?<><p>Assignment accepted. Coordinate a suitable visit with the customer and submit the preferred booking details for management confirmation.</p><form className="auth-form" onSubmit={e=>void requestBooking(e,job.id)}><label>Preferred date and time<input type="datetime-local" required value={bookingForm(job.id).preferredStart} onChange={e=>setBookingForms(v=>({...v,[job.id]:{...bookingForm(job.id),preferredStart:e.target.value}}))}/></label><label>Customer-site location<input required minLength={3} maxLength={200} value={bookingForm(job.id).location} onChange={e=>setBookingForms(v=>({...v,[job.id]:{...bookingForm(job.id),location:e.target.value}}))}/></label><label>Booking notes<textarea rows={2} maxLength={2000} value={bookingForm(job.id).notes} onChange={e=>setBookingForms(v=>({...v,[job.id]:{...bookingForm(job.id),notes:e.target.value}}))}/></label><button className="button button-primary" disabled={busy}>Send booking request</button></form></>:<><p>Booking confirmed. You can now attend and start the Workcard.</p><button className="button button-primary" disabled={busy} onClick={()=>void action("/api/staff/jobs/"+job.id+"/status",{action:"start"},"PATCH")}>Start Workcard / mark arrived</button></>}</div>}
     {job.status==="in_progress"&&<>
      <div className="brv-workcard-entries"><strong>Work recorded</strong>{job.entries.length?job.entries.map(x=><div className="brv-workcard-entry" key={x.id}><span>{pretty(x.entry_type)}</span><p>{x.description}</p><small>{x.entry_type==="note"?"Non-billable note":"Qty "+x.quantity+" · $"+Number(x.line_total).toFixed(2)}</small></div>):<p className="panel-footnote">No work entries yet.</p>}</div>
      <form className="auth-form brv-workcard-entry-form" onSubmit={e=>void addEntry(e,job.id)}>

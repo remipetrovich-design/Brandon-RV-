@@ -5,7 +5,7 @@ export async function GET(){
  const db=database(),businessId=access.membership!.business_id;
  const [{data:enquiries,error:enquiryError},{data:quotes,error:quoteError},{data:businessSettings}]=await Promise.all([
   db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id,customer_id").eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
-  db.from("quotes").select("id,quote_number,enquiry_id,revision_number,status").eq("business_id",businessId).not("enquiry_id","is",null).order("created_at",{ascending:false}),
+  db.from("quotes").select("id,quote_number,enquiry_id,revision_number,status,total,created_at").eq("business_id",businessId).not("enquiry_id","is",null).order("created_at",{ascending:false}),
   db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle()
  ]);
  if(enquiryError||quoteError)return jsonError("Could not load quote records.",500);

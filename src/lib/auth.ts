@@ -32,8 +32,11 @@ export async function userHasPermissions(userId:string,permissions:string[]){
  const role=String(user.user_role).toLowerCase();
  if(isGlobalAdministrator(role))return new Set(requested);
  if(!hasEmployeeAccess(user))return new Set<string>();
- const {data}=await db.from("user_role_permissions").select("permission_key").eq("role_key",user.user_role).in("permission_key",requested);
- return new Set((data??[]).map((x:{permission_key:string})=>x.permission_key));
+ const [{data:rolePermissions},{data:userGrants}]=await Promise.all([
+  db.from("user_role_permissions").select("permission_key").eq("role_key",user.user_role).in("permission_key",requested),
+  db.from("user_permission_grants").select("permission_key").eq("user_id",userId).in("permission_key",requested).is("revoked_at",null).or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+ ]);
+ return new Set([...(rolePermissions??[]),...(userGrants??[])].map((x:{permission_key:string})=>x.permission_key));
 }
 export async function userHasPermission(userId:string,permission:string){return (await userHasPermissions(userId,[permission])).has(permission);}
 export async function authorizePermission(permission:string){

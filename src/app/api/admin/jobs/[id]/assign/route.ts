@@ -2,15 +2,15 @@ import {currentUser,currentMembership,database,userHasPermission,jsonError,sameO
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,"jobs.assign")))return jsonError("You do not have permission to assign jobs.",403);
- const {id}=await params;const db=database();const {data:job}=await db.from("jobs").select("id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();if(!job)return jsonError("Job not found.",404);
+ const {id}=await params;const db=database();const {data:job}=await db.from("jobs").select("id,workcard_review_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();if(!job)return jsonError("Workcard not found.",404);
  const [{data:staff},{data:assignments}]=await Promise.all([db.from("staff").select("id,user_id,job_title,employment_status,full_name,email").eq("business_id",membership.business_id).eq("employment_status","active"),db.from("job_assignments").select("staff_id,status").eq("job_id",id)]);
- return Response.json({staff:staff??[],assignments:assignments??[]});
+ return Response.json({staff:staff??[],assignments:assignments??[],canAssign:["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")),workcardReviewStatus:job.workcard_review_status??"legacy_approved"});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,"jobs.assign")))return jsonError("You do not have permission to assign jobs.",403);
  try{
   const {id}=await params;const body=await request.json();const ids:string[]=Array.isArray(body.staffIds)?body.staffIds.map((x:unknown)=>String(x)):[];if(ids.length>20||ids.some(x=>!/^[0-9a-f-]{36}$/i.test(x)))return jsonError("Invalid staff selection.");
-  const db=database();const {data:job}=await db.from("jobs").select("id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();if(!job)return jsonError("Job not found.",404);
+  const db=database();const {data:job}=await db.from("jobs").select("id,workcard_review_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();if(!job)return jsonError("Workcard not found.",404);if(!["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")))return jsonError("The Workcard must pass senior setup review before it can be assigned.",409);
   if(ids.length){const {data:staff}=await db.from("staff").select("id").eq("business_id",membership.business_id).eq("employment_status","active").in("id",ids);if((staff??[]).length!==ids.length)return jsonError("One or more staff members are not active in this business.");}
   const {data:currentAssignments,error:currentError}=await db.from("job_assignments").select("id,staff_id,status").eq("job_id",id).eq("business_id",membership.business_id);
   if(currentError)return jsonError("Could not load current assignments.",500);

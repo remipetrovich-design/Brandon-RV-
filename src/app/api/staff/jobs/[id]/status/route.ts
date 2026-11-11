@@ -12,13 +12,16 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!["start","finish"].includes(action))return jsonError("Choose start or finish.");
   const db=database();const {data:staff}=await db.from("staff").select("id").eq("user_id",user.id).eq("business_id",membership.business_id).maybeSingle();
   if(!staff)return jsonError("Employee profile not found.",404);
-    const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+    const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,appointment_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
   if(!job)return jsonError("Work Order not found.",404);
   const {data:assignment}=await db.from("job_assignments").select("id,status").eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
   if(assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
   const now=new Date().toISOString();
   if(action==="start"){
    if(job.status==="in_progress")return Response.json({success:true,status:"in_progress",alreadyStarted:true});
+   if(!job.appointment_id)return jsonError("A booking must be confirmed before work can start.",409);
+   const {data:booking}=await db.from("appointments").select("id,status,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",membership.business_id).maybeSingle();
+   if(!booking||booking.status!=="confirmed"||!booking.starts_at||!booking.ends_at||!booking.location)return jsonError("A complete confirmed booking is required before work can start.",409);
    if(!canStartWorkOrder(job.status,assignment?.status,false))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
    const {error}=await db.from("jobs").update({status:"in_progress",actual_start:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
    if(error)return jsonError("Could not start Work Order.",500);
