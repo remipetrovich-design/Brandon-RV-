@@ -1,10 +1,20 @@
 {
   "name": "@license-manager/standalone-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": false,
   "type": "module",
   "description": "Portable client and enforcement helpers for the central License Manager API.",
-  "exports": { ".": "./src/index.js", "./enforcement": "./src/enforcement.js" },
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./enforcement": {
+      "types": "./src/enforcement.d.ts",
+      "import": "./src/enforcement.js"
+    }
+  },
   "scripts": { "test": "node --test" },
   "engines": { "node": ">=18" }
 }
