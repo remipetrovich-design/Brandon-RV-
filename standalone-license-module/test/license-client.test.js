@@ -114,3 +114,15 @@ test('does not use offline grace when licensing is deliberately disabled', async
   const client = createLicenseClient(opts(fetch));
   await assert.rejects(() => client.validate({ licenseKey: 'LIC-TEST' }), error => error.code === 'LICENSING_AUTHORITY_DISABLED');
 });
+
+test('reuses a recent successful validation only for the same licence key', async () => {
+  const fetch = fakeFetch('main');
+  const client = createLicenseClient({ ...opts(fetch), cacheValidForMs: 60_000 });
+  await client.validate({ licenseKey: 'LIC-ONE' });
+  const before = fetch.calls.filter(url => url.endsWith('/license/validate')).length;
+  const cached = await client.validate({ licenseKey: 'LIC-ONE' });
+  assert.equal(cached.valid, true);
+  assert.equal(fetch.calls.filter(url => url.endsWith('/license/validate')).length, before);
+  await client.validate({ licenseKey: 'LIC-TWO' });
+  assert.equal(fetch.calls.filter(url => url.endsWith('/license/validate')).length, before + 1);
+});
