@@ -1,43 +1,51 @@
+export type LicenseAction = "validate" | "activate" | "check_in";
 export type LicenseValidation = {
-  valid: boolean;
-  code?: string;
-  checkedAt?: number;
-  authority?: "main" | "fallback";
-  installationId?: string;
-  product?: string;
-  keyFingerprint?: string | null;
-  runtime_policy?: Record<string, unknown>;
-  runtimePolicy?: Record<string, unknown>;
-  entitlements?: Record<string, unknown>;
-  offlineGrace?: boolean;
-  offlineGraceRemainingSeconds?: number;
-  [key: string]: unknown;
+ valid: boolean;
+ code?: string;
+ product?: string;
+ component?: string;
+ installationId?: string;
+ authority?: "main" | "fallback";
+ checkedAt?: number;
+ keyFingerprint?: string | null;
+ runtime_policy?: Record<string,unknown>;
+ runtimePolicy?: Record<string,unknown>;
+ entitlements?: Record<string,unknown>;
+ components?: Record<string,{allowed?:boolean}>;
+ offlineGrace?: boolean;
+ offlineGraceRemainingSeconds?: number;
+ expires_at?: string;
+ expiresAt?: string;
+ [key:string]:unknown;
+};
+export type LicenseClientOptions = {
+ product:string;
+ component?:string;
+ installationId:string;
+ fetch?:typeof fetch;
+ timeoutMs?:number;
+ cacheValidForMs?:number;
+ storage?:{get?:(key:string)=>Promise<LicenseValidation|null>;set?:(key:string,value:LicenseValidation)=>Promise<void>};
 };
 export class LicenseError extends Error {
-  code: string;
-  status: number;
-  details: unknown;
-  constructor(message: string, options?: {code?: string; status?: number; details?: unknown});
+ name:"LicenseError";
+ code:string;
+ status:number;
+ details:unknown;
+ constructor(message:string,options?:{code?:string;status?:number;details?:unknown});
 }
-export const LICENSE_AUTHORITIES: Readonly<{main: string; fallback: string}>;
-export function createLicenseClient(options: {
-  product: string;
-  component?: string;
-  installationId: string;
-  fetch?: typeof fetch;
-  timeoutMs?: number;
-  cacheValidForMs?: number;
-  storage?: {
-    get?: (key: string) => Promise<LicenseValidation | null>;
-    set?: (key: string, value: LicenseValidation) => Promise<void>;
-  };
-}): {
-  readonly product: string;
-  readonly component: string;
-  readonly installationId: string;
-  detectAuthority(options?: {force?: boolean}): Promise<{mode: "main" | "fallback"; baseUrl: string; revision: string | null; checkedAt: number; health: unknown}>;
-  validate(input: {licenseKey: string; action?: "validate" | "activate" | "check_in"; productVersion?: string; metadata?: Record<string, unknown>; telemetry?: Record<string, unknown>}): Promise<LicenseValidation>;
-  activate(input: {licenseKey: string; productVersion?: string; metadata?: Record<string, unknown>}): Promise<LicenseValidation>;
-  checkIn(input: {licenseKey: string; productVersion?: string; metadata?: Record<string, unknown>}): Promise<LicenseValidation>;
-  enforce(input: {licenseKey: string; action?: "validate" | "activate" | "check_in"; productVersion?: string; metadata?: Record<string, unknown>}): Promise<LicenseValidation>;
+export const LICENSE_AUTHORITIES:Readonly<{main:string;fallback:string}>;
+export function createLicenseClient(options:LicenseClientOptions):{
+ readonly product:string;
+ readonly component:string;
+ readonly installationId:string;
+ detectAuthority(options?:{force?:boolean}):Promise<{mode:"main"|"fallback";baseUrl:string;revision:string|null;checkedAt:number;health:unknown}>;
+ validate(input:{licenseKey:string;action?:LicenseAction;productVersion?:string;metadata?:Record<string,unknown>;telemetry?:Record<string,unknown>}):Promise<LicenseValidation>;
+ activate(input:{licenseKey:string;productVersion?:string;metadata?:Record<string,unknown>}):Promise<LicenseValidation>;
+ checkIn(input:{licenseKey:string;productVersion?:string;metadata?:Record<string,unknown>}):Promise<LicenseValidation>;
+ enforce(input:{licenseKey:string;action?:LicenseAction;productVersion?:string;metadata?:Record<string,unknown>}):Promise<LicenseValidation>;
 };
+
+export function requireFeature(validation:LicenseValidation,feature:string):true;
+export function withLicense<TContext,TResult>(client:{enforce(input:any):Promise<LicenseValidation>},handler:(context:TContext,validation:LicenseValidation)=>Promise<TResult>|TResult,options?:{feature?:string;getLicenseInput?:(context:TContext)=>Promise<any>|any}):(context:TContext)=>Promise<TResult>;
+export function licenseMiddleware(client:{enforce(input:any):Promise<LicenseValidation>},options?:{feature?:string;getLicenseInput?:(request:any)=>Promise<any>|any}):(request:any,response:any,next:()=>any)=>Promise<any>;
