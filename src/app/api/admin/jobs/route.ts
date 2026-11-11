@@ -33,7 +33,8 @@ export async function POST(request:Request){
   ]);
   if(!enquiry||enquiry.request_type!=="quote_request")return jsonError("The linked Jobcard could not be found.",404);
   const title=String(body.title??items?.[0]?.description??("Work for "+quote.quote_number)).trim().slice(0,180);
-  const scope=String(body.scope??(items??[]).map((x:any)=>x.description).join("\n")||enquiry.description).trim().slice(0,5000);
+  const defaultScope=(items??[]).map((x:any)=>x.description).join("\n")||enquiry.description;
+  const scope=String(body.scope??defaultScope).trim().slice(0,5000);
   if(title.length<3||scope.length<3)return jsonError("Enter a Workcard title and scope of work.");
   const {data:job,error}=await db.from("jobs").insert({
    business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,user_id:quote.user_id??enquiry.user_id??null,
