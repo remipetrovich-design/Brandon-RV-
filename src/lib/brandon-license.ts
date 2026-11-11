@@ -78,7 +78,7 @@ export async function installApplicationLicense(licenseKey:string){
  const installationId=existing?.installation_id||randomUUID();
  const result=await clientFor(installationId,true).enforce({licenseKey:key,productVersion:process.env.BRANDON_RV_VERSION||"1.0.0",action:"activate"});
  const encrypted=encrypt(key);
- const {error}=await db.from("application_license").upsert({id:"primary",product_id:PRODUCT_ID,installation_id:installationId,...encrypted,last_validated_at:new Date().toISOString(),last_status:"valid",last_error_code:null,updated_at:new Date().toISOString()},{onConflict:"id"});
+ const {error}=await db.from("application_license").upsert({id:"primary",product_id:PRODUCT_ID,installation_id:installationId,...encrypted,cached_validation:result,last_validated_at:new Date(Number(result.checkedAt||Date.now())).toISOString(),last_status:"valid",last_error_code:null,updated_at:new Date().toISOString()},{onConflict:"id"});
  if(error)throw error;
  return safeState(result);
 }
