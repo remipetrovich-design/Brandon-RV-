@@ -40,7 +40,7 @@ test('the installed product and installation identity are stable and product-spe
 test('the woven application client preserves bounded successful caching and per-key cache isolation',()=>{
  const client=read('../src/lib/license-manager-client.js');
  assert.match(client,/cacheValidForMs/);
- assert.match(client,/lastValid\\.keyFingerprint/);
+ assert.match(client,/lastValid\.keyFingerprint/);
  assert.match(client,/fingerprintKey/);
  assert.match(client,/LICENSE_AUTHORITIES/);
 });
@@ -78,7 +78,7 @@ test('the portable client and enforcement helpers are woven into application run
  const adapter=read('../src/lib/brandon-license.ts');
  const runtime=read('../src/lib/license-manager-client.js');
  const types=read('../src/lib/license-manager-client.d.ts');
- assert.match(adapter,/@\\/lib\\/license-manager-client\\.js/);
+ assert.ok(adapter.includes('@/lib/license-manager-client.js'));
  assert.match(runtime,/createLicenseClient/);
  assert.match(runtime,/export function requireFeature/);
  assert.match(runtime,/export function withLicense/);
