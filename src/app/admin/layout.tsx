@@ -41,9 +41,12 @@ const navigation:AdminNavGroup[]=[
 export default async function AdminLayout({children}:{children:React.ReactNode}) {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
- const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage"])];
+ const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage"])];
  const permitted=await userHasPermissions(user.id,permissionKeys);
- const groups=navigation.map(group=>({...group,items:group.items.filter(item=>permitted.has(item.permission))})).filter(group=>group.items.length>0);
+ const workforcePermissions=["time.clock","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
+ const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
+ const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage");
+ const groups=navigation.map(group=>({...group,items:group.items.filter(item=>item.href==="/admin/workforce"?canAccessWorkforce:item.href==="/admin/staff"?canAccessStaff:permitted.has(item.permission))})).filter(group=>group.items.length>0);
  const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
  const employeeTools=["jobs.complete","time.view","time.manage","time.clock","leave.view","payroll.view","assets.view","onboarding.view"].some(permission=>permitted.has(permission));
  if(!canSeeOverview&&!groups.length&&!employeeTools)redirect("/portal");
