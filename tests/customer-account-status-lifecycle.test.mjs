@@ -15,7 +15,7 @@ test("email verification changes only account status to active",()=>{
  assert.doesNotMatch(s,/primary_group:"customer"/);
 });
 test("manual verification changes unverified customer account to active",()=>{
- const s=read("../src/app/api/admin/customers/\[id\]/verify-email/route.ts");
+ const s=read("../src/app/api/admin/customers/[id]/verify-email/route.ts");
  assert.match(s,/eq\("primary_group","customer"\)\.eq\("status","unverified"\)/);
  assert.match(s,/email_verified_at:verifiedAt,status:"active"/);
  assert.doesNotMatch(s,/primary_group:"unverified"/);
@@ -47,7 +47,7 @@ test("login distinguishes a valid password on an unverified account from an inco
  assert.match(s,/user\.status!=="active"/);
 });
 test("manual email verification updates the customer account group",()=>{
- const s=read("../src/app/api/admin/customers/\[id\]/verify-email/route.ts");
+ const s=read("../src/app/api/admin/customers/[id]/verify-email/route.ts");
  assert.match(s,/update\(\{email_verified_at:verifiedAt,status:"active",primary_group:"customer"/);
  assert.match(s,/eq\("primary_group","customer"\)\.eq\("status","unverified"\)\.select/);
 });
