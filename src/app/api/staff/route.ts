@@ -2,7 +2,6 @@ import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} fro
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const roleKeys=["ceo_founder","website_development_specialist","owner","website_developer"];
-const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
@@ -20,8 +19,13 @@ export async function GET(){
  const {data:customers,error:customerError}=ids.length?await db.from("customers").select("id,user_id").eq("business_id",businessId).in("user_id",ids):{data:[],error:null};
  if(customerError)return jsonError("Could not match staff to their customer profiles.",500);
  const customerByUser=new Map((customers??[]).map(x=>[x.user_id,x.id]));
- const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id)}));
- return Response.json({employees:directory,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))).sort((a,b)=>staffRoleKeys.indexOf(a.role_key)-staffRoleKeys.indexOf(b.role_key))});
+ const [{data:grants},{data:catalogue}]=ids.length?await Promise.all([
+  db.from("user_permission_grants").select("user_id,permission_key,expires_at").in("user_id",ids).is("revoked_at",null).or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`),
+  db.from("permissions").select("permission_key,description").order("permission_key")
+ ]):[{data:[]},{data:[]}];
+ const grantsByUser=new Map<string,string[]>();for(const grant of grants??[]){const current=grantsByUser.get(grant.user_id)??[];current.push(grant.permission_key);grantsByUser.set(grant.user_id,current);}
+ const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),additional_permissions:grantsByUser.get(x.id)??[]}));
+ return Response.json({employees:directory,permissions:catalogue??[],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
@@ -33,8 +37,10 @@ export async function PATCH(request:Request){
   const db=database(),businessId=access.membership!.business_id;
   const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date,updated_at").eq("id",userId).eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").maybeSingle();
   if(!employee)return jsonError("Employee record not found.",404);
-  if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only an Owner or Website Developer can edit this account.",403);
-  const updates:any={updated_at:new Date().toISOString()};\n  const managesAccess=body.roleKey!==undefined||body.additionalPermissions!==undefined||body.department!==undefined||body.teamName!==undefined;\n  if(managesAccess){const permissionAccess=await authorizePermission("roles.manage");if(permissionAccess.response)return permissionAccess.response;}
+  if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can edit this account.",403);
+  const updates:any={updated_at:new Date().toISOString()};
+  const managesAccess=body.roleKey!==undefined||body.additionalPermissions!==undefined||body.department!==undefined||body.teamName!==undefined;
+  if(managesAccess){const permissionAccess=await authorizePermission("roles.manage");if(permissionAccess.response)return permissionAccess.response;}
   if(body.employmentStatus!==undefined){const value=String(body.employmentStatus);if(!employmentStatuses.includes(value))return jsonError("Select a valid employment status.");updates.employment_status=value;}
   if(body.employmentType!==undefined){const value=String(body.employmentType);if(!employmentTypes.includes(value))return jsonError("Select a valid employment type.");updates.employment_type=value;}
   if(body.jobTitle!==undefined){const value=String(body.jobTitle).trim();if(value.length>100)return jsonError("Job title must be 100 characters or fewer.");updates.job_title=value||null;}
