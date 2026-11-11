@@ -37,7 +37,7 @@ function clientFor(installationId:string,forceRecheck=false){
      if(error)throw error;
      return data?.cached_validation||null;
     },
-    async set(_key,value){
+    async set(_key:string,value:any){
      const {error}=await db.from("application_license").update({
       cached_validation:value,last_validated_at:new Date(Number(value.checkedAt||Date.now())).toISOString(),
       last_status:"valid",last_error_code:null,updated_at:new Date().toISOString()
