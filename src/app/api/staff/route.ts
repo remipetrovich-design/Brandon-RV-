@@ -2,6 +2,7 @@ import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} fro
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const roleKeys=["ceo_founder","website_development_specialist","owner","website_developer"];
+const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
@@ -47,7 +48,7 @@ export async function PATCH(request:Request){
   if(body.customTitle!==undefined){const value=String(body.customTitle).trim();if(value.length>100)return jsonError("Custom title must be 100 characters or fewer.");updates.custom_title=value||null;}
   if(body.department!==undefined){const value=String(body.department).trim();if(value.length>100)return jsonError("Department must be 100 characters or fewer.");updates.department=value||null;}
   if(body.teamName!==undefined){const value=String(body.teamName).trim();if(value.length>100)return jsonError("Team name must be 100 characters or fewer.");updates.team_name=value||null;}
-  if(body.roleKey!==undefined){const value=String(body.roleKey);const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",value).maybeSingle();if(!role||value==="customer")return jsonError("Select a valid staff role.");updates.user_role=value;}
+  if(body.roleKey!==undefined){const value=String(body.roleKey);const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",value).maybeSingle();if(!role||value==="customer")return jsonError("Select a valid staff role.");if(roleKeys.includes(value)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can assign executive access.",403);updates.user_role=value;}
   if(body.employeeNumber!==undefined){const value=String(body.employeeNumber).trim();if(value.length>50)return jsonError("Employee number must be 50 characters or fewer.");updates.employee_number=value||null;}
   if(body.startDate!==undefined){const value=String(body.startDate);if(value&&!isDate(value))return jsonError("Enter a valid start date.");updates.start_date=value||null;}
   if(body.endDate!==undefined){const value=String(body.endDate);if(value&&!isDate(value))return jsonError("Enter a valid end date.");updates.end_date=value||null;}
