@@ -116,7 +116,7 @@ test('does not use offline grace when licensing is deliberately disabled', async
 });
 
 test('reuses a recent successful validation only for the same licence key', async () => {
-  const fetch = fakeFetch('main');
+  const fetch = fakeFetch('main', { valid: true, code: 'LICENSE_VALID', runtime_policy: { validation_ttl_seconds: 120 } });
   const client = createLicenseClient({ ...opts(fetch), cacheValidForMs: 60_000 });
   await client.validate({ licenseKey: 'LIC-ONE' });
   const before = fetch.calls.filter(url => url.endsWith('/license/validate')).length;
@@ -125,4 +125,30 @@ test('reuses a recent successful validation only for the same licence key', asyn
   assert.equal(fetch.calls.filter(url => url.endsWith('/license/validate')).length, before);
   await client.validate({ licenseKey: 'LIC-TWO' });
   assert.equal(fetch.calls.filter(url => url.endsWith('/license/validate')).length, before + 1);
+});
+
+test('persists successful validation for later offline grace and ignores cache storage failures', async () => {
+  let stored = null;
+  let offline = false;
+  const fetch = async url => {
+    if (offline) throw new TypeError('network unavailable');
+    if (url.endsWith('/source-configuration')) return new Response(JSON.stringify(config('main')), { status: 200 });
+    if (url.endsWith('/license/health')) return new Response(JSON.stringify(health), { status: 200 });
+    if (url.endsWith('/license/validate')) return new Response(JSON.stringify({
+      valid: true, code: 'LICENSE_VALID',
+      runtime_policy: { allow_offline_grace: true, validation_ttl_seconds: 0, offline_grace_seconds: 60 }
+    }), { status: 200 });
+    return new Response('{}', { status: 404 });
+  };
+  const storage = { get: async () => stored, set: async (_key, value) => { stored = value; } };
+  await createLicenseClient({ ...opts(fetch), storage }).validate({ licenseKey: 'LIC-STORE' });
+  offline = true;
+  const nextInstance = createLicenseClient({ ...opts(fetch), storage });
+  const cached = await nextInstance.validate({ licenseKey: 'LIC-STORE' });
+  assert.equal(cached.offlineGrace, true);
+
+  offline = false;
+  const failingStorage = { set: async () => { throw new Error('storage unavailable'); } };
+  const stillValid = await createLicenseClient({ ...opts(fetch), storage: failingStorage }).validate({ licenseKey: 'LIC-STORE' });
+  assert.equal(stillValid.valid, true);
 });
