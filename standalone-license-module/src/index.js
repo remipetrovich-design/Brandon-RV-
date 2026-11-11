@@ -120,7 +120,7 @@ export function createLicenseClient(options = {}) {
   async function validate(input = {}) {
     const key = String(input.licenseKey || '').trim();
     const cacheMs = Math.max(0, Number(options.cacheValidForMs || 0));
-    if (cacheMs > 0 && lastValid && lastValid.valid === true && lastValid.licenseKeyFingerprint &&
+    if (cacheMs > 0 && lastValid && lastValid.valid === true && lastValid.keyFingerprint &&
         Date.now() - Number(lastValid.checkedAt || 0) < cacheMs) {
       const requestedFingerprint = await fingerprintKey(key);
       if (requestedFingerprint && requestedFingerprint === lastValid.keyFingerprint) return lastValid;
