@@ -23,7 +23,7 @@ The application-level guard is implemented in `src/proxy.ts` and protects websit
 
 The owner or Website Developer installs a key at `/license`. The server validates the key against the active Main/Fallback License Manager, then stores it encrypted with AES-256-GCM in `application_license`. The key is never returned to the browser. Configure the server-only Vercel environment variable `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` with a random secret of at least 32 characters. Never prefix it with `NEXT_PUBLIC_`. The Supabase migration `20261112090000_application_license.sql` creates the restricted storage table; the existing Supabase migration workflow applies it after a successful main-branch CI check.
 
-Brandon RV's live licensing implementation is integrated into the normal application source: `src/lib/license-manager-client.js` contains the in-app License Manager API client, `src/lib/brandon-license.ts` provides Brandon RV's encrypted storage and activation adapter, `/license` provides owner activation, `/admin/license` provides monitoring, and `src/proxy.ts` enforces the licence across protected pages and API routes. The application does not import or depend on `standalone-license-module/`. That folder is maintained as a separate, reusable package for future products. For another product, copy that folder and follow `standalone-license-module/integrations/nextjs/README.md`; register its own product ID and configure a separate stable business-installation ID and encryption secret. Do not copy Brandon RV's product ID, database table, auth implementation or secrets into another product.
+Brandon RV's live licensing implementation is integrated into the normal application source: `src/lib/license-manager-client.js` contains the portable License Manager client and enforcement helpers, `src/lib/brandon-license.ts` provides Brandon RV's encrypted storage and activation adapter, `/license` provides owner activation, `/admin/license` provides monitoring, and `src/proxy.ts` enforces the licence across protected pages and API routes. The original portable source has been archived as `standalone-license-module.zip` and removed from the runtime repository; the application does not import or depend on a separate module folder. For another product, use the retained ZIP archive and its Next.js integration guide; register its own product ID and configure a separate stable business-installation ID and encryption secret. Do not copy Brandon RV's product ID, database table, auth implementation or secrets into another product.
 
 ## Account and database model
 
@@ -84,6 +84,7 @@ See `.env.example` for the supported configuration:
 - `SUPABASE_URL` — Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only Supabase service-role key; never expose it with a `NEXT_PUBLIC_` prefix
 - `BRANDON_RV_SETUP_SECRET` — optional legacy owner-bootstrap secret
+- `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` — required server-only random secret (at least 32 characters) used to encrypt the installed application licence
 - `NEXT_PUBLIC_APP_URL` — public application origin used for account and invitation links; production is `https://brandon-rv.vercel.app`
 - `ORBITFS_MAIL_URL` — base URL of the connected OrbitFS Mail service
 - `BRANDONSRV_MAIL_API_KEY` — Brandon RV Mail System API key; keep server-side only
