@@ -103,7 +103,7 @@ test("worker completion is separately signed off and cannot bypass senior review
  assert.ok(migration.includes("v_job.worker_signed_off_by = p_actor_user_id"));
  assert.match(migration,/customer_approval_status = 'pending'/);
  assert.match(migration,/status = 'in_progress'/);
- assert.match(customer,/senior_approval_status/);
+ assert.match(customer,/rpc\("respond_to_completed_workcard"/);
 });
 
 test("staff work entry and completion endpoints require an accepted assignment",async()=>{
