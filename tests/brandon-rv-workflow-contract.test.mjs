@@ -203,3 +203,31 @@ test("Workcard test/check entries are non-billable",async()=>{
  assert.ok(helper.includes('["note", "test"]'));
  assert.ok(finish.includes('!["note","test"].includes(x.entry_type)'));
 });
+
+
+test("account and guest final Workcard decisions issue the invoice in the same database transaction",async()=>{
+ const migration=await source("../supabase/migrations/20261111170000_atomic_workcard_customer_decision.sql");
+ const account=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
+ const guest=await source("../src/app/api/tickets/[id]/work-order/route.ts");
+ assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_completed_workcard"));
+ assert.ok(migration.includes("FOR UPDATE"));
+ assert.ok(migration.includes("SET status = 'issued'"));
+ assert.ok(migration.includes("customer_approval_status = 'pending'"));
+ assert.ok(migration.includes("guest_access_token_hash = p_guest_token_hash"));
+ assert.ok(migration.includes("REVOKE ALL ON FUNCTION public.respond_to_completed_workcard"));
+ assert.ok(account.includes('rpc("respond_to_completed_workcard"'));
+ assert.ok(guest.includes('rpc("respond_to_completed_workcard"'));
+ assert.ok(!account.includes('.from("invoices").update'));
+ assert.ok(!guest.includes('.from("invoices").update'));
+});
+
+test("full payment archives a quote-request Jobcard and revokes its guest access",async()=>{
+ const migration=await source("../supabase/migrations/20261111160000_invoice_payment_and_jobcard_archive.sql");
+ const route=await source("../src/app/api/admin/invoices/[id]/payments/route.ts");
+ assert.ok(migration.includes("v_status = 'paid' AND v_enquiry_id IS NOT NULL"));
+ assert.ok(migration.includes("archived_at = v_now"));
+ assert.ok(migration.includes("guest_access_token_hash = NULL"));
+ assert.ok(migration.includes("guest_access_expires_at = NULL"));
+ assert.ok(migration.includes("Payment exceeds the outstanding balance."));
+ assert.ok(route.includes('rpc("record_invoice_payment"'));
+});
