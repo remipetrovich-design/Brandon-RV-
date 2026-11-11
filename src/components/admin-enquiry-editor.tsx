@@ -26,7 +26,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    if(!r.ok){setNotice(d.error??"Could not load Jobcard.");return;}
    setRecord(d.enquiry);setCustomer(d.customer??null);setVehicle(d.vehicle??null);setStaff(d.staff??[]);
    setAssigned((d.assignments??[]).map((x:any)=>x.staff_id));setHistory(d.history??[]);setAttachments(d.attachments??[]);
-   if(qr){const qd=await qr.json();if(qr.ok)setQuotes((qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId));}
+   if(qr){const qd=await qr.json();if(qr.ok){const ticketQuotes=(qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId);setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}}
   }catch{setNotice("Could not load Jobcard details.");}
  }
  useEffect(()=>{void load();},[enquiryId]);
@@ -63,7 +63,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
   {isQuoteRequest&&canManageQuotes&&<section className="portal-panel brv-ticket-quotes"><div className="portal-panel-heading"><div><span className="panel-kicker">QUOTES ATTACHED TO THIS JOBCARD</span><h2>Quote history</h2></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
    {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div><AdminQuoteTools quoteId={q.id}/></article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
    {quotePanelOpen&&<div className="brv-ticket-quote-create"><AdminCreateQuote initialEnquiryId={enquiryId} onCreated={()=>void load()}/></div>}
-   {acceptedQuote&&canManageJobs&&<div className="brv-ticket-workcard-create"><AdminCreateJob initialQuoteId={acceptedQuote.id}/></div>}
+   {acceptedQuote&&canManageJobs&&(workcard?<div className="brv-ticket-workcard-create"><span className="panel-kicker">WORKCARD CREATED</span><h3>{workcard.job_number} · {workcard.title}</h3><p>{pretty(workcard.status)} · Setup review: {pretty(workcard.workcard_review_status??"legacy_approved")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a></div>:<div className="brv-ticket-workcard-create"><AdminCreateJob initialQuoteId={acceptedQuote.id}/></div>)}
    {acceptedQuote&&!canManageJobs&&<p className="panel-footnote">The quote has been accepted. A user with Workcard management permission can create the Workcard.</p>}
   </section>}
   {isQuoteRequest&&canManageJobs&&!acceptedQuote&&<section className="portal-panel"><span className="panel-kicker">WORKCARD</span><p>A Workcard becomes available after the customer accepts a quote.</p></section>}
