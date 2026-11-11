@@ -1,6 +1,4 @@
-/** Brandon RV's in-app License Manager client.
- * This is application runtime code. The portable standalone package is maintained separately.
- */
+/** Portable, opt-in License Manager client. No V1 Base imports or side effects. */
 export const LICENSE_AUTHORITIES = Object.freeze({
   main: 'https://incendiarynetworks.cc/api/v1',
   fallback: 'https://lm.incendiarynetworks.cc/api/v1'
@@ -51,7 +49,9 @@ export function createLicenseClient(options = {}) {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetcher(url, {
-        ...init, cache: 'no-store', signal: controller.signal,
+        ...init,
+        cache: 'no-store',
+        signal: controller.signal,
         headers: { accept: 'application/json', ...(init.body ? { 'content-type': 'application/json' } : {}), ...(init.headers || {}) }
       });
       const body = await response.json().catch(() => ({}));
@@ -59,7 +59,9 @@ export function createLicenseClient(options = {}) {
         code: body.code || 'LICENSE_MANAGER_HTTP_ERROR', status: response.status, details: body
       });
       return body;
-    } finally { clearTimeout(timer); }
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async function detectAuthority({ force = false } = {}) {
@@ -75,8 +77,9 @@ export function createLicenseClient(options = {}) {
         if (!config.active || config.active.licenseApi !== baseUrl) continue;
         authoritativeConfigFound = true;
         let health;
-        try { health = await request(baseUrl + '/license/health'); }
-        catch (error) {
+        try {
+          health = await request(baseUrl + '/license/health');
+        } catch (error) {
           throw new LicenseError('The configured active License Manager is unavailable.', {
             code: 'ACTIVE_AUTHORITY_UNAVAILABLE', status: 503, details: { mode, cause: error.code || error.message }
           });
@@ -95,6 +98,7 @@ export function createLicenseClient(options = {}) {
         return currentAuthority;
       } catch (error) {
         lastError = error;
+        // Never promote the standby if authoritative config names an unhealthy manager.
         if (authoritativeConfigFound || error.code === 'ACTIVE_AUTHORITY_UNAVAILABLE' || error.code === 'LICENSING_AUTHORITY_DISABLED') throw error;
       }
     }
@@ -113,7 +117,9 @@ export function createLicenseClient(options = {}) {
   async function writeCache(value) {
     lastValid = value;
     if (storage && typeof storage.set === 'function') {
-      try { await storage.set(cacheKey, value); } catch { /* cache persistence is optional */ }
+      // Persistence is an offline-resilience enhancement, not a reason to reject
+      // a licence that the live authority has just accepted.
+      try { await storage.set(cacheKey, value); } catch { /* keep the in-memory success */ }
     }
   }
 
@@ -140,8 +146,9 @@ export function createLicenseClient(options = {}) {
     try {
       let selected = await detectAuthority({ force: true });
       let result;
-      try { result = await request(selected.baseUrl + '/license/validate', { method: 'POST', body: JSON.stringify(payload) }); }
-      catch (error) {
+      try {
+        result = await request(selected.baseUrl + '/license/validate', { method: 'POST', body: JSON.stringify(payload) });
+      } catch (error) {
         if (error.code !== 'SOURCE_MODE_STANDBY') throw error;
         selected = await detectAuthority({ force: true });
         result = await request(selected.baseUrl + '/license/validate', { method: 'POST', body: JSON.stringify(payload) });
@@ -168,7 +175,8 @@ export function createLicenseClient(options = {}) {
   }
 
   return Object.freeze({
-    product, component, installationId, detectAuthority, validate,
+    product, component, installationId, detectAuthority,
+    validate,
     activate: input => validate({ ...input, action: 'activate' }),
     checkIn: input => validate({ ...input, action: 'check_in' }),
     async enforce(input) {
@@ -177,4 +185,43 @@ export function createLicenseClient(options = {}) {
       return result;
     }
   });
+}
+
+// Framework-neutral enforcement helpers, woven into the application client.
+export function requireFeature(validation, feature) {
+  if (!validation || validation.valid !== true) {
+    throw new LicenseError('An active licence is required.', { code: 'LICENSE_REQUIRED', status: 403 });
+  }
+  const components = validation.components && typeof validation.components === 'object' ? validation.components : {};
+  const entitlements = validation.entitlements && typeof validation.entitlements === 'object' ? validation.entitlements : {};
+  if (components[feature] && components[feature].allowed === true) return true;
+  if (entitlements[feature] === true || (entitlements[feature] && entitlements[feature].allowed === true)) return true;
+  if (feature === validation.component || feature === validation.product) return true;
+  throw new LicenseError('This licence does not include feature: ' + feature, {
+    code: 'FEATURE_NOT_ENTITLED', status: 403, details: { feature }
+  });
+}
+export function withLicense(client, handler, options = {}) {
+  if (!client || typeof client.enforce !== 'function') throw new TypeError('A license client is required.');
+  if (typeof handler !== 'function') throw new TypeError('A handler function is required.');
+  return async function licensedHandler(context) {
+    const input = typeof options.getLicenseInput === 'function' ? await options.getLicenseInput(context) : context && context.license;
+    const validation = await client.enforce(input || {});
+    if (options.feature) requireFeature(validation, options.feature);
+    return handler(context, validation);
+  };
+}
+export function licenseMiddleware(client, options = {}) {
+  return async function licenseManagerMiddleware(req, res, next) {
+    try {
+      const input = typeof options.getLicenseInput === 'function' ? await options.getLicenseInput(req) : req && req.body && req.body.license;
+      const validation = await client.enforce(input || {});
+      if (options.feature) requireFeature(validation, options.feature);
+      req.license = validation;
+      return next();
+    } catch (error) {
+      const status = Number(error.status || 403);
+      return res.status(status).json({valid:false,code:error.code||'LICENSE_REQUIRED',error:error.message||'Licence enforcement failed'});
+    }
+  };
 }
