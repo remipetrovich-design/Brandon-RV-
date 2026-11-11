@@ -3,16 +3,23 @@ import {getApplicationLicenseState} from "@/lib/brandon-license";
 
 const allowedPages=new Set([
  "/license",
- "/admin/license",
  "/portal/sign-in",
- "/portal/register",
- "/portal/verify-email",
  "/portal/forgot-password",
  "/portal/reset-password",
- "/portal/accept-staff-invitation"
+ "/portal/verify-email",
+ "/admin/license"
+]);
+const allowedAuthApis=new Set([
+ "/api/auth/login",
+ "/api/auth/logout",
+ "/api/auth/me",
+ "/api/auth/forgot-password",
+ "/api/auth/reset-password",
+ "/api/auth/verify-email"
 ]);
 function isAllowedWithoutLicence(pathname:string){
- return allowedPages.has(pathname)||pathname.startsWith("/api/license/")||pathname==="/api/license"||pathname==="/api/admin/license"||pathname.startsWith("/api/auth/");
+ return allowedPages.has(pathname)||pathname==="/api/license"||pathname.startsWith("/api/license/")||
+  pathname==="/api/admin/license"||allowedAuthApis.has(pathname);
 }
 export async function proxy(request:NextRequest){
  const pathname=request.nextUrl.pathname;
