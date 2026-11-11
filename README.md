@@ -14,6 +14,17 @@ Brandon RV is a mobile caravan and motorhome interior repair and accessories bus
 
 The application is built with Next.js 16, React 19, TypeScript and Supabase.
 
+
+## Application licensing
+
+Brandon RV is registered with the central License Manager as product ID `brandon-rv`. One licence represents the Brandon RV business installation; it is not assigned per employee or customer account. The existing `users`, customer, employee, session, vehicle, job, quote, invoice and business records remain independent of licence state.
+
+The application-level guard is implemented in `src/proxy.ts` and protects website pages and API routes. When the licence is missing, invalid, expired, suspended, revoked, or the configured licensing authority is unavailable, protected requests are blocked. The `/license` page and sign-in/account recovery routes remain reachable so an owner can restore access. API requests receive HTTP 423 while the licence is not valid.
+
+The owner or Website Developer installs a key at `/license`. The server validates the key against the active Main/Fallback License Manager, then stores it encrypted with AES-256-GCM in `application_license`. The key is never returned to the browser. Configure the server-only Vercel environment variable `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` with a random secret of at least 32 characters. Never prefix it with `NEXT_PUBLIC_`. The Supabase migration `20261112090000_application_license.sql` creates the restricted storage table; the existing Supabase migration workflow applies it after a successful main-branch CI check.
+
+The reusable, product-independent integration source remains in `standalone-license-module/`. For the next product, copy that folder and follow `standalone-license-module/integrations/nextjs/README.md`; register the new product ID and configure a separate stable business-installation ID and encryption secret. Do not copy Brandon RV's product ID, database table, auth implementation or secrets into another product.
+
 ## Account and database model
 
 The \`public.users\` table is the single account identity table. Every person has one customer account, one login and \`primary_group = customer\`. The nullable \`user_role\` field defaults to \`NULL\`, which means customer-only access. Owner, Website Developer and other employee roles are assigned directly to the user account through the global user-role catalogue.
