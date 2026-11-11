@@ -30,7 +30,8 @@ const navigation:AdminNavGroup[]=[
   {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
   {label:"Settings",href:"/admin/settings",permission:"business.settings.manage",icon:"settings"},
   {label:"Email templates",href:"/admin/email-templates",permission:"business.settings.manage",icon:"settings"},
-  {label:"Integrations",href:"/admin/integrations",permission:"business.settings.manage",icon:"business"}
+  {label:"Integrations",href:"/admin/integrations",permission:"business.settings.manage",icon:"business"},
+  {label:"Application licence",href:"/license",permission:"business.settings.manage",icon:"access"}
  ]}
 ];
 export default async function AdminLayout({children}:{children:React.ReactNode}) {
