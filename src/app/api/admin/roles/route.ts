@@ -25,7 +25,7 @@ export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;if(!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can manage role definitions.",403);
  try{const body=await request.json();const key=String(body.groupId??"");const keys=readKeys(body.permissions);if(!/^[a-z0-9_]{2,60}$/.test(key))return jsonError("Invalid user role.");
  const db=database();const {data:role}=await db.from("user_roles").select("role_key,name,is_system").eq("role_key",key).maybeSingle();if(!role)return jsonError("User role not found.",404);
- if(["owner","website_developer","ceo_founder","website_development_specialist"].includes(key))return jsonError("CEO / Founder and Website Development Specialist always retain full access.",403);
+ if(["owner","website_developer","ceo_founder","website_development_specialist"].includes(key))return jsonError("CEO / Founder and Website Development Specialist always retain full access.",403);if(key==="customer")return jsonError("Customer is the permanent default account role and cannot be changed.",403);
  const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
  const {error:saveError}=await db.rpc("set_user_role_permissions",{p_role_key:key,p_permission_keys:keys});if(saveError)return jsonError("Could not update role permissions.",500);
  return Response.json({success:true});
