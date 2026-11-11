@@ -12,7 +12,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  const {data:account,error:accountError}=await db.from("users").select("id,email,primary_group,status").eq("id",id).eq("business_id",businessId).eq("primary_group","customer").eq("status","unverified").maybeSingle();
  if(accountError||!account)return jsonError("Unverified account not found.",404);
  const verifiedAt=new Date().toISOString();
- const {data:updated,error}=await db.from("users").update({email_verified_at:verifiedAt,status:"active",primary_group:"customer",updated_at:verifiedAt}).eq("id",id).eq("primary_group","unverified").select("id").maybeSingle();
+ const {data:updated,error}=await db.from("users").update({email_verified_at:verifiedAt,status:"active",primary_group:"customer",updated_at:verifiedAt}).eq("id",id).eq("primary_group","customer").eq("status","unverified").select("id").maybeSingle();
  if(error)return jsonError("Could not verify the customer email.",500);
  if(!updated)return jsonError("This account has already been verified or is unavailable.",409);
  const {error:auditError}=await db.from("audit_events").insert({business_id:businessId,actor_user_id:user.id,action:"customer.email_manually_verified",entity_type:"user",entity_id:id,details:{email:account.email,verified_at:verifiedAt,verification_method:"manual",previous_status:account.status,new_status:"active"}});
