@@ -15,7 +15,7 @@ export async function createSession(userId:string,request?:Request){const db=dat
 export async function currentUser(){
  const jar=await cookies();const token=jar.get(SESSION_COOKIE)?.value;if(!token)return null;
  const db=database();const {data:session}=await db.from("user_sessions").select("id,user_id,expires_at").eq("token_hash",digest(token)).gt("expires_at",new Date().toISOString()).maybeSingle();if(!session)return null;
- const {data:user}=await db.from("users").select("id,email,full_name,first_name,last_name,date_of_birth,phone,account_type,status,email_verified_at,force_password_change,primary_group,business_id,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",session.user_id).eq("status","active").neq("primary_group","unverified").maybeSingle();
+ const {data:user}=await db.from("users").select("id,email,full_name,first_name,last_name,date_of_birth,phone,account_type,status,email_verified_at,force_password_change,primary_group,business_id,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",session.user_id).eq("status","active").maybeSingle();
  if(!user)return null;return user;
 }
 export async function currentMembership(userId:string){
