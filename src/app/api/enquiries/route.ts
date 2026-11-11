@@ -37,6 +37,11 @@ export async function POST(request:Request){
   const year=String(form.get("year")??"").trim();const requestedVehicleId=String(form.get("vehicleId")??"").trim();const location=String(form.get("location")??"").trim();
   const workType=String(form.get("workType")??"").trim();const description=String(form.get("description")??"").trim();const preferred=String(form.get("preferredContact")??"email");
   if((!requestedVehicleId&&!vehicleType)||!location||location.length>160||!workType||description.length<10||description.length>5000)return jsonError("Complete the vehicle, location and job description fields.");
+  const assessmentRequest=workType==="Other / unsure — assessment required";
+  if(!assessmentRequest){
+   const {data:service}=await db.from("services").select("id,approval_status,is_active,is_published").eq("business_id",business.id).eq("name",workType).maybeSingle();
+   if(!service||service.approval_status!=="approved_for_launch"||!service.is_active||!service.is_published)return jsonError("That service is not currently approved for online requests. Choose another approved service or submit an assessment request.",409);
+  }
   const files=form.getAll("files").filter((x):x is File=>x instanceof File&&x.size>0);
   if(files.length>8||files.some(f=>f.size>10*1024*1024||!allowedTypes.has(f.type)))return jsonError("Attach up to 8 JPG, PNG, WEBP or PDF files. Each file must be under 10 MB.");
   let vehicleId:string|null=null;let vehicleDescription=[vehicleType,vehicle,year].filter(Boolean).join(" · ");
@@ -44,7 +49,7 @@ export async function POST(request:Request){
    if(requestedVehicleId){const {data:existingVehicle}=await db.from("vehicles").select("id,make,model,year,vehicle_type").eq("id",requestedVehicleId).eq("customer_id",account.id).maybeSingle();if(!existingVehicle)return jsonError("Select one of your saved vehicles.");vehicleId=existingVehicle.id;vehicleDescription=[existingVehicle.vehicle_type,existingVehicle.make,existingVehicle.model,existingVehicle.year].filter(Boolean).join(" · ");}
    else if(vehicle){const {data:savedVehicle}=await db.from("vehicles").insert({business_id:business.id,customer_id:account.id,make:vehicle.slice(0,80),year:year&&/^\d{4}$/.test(year)?Number(year):null,vehicle_type:vehicleType,notes:"Added from Request a Quote"}).select("id").single();vehicleId=savedVehicle?.id??null;}
   }else guestToken=randomBytes(32).toString("base64url");
-  const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,location,vehicle_description:vehicleDescription,vehicle_id:vehicleId,requested_service:workType,description,preferred_contact:["email","phone","sms"].includes(preferred)?preferred:"email",status:"new",source:"website",request_type:"quote_request",request_number:reference,guest_access_token_hash:guestToken?digest(guestToken):null,guest_access_expires_at:guestToken?new Date(Date.now()+90*86400000).toISOString():null}).select("id").single();
+  const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,location,vehicle_description:vehicleDescription,vehicle_id:vehicleId,requested_service:workType,description,preferred_contact:["email","phone","sms"].includes(preferred)?preferred:"email",status:assessmentRequest?"reviewing":"new",stage:assessmentRequest?"assessment_required":"new",source:"website",request_type:"quote_request",request_number:reference,guest_access_token_hash:guestToken?digest(guestToken):null,guest_access_expires_at:guestToken?new Date(Date.now()+90*86400000).toISOString():null}).select("id").single();
   if(error||!enquiry)return jsonError("Could not submit your quote request. Please try again.",500);
   const uploaded:string[]=[];
   for(const file of files){
