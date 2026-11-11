@@ -109,19 +109,28 @@ export function createLicenseClient(options = {}) {
   }
 
   async function readCache() {
-    if (storage && typeof storage.get === 'function') return (await storage.get(cacheKey)) || lastValid;
+    if (storage && typeof storage.get === 'function') {
+      try { return (await storage.get(cacheKey)) || lastValid; } catch { return lastValid; }
+    }
     return lastValid;
   }
   async function writeCache(value) {
     lastValid = value;
-    if (storage && typeof storage.set === 'function') await storage.set(cacheKey, value);
+    if (storage && typeof storage.set === 'function') {
+      // Persistence is an offline-resilience enhancement, not a reason to reject
+      // a licence that the live authority has just accepted.
+      try { await storage.set(cacheKey, value); } catch { /* keep the in-memory success */ }
+    }
   }
 
   async function validate(input = {}) {
     const key = String(input.licenseKey || '').trim();
     const cacheMs = Math.max(0, Number(options.cacheValidForMs || 0));
-    if (cacheMs > 0 && lastValid && lastValid.valid === true && lastValid.keyFingerprint &&
-        Date.now() - Number(lastValid.checkedAt || 0) < cacheMs) {
+    const lastPolicy = policyOf(lastValid);
+    const managerTtl = Number(lastPolicy.validation_ttl_seconds || lastPolicy.validationTtlSeconds || 0);
+    const effectiveCacheMs = managerTtl > 0 ? Math.min(cacheMs, managerTtl * 1000) : 0;
+    if (effectiveCacheMs > 0 && lastValid && lastValid.valid === true && lastValid.keyFingerprint &&
+        Date.now() - Number(lastValid.checkedAt || 0) < effectiveCacheMs) {
       const requestedFingerprint = await fingerprintKey(key);
       if (requestedFingerprint && requestedFingerprint === lastValid.keyFingerprint) return lastValid;
     }
