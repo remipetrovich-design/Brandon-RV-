@@ -11,7 +11,7 @@ const navigation=[
  {href:"/general-enquiry",label:"General Enquiry",matches:["/general-enquiry","/contact"]}
 ];
 
-export default function SiteHeader({brandLine,isLoggedIn}:{brandLine:string;isLoggedIn:boolean}) {
+export default function SiteHeader({brandLine}:{brandLine:string}) {
  const pathname=usePathname()??"/";const [menuOpen,setMenuOpen]=useState(false);
  const appArea=["/portal","/staff","/admin","/dev","/initial-owner-setup"].some(base=>pathname===base||pathname.startsWith(base+"/"));
  if(appArea)return null;
@@ -30,7 +30,7 @@ export default function SiteHeader({brandLine,isLoggedIn}:{brandLine:string;isLo
      })}
     </nav>
     <div className="header-actions">
-     {isLoggedIn?<Link className="header-portal-link" href="/portal" onClick={()=>setMenuOpen(false)}>Customer portal</Link>:<details className="header-auth-menu"><summary>Login / Register</summary><div className="header-auth-popout"><Link href="/portal/sign-in" onClick={()=>setMenuOpen(false)}>Sign in</Link><Link href="/portal/register" onClick={()=>setMenuOpen(false)}>Create an account</Link></div></details>}
+     <details className="header-auth-menu"><summary>Account</summary><div className="header-auth-popout"><Link href="/portal" onClick={()=>setMenuOpen(false)}>Customer portal</Link><Link href="/portal/sign-in" onClick={()=>setMenuOpen(false)}>Sign in</Link><Link href="/portal/register" onClick={()=>setMenuOpen(false)}>Create an account</Link></div></details>
      <Link className="header-quote-link" href="/request-quote" onClick={()=>setMenuOpen(false)}>Request a quote <span aria-hidden="true">→</span></Link>
     </div>
    </div>
