@@ -1,4 +1,5 @@
 import {redirect} from "next/navigation";
+import type {ReactNode} from "react";
 import {currentUser,currentMembership,userHasPermissions} from "@/lib/auth";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 import "./admin-density.css";
@@ -38,7 +39,7 @@ const navigation:AdminNavGroup[]=[
   {label:"Application licence",href:"/admin/license",permission:"business.settings.manage",icon:"access"}
  ]}
 ];
-export default async function AdminLayout({children}:{children:React.ReactNode}) {
+export default async function AdminLayout({children}:{children:ReactNode}) {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
  const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage"])];
