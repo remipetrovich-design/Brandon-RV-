@@ -422,3 +422,26 @@
   white-space:pre-wrap;
   overflow-wrap:anywhere;
 }
+
+
+.brv-admin-frame .brv-ticket-tabs [role="tab"] span {
+  display:inline-grid;
+  min-width:19px;
+  height:19px;
+  margin-left:6px;
+  padding:0 5px;
+  place-items:center;
+  border-radius:10px;
+  background:#e5edf4;
+  color:#52677c;
+  font-size:10px;
+  font-weight:800;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"][aria-selected="true"] span {
+  background:#d4e7f6;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-attachments,
+.brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-history {
+  width:100%;
+}
