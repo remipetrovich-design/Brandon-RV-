@@ -51,5 +51,5 @@ export async function authorizePermission(permission:string){
 }
 export async function destroySession(){const jar=await cookies();const token=jar.get(SESSION_COOKIE)?.value;if(token){const db=database();await db.from("user_sessions").delete().eq("token_hash",digest(token));}jar.delete(SESSION_COOKIE);}
 export async function passwordHash(password:string){return argon2.hash(password,{type:argon2.argon2id,memoryCost:19456,timeCost:2,parallelism:1});}
-export async function passwordMatches(password:string,storedHash:string|null){if(!storedHash)return false;try{return await argon2.verify(password,storedHash);}catch{return false;}}
+export async function passwordMatches(password:string,storedHash:string|null){if(!storedHash)return false;try{return await argon2.verify(storedHash,password);}catch{return false;}}
 export function jsonError(message:string,status=400){return Response.json({error:message},{status});}
