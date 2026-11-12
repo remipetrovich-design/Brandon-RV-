@@ -410,3 +410,15 @@
     grid-template-columns:1fr;
   }
 }
+
+
+.brv-admin-frame .brv-admin-workcard-scope {
+  display:block;
+  max-width:900px;
+  margin-top:4px;
+  color:#52677c;
+  font-size:11px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
