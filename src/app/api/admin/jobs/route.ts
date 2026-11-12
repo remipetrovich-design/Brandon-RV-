@@ -37,12 +37,15 @@ export async function POST(request:Request){
   const defaultScope=(quote.quote_items??[]).map((item:any)=>item.description).join("\n")||enquiry.description;
   const scope=String(body.scope??defaultScope).trim().slice(0,5000);
   if(title.length<3||scope.length<3)return jsonError("Enter a Workcard title and approved scope of work.");
+  // jobs.job_number is NOT NULL and has no database default. Generate it here.
+  const jobNumber="BRV-WC-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+crypto.randomUUID().replaceAll("-","").slice(0,8).toUpperCase();
   const {data:job,error}=await db.from("jobs").insert({
    business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,
    user_id:quote.user_id??enquiry.user_id??null,guest_name:enquiry.contact_name,guest_email:enquiry.email,
-   quote_id:quote.id,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
+   quote_id:quote.id,job_number:jobNumber,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
   }).select("id,job_number,title,status,senior_approval_status,quote_id").single();
   if(error||!job){
+   console.error("Workcard insert failed",error);
    if(error?.code==="23505"){
     const {data:duplicate}=await db.from("jobs").select("id,job_number,title,status,senior_approval_status,quote_id").eq("business_id",businessId).eq("quote_id",quote.id).maybeSingle();
     if(duplicate)return Response.json({job:duplicate,alreadyCreated:true});
@@ -51,5 +54,8 @@ export async function POST(request:Request){
   }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review"}});
   return Response.json({job},{status:201});
- }catch{return jsonError("Could not create Workcard.",500);}
+ }catch(error){
+  console.error("Workcard creation failed",error);
+  return jsonError("Could not create Workcard.",500);
+ }
 }
