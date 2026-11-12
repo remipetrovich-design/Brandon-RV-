@@ -7,7 +7,7 @@ async function guestTicket(id:string,token:string){
 }
 export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
  const {id}=await params;const token=new URL(request.url).searchParams.get("guestToken")??"";const {db,enquiry}=await guestTicket(id,token);if(!enquiry)return jsonError("Request not found or guest access expired.",404);
- const {data:quotes,error}=await db.from("quotes").select("id,quote_number,status,revision_number,issue_date,expiry_date,subtotal,tax_amount,total,notes,terms,quote_items(id,description,quantity,unit_price,line_total)").eq("enquiry_id",id).order("revision_number",{ascending:false});
+ const {data:quotes,error}=await db.from("quotes").select("id,quote_number,status,revision_number,quote_kind,variation_reason,job_id,issue_date,expiry_date,subtotal,tax_amount,total,notes,terms,quote_items(id,description,quantity,unit_price,line_total,item_type)").eq("enquiry_id",id).order("revision_number",{ascending:false});
  if(error)return jsonError("Could not load your quotes.",500);
  const [{data:vehicle},{data:appointments}]=await Promise.all([
   enquiry.vehicle_id?db.from("vehicles").select("make,model,year,vehicle_type,registration").eq("id",enquiry.vehicle_id).maybeSingle():Promise.resolve({data:null}),
