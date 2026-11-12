@@ -71,9 +71,9 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
     {vehicle&&<div className="brv-ticket-customer-grid"><div><small>Vehicle</small><strong>{[vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(" ")||"Vehicle details incomplete"}</strong><span>{vehicle.vehicle_type??"Vehicle type not recorded"}</span></div><div><small>Registration</small><strong>{vehicle.registration||"Not supplied"}</strong></div><div><small>VIN / chassis</small><strong>{vehicle.vin||"Not supplied"}</strong></div></div>}
     {vehicle?.notes&&<div className="brv-ticket-vehicle-notes"><span className="panel-kicker">VEHICLE NOTES</span><p>{vehicle.notes}</p></div>}
     {customer&&<div className="brv-ticket-linked-customer"><span className="panel-kicker">LINKED CUSTOMER RECORD</span><h3>{customer.full_name}</h3><p>{[customer.address,customer.suburb,customer.state,customer.postcode].filter(Boolean).join(", ")||"No postal address recorded"}</p><a className="text-link" href={"/admin/customers/"+customer.id}>Open customer record →</a></div>}
-    {!customer&&canManageEnquiries&&<AdminEnquiryTools enquiryId={enquiryId} customerId={record.customer_id??null}/>}
     {canManageEnquiries&&<button className="button button-primary" disabled={busy}>{busy?"Saving…":"Save customer details"}</button>}
    </form>
+   {!customer&&canManageEnquiries&&<AdminEnquiryTools enquiryId={enquiryId} customerId={record.customer_id??null}/>}
   </section>
 
   <section id="brv-panel-request" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-request" hidden={selectedTab!=="request"}>
