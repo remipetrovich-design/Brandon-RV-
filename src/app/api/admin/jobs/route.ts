@@ -35,7 +35,7 @@ export async function POST(request:Request){
   const {data:job,error}=await db.from("jobs").insert({
    business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,
    user_id:quote.user_id??enquiry.user_id??null,guest_name:enquiry.contact_name,guest_email:enquiry.email,
-   quote_id:quote.id,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted"
+   quote_id:quote.id,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
   }).select("id,job_number,title,status,senior_approval_status,quote_id").single();
   if(error||!job){
    if(error?.code==="23505"){
