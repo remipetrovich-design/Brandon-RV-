@@ -17,7 +17,7 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  let query=access.db.from("customer_messages").select("id,sender_type,sender_user_id,guest_name,message,is_internal,created_at").eq("enquiry_id",id).order("created_at",{ascending:true});
  if(access.mode!=="staff")query=query.eq("is_internal",false);
  const {data,error}=await query;if(error)return jsonError("Could not load ticket messages.",500);
- return Response.json({messages:data??[],mode:access.mode});
+ return Response.json({messages:data??[],mode:access.mode,viewerUserId:access.user?.id??null});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
