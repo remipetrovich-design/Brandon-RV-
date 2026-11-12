@@ -194,15 +194,16 @@ test("Workcard photo evidence is private by default and customer-visible only by
  assert.ok(customer.includes("attachments.map"));
 });
 
-test("guest and account booking requests use one quote and the configured availability rules",async()=>{
+test("only registered customer accounts can request bookings",async()=>{
  const account=await source("../src/app/api/portal/appointments/route.ts");
  const guest=await source("../src/app/api/tickets/[id]/booking-request/route.ts");
  assert.ok(account.includes("existingBooking"));
- assert.ok(guest.includes("existingBooking"));
- assert.ok(guest.includes("working_days"));
- assert.ok(guest.includes("unavailable_dates"));
- assert.ok(guest.includes("travel_buffer_minutes"));
- assert.ok(guest.includes("appointments"));
+ assert.ok(account.includes("working_days"));
+ assert.ok(account.includes("unavailable_dates"));
+ assert.ok(account.includes("travel_buffer_minutes"));
+ assert.ok(account.includes("appointments"));
+ assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
+ assert.match(guest,/return jsonError\(.*403\)/);
 });
 
 test("Workcard test/check entries are non-billable",async()=>{
@@ -226,10 +227,9 @@ test("account and guest final Workcard decisions issue the invoice in the same d
  assert.ok(migration.includes("guest_access_token_hash = p_guest_token_hash"));
  assert.ok(migration.includes("REVOKE ALL ON FUNCTION public.respond_to_completed_workcard"));
  assert.ok(account.includes('rpc("respond_to_completed_workcard"'));
- assert.ok(guest.includes('rpc("respond_to_completed_workcard"'));
- assert.ok(guest.includes("invoice_number,subtotal,tax_amount,total,status"));
+ assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
+ assert.match(guest,/return jsonError\(.*403\)/);
  assert.ok(!account.includes('.from("invoices").update'));
- assert.ok(!guest.includes('.from("invoices").update'));
 });
 
 test("full payment archives a quote-request Jobcard and revokes its guest access",async()=>{
