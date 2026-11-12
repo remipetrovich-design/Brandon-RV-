@@ -1,7 +1,7 @@
 "use client";
 import {FormEvent,useCallback,useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
-type Quote={id:string;quote_number:string;total:number;revision_number:number;users:{full_name:string}|null;enquiries:{contact_name:string;request_number:string;request_type:string}|null;quote_items:{description:string;quantity:number;unit_price:number}[];existingWorkcard?:{id:string;job_number:string;title:string;status:string;senior_approval_status:string}|null};
+type Quote={id:string;quote_number:string;total:number;revision_number:number;users:{full_name:string}|null;enquiries:{contact_name:string;request_number:string;request_type:string}|null;quote_items:{description:string;quantity:number;unit_price:number}[];existingWorkcard?:{id:string;job_number:string;title:string;status:string;workcard_review_status:string}|null};
 const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v||0));
 export default function AdminCreateJob({initialQuoteId=""}:{initialQuoteId?:string}){
  const [quotes,setQuotes]=useState<Quote[]>([]),[quoteId,setQuoteId]=useState(initialQuoteId),[title,setTitle]=useState(""),[scope,setScope]=useState(""),[notice,setNotice]=useState(""),[loadError,setLoadError]=useState(""),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
@@ -21,7 +21,7 @@ export default function AdminCreateJob({initialQuoteId=""}:{initialQuoteId?:stri
   await loadQuotes();router.refresh();
  }catch{setNotice("Could not create Workcard.");}finally{setBusy(false);}}
  const selected=quotes.find(q=>q.id===quoteId);
- if(selected?.existingWorkcard)return <section className="portal-panel"><span className="panel-kicker">WORKCARD CREATED</span><h3>{selected.existingWorkcard.job_number} · {selected.existingWorkcard.title}</h3><p>{selected.existingWorkcard.status.replaceAll("_"," ")} · Setup review: {selected.existingWorkcard.senior_approval_status.replaceAll("_"," ")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a></section>;
+ if(selected?.existingWorkcard)return <section className="portal-panel"><span className="panel-kicker">WORKCARD CREATED</span><h3>{selected.existingWorkcard.job_number} · {selected.existingWorkcard.title}</h3><p>{selected.existingWorkcard.status.replaceAll("_"," ")} · Setup review: {selected.existingWorkcard.workcard_review_status.replaceAll("_"," ")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a></section>;
  return <section className="portal-panel"><span className="panel-kicker">NEW WORKCARD</span><h2>Create a Workcard from an accepted quote</h2>
   {loading?<p className="panel-footnote" role="status">Loading accepted quotes…</p>:loadError?<div className="inline-notice" role="alert"><p>{loadError}</p><button type="button" className="button button-secondary" onClick={()=>void loadQuotes()}>Retry loading accepted quotes</button></div>:quotes.length?<form className="auth-form" onSubmit={submit}>
    <label>Customer-accepted quote<select value={quoteId} onChange={e=>chooseQuote(e.target.value)} required><option value="">Select an accepted quote</option>{quotes.map(q=><option key={q.id} value={q.id}>{q.quote_number} · {q.enquiries?.request_number??"Jobcard"} · {q.users?.full_name??q.enquiries?.contact_name??"Customer"} · {money(q.total)}</option>)}</select></label>
