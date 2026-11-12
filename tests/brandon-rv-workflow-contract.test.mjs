@@ -59,9 +59,10 @@ test("a Workcard is created from an accepted quote before booking and only once"
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
- const page=await source("../src/app/admin/enquiries/[id]/page.tsx");
- assert.match(page,/\["customer_enquiry","quote_request"\]\.includes\(item\.request_type\)/);
- assert.match(page,/General enquiries are handled by phone or email/);
+ const editor=await source("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/\["customer_enquiry","quote_request"\]\.includes\(record\.request_type\)/);
+ assert.match(editor,/record\.request_type==="general_enquiry"/);
+ assert.match(editor,/no customer reply composer/);
 });
 
 test("quotes can only be prepared for active Quote Request Jobcards",async()=>{
