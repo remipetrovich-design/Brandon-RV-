@@ -13,7 +13,7 @@ export default function AdminCreateJob({initialQuoteId="",onCreated}:{initialQuo
   finally{setLoading(false);}
  },[initialQuoteId]);
  useEffect(()=>{void loadQuotes();},[loadQuotes]);
- useEffect(()=>{if(!quoteId)return;const q=quotes.find(item=>item.id===quoteId);if(!q)return;setTitle(current=>current||("Work for "+q.quote_number));setScope(current=>current||((q.quote_items??[]).map(item=>item.description+" (Qty "+item.quantity+" × "+money(item.unit_price)+")").join("\\n")));},[quoteId,quotes]);
+ useEffect(()=>{if(!quoteId)return;const q=quotes.find(item=>item.id===quoteId);if(!q)return;setTitle(current=>current||("Work for "+q.quote_number));setScope(current=>current||((q.quote_items??[]).map(item=>item.description+" (Qty "+item.quantity+" × "+money(item.unit_price)+")").join("\n")));},[quoteId,quotes]);
  function chooseQuote(id:string){setQuoteId(id);const q=quotes.find(item=>item.id===id);if(q){setTitle("Work for "+q.quote_number);setScope((q.quote_items??[]).map(item=>item.description+" (Qty "+item.quantity+" × "+money(item.unit_price)+")").join("\n"));}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");try{
   const r=await fetch("/api/admin/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quoteId,title,scope})}),d=await r.json();
