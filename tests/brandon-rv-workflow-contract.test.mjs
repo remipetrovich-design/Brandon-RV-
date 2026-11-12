@@ -244,13 +244,13 @@ test("full payment archives a quote-request Jobcard and revokes its guest access
 });
 
 
-test("Quote Request detail is organised into the three planned workspace tabs",async()=>{
+test("request workspace separates customer, request, conversation, attachments, activity and quote",async()=>{
  const editor=await source("../src/components/admin-enquiry-editor.tsx");
  assert.match(editor,/role="tablist"/);
- assert.match(editor,/Customer &amp; Vehicle/);
- assert.match(editor,/Job Request/);
- assert.match(editor,/Quote/);
+ for(const tab of ["Customer &amp; Vehicle","Job Request","Conversation","Attachments","Activity","Quote"])assert.ok(editor.includes(tab),tab);
+ for(const panel of ["brv-panel-customer","brv-panel-request","brv-panel-conversation","brv-panel-attachments","brv-panel-activity","brv-panel-quote"])assert.ok(editor.includes(panel),panel);
  assert.match(editor,/role="tabpanel"/);
+ assert.match(editor,/record\.request_type==="general_enquiry"/);
 });
 
 
