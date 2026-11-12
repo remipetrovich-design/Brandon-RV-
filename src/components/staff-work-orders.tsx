@@ -48,6 +48,7 @@ export default function StaffWorkOrders(){
   }
  }
  const pretty=(v:string)=>v.replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase());
+ const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(value||0));
 
  return <section className="portal-panel brv-workcards-panel">
   <div className="portal-panel-heading"><div><span className="panel-kicker">YOUR ASSIGNED WORK</span><h2>Workcards</h2><p>Open one Workcard at a time. Record the work as you complete it.</p></div><button type="button" className="button button-secondary" onClick={()=>void load()} disabled={busy}>Refresh</button></div>
