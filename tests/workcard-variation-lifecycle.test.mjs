@@ -3,45 +3,48 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 const source=path=>readFile(new URL(path,import.meta.url),"utf8");
 
-test("guest variation decisions never close the original Jobcard",async()=>{
+test("guest quote portal exposes only standard quotes and enquiry messages",async()=>{
  const route=await source("../src/app/api/tickets/[id]/quote-response/route.ts");
- const migration=await source("../supabase/migrations/20261112112401_guest_workcard_variation_decisions.sql");
  const ui=await source("../src/components/guest-request-workspace.tsx");
- assert.match(route,/respond_to_guest_job_variation/);
- assert.match(route,/quote_kind/);
- assert.match(migration,/quote_kind='variation'/);
- assert.match(migration,/guest_access_token_hash=p_guest_token_hash/);
- assert.match(migration,/archived_at IS NULL/);
- assert.doesNotMatch(migration,/UPDATE public\.enquiries/);
- assert.match(ui,/q\.quote_kind==="variation"\?"Decline variation"/);
- assert.match(ui,/selected\?\.quote_kind!=="variation"/);
- assert.match(ui,/q\.quote_kind!=="variation"&&!appointments/);
+ const page=await source("../src/app/request-status/page.tsx");
+ const messages=await source("../src/app/api/tickets/[id]/messages/route.ts");
+ assert.match(route,/eq\("quote_kind","standard"\)/);
+ assert.match(route,/Guest access is limited to standard quotes/);
+ assert.doesNotMatch(route,/appointments/);
+ assert.doesNotMatch(ui,/CustomerWorkApproval|booking-request|variation|workOrder/);
+ assert.match(ui,/TicketConversation/);
+ assert.match(page,/Review and respond to quotes, or message Brandon RV/);
+ assert.match(messages,/public_enquiry.*general_enquiry.*customer_enquiry.*quote_request/);
 });
 
-test("account variation decisions use their dedicated lifecycle and preserve the Jobcard",async()=>{
+test("guest booking and Workcard endpoints are denied server-side",async()=>{
+ const booking=await source("../src/app/api/tickets/[id]/booking-request/route.ts");
+ const workOrder=await source("../src/app/api/tickets/[id]/work-order/route.ts");
+ assert.match(booking,/return jsonError\("Guest access is limited to quote responses and general enquiry messages/);
+ assert.match(workOrder,/return jsonError\("Guest access is limited to quote responses and general enquiry messages/);
+});
+
+test("guest quote acceptance retains enquiry access but only accepts standard quotes",async()=>{
+ const migration=await source("../supabase/migrations/20261112113000_limit_guest_access_to_quotes_and_enquiries.sql");
+ assert.match(migration,/quote_kind='standard'/);
+ assert.match(migration,/guest_access_token_hash=CASE WHEN p_response='declined' THEN NULL ELSE guest_access_token_hash END/);
+ assert.match(migration,/guest_scope','quote_and_general_enquiry_only'/);
+ assert.match(migration,/DROP FUNCTION IF EXISTS public\.respond_to_guest_job_variation/);
+});
+
+test("Workcard variations require a linked customer account",async()=>{
+ const route=await source("../src/app/api/admin/jobs/[id]/variations/route.ts");
+ assert.match(route,/!job\.user_id/);
+ assert.match(route,/Workcard variations require a linked customer account/);
+ assert.match(route,/\.not\("user_id","is",null\)/);
+});
+
+test("registered customers retain the dedicated variation lifecycle",async()=>{
  const route=await source("../src/app/api/portal/quotes/respond/route.ts");
  const migration=await source("../supabase/migrations/20261112110759_workcard_quote_variations.sql");
  const page=await source("../src/app/portal/jobcards/[id]/page.tsx");
  assert.match(route,/respond_to_job_variation/);
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.respond_to_job_variation/);
  assert.match(migration,/job_work_entries/);
- assert.match(page,/q\.quote_kind==="variation"\?"Decline variation"/);
  assert.match(page,/notice==="variation_declined"/);
-});
-
-test("guest and account quote histories identify variation scope and price",async()=>{
- const guest=await source("../src/components/guest-request-workspace.tsx");
- const account=await source("../src/app/portal/quotes/page.tsx");
- assert.match(guest,/variation_reason/);
- assert.match(guest,/Approve additional work/);
- assert.match(account,/WORKCARD VARIATION/);
- assert.match(account,/Reason for additional work/);
-});
-
-test("guest variation approval is a service-only atomic database operation",async()=>{
- const migration=await source("../supabase/migrations/20261112112401_guest_workcard_variation_decisions.sql");
- assert.match(migration,/FOR UPDATE/);
- assert.match(migration,/ON CONFLICT\(source_quote_item_id\)/);
- assert.match(migration,/REVOKE ALL ON FUNCTION public\.respond_to_guest_job_variation/);
- assert.match(migration,/GRANT EXECUTE ON FUNCTION public\.respond_to_guest_job_variation.*TO service_role/);
 });
