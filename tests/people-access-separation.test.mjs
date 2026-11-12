@@ -18,8 +18,11 @@ test("changing User Role does not write employment status, start date or staff t
   assert.doesNotMatch(customerApi,/update\.employment_status\s*=\s*"active"|update\.start_date\s*=|update\.job_title\s*=/);
 });
 
-test("employment updates cannot change or clear User Role",()=>{
-  assert.doesNotMatch(staffApi,/body\.userRole|updates\.user_role\s*=/);
+test("employment updates change User Role only through the separately validated roleKey field",()=>{
+  assert.doesNotMatch(staffApi,/body\.userRole/);
+  assert.match(staffApi,/if\(body\.roleKey!==undefined\)/);
+  assert.match(staffApi,/roleKeys\.includes\(value\)&&!isGlobalAdministrator/);
+  assert.match(staffApi,/updates\.user_role=value/);
 });
 
 test("the duplicate root app directory cannot shadow the real src app",()=>{

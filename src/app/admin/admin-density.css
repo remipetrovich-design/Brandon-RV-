@@ -278,3 +278,170 @@
 @media (max-width:1100px) {
  .brv-admin-frame .brv-ticket-conversation .activity-item { grid-template-columns:1fr; gap:6px; }
 }
+
+
+/* Quote Request detail is a single workspace with focused, keyboard-accessible tabs. */
+.brv-admin-frame .brv-ticket-tabbed-workspace {
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+.brv-admin-frame .brv-ticket-tabbed-workspace > * {
+  grid-column:1 !important;
+  grid-row:auto !important;
+  min-width:0;
+}
+.brv-admin-frame .brv-ticket-tabbed-workspace .brv-ticket-summary {
+  padding:18px 20px;
+}
+.brv-admin-frame .brv-ticket-tabs {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  padding:6px;
+  border:1px solid #dce5ee;
+  border-radius:9px;
+  background:#f8fafc;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"] {
+  min-height:40px;
+  padding:0 16px;
+  border:1px solid transparent;
+  border-radius:6px;
+  background:transparent;
+  color:#52677c;
+  font:inherit;
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"]:hover {
+  background:#edf4fa;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"][aria-selected="true"] {
+  border-color:#c8dced;
+  background:#eaf3fb;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tab-panel[hidden] {
+  display:none !important;
+}
+.brv-admin-frame .brv-ticket-tab-panel {
+  display:grid;
+  align-content:start;
+  gap:16px;
+  width:100%;
+}
+.brv-admin-frame .brv-ticket-tab-panel > .portal-panel-heading {
+  margin:0;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-edit {
+  grid-column:auto;
+  grid-row:auto;
+  display:grid;
+  width:100%;
+  gap:14px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-actions,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-attachments,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-history {
+  grid-column:auto;
+  grid-row:auto;
+  padding:16px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-linked-customer,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-vehicle-notes {
+  padding:14px;
+  border:1px solid #dce5ee;
+  border-radius:8px;
+  background:#f8fafc;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-linked-customer h3 {
+  margin:5px 0;
+  color:#203449;
+  font-size:14px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-linked-customer p,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-vehicle-notes p {
+  margin:5px 0;
+  color:#52677c;
+  font-size:12px;
+  line-height:1.55;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  padding:12px;
+  border:1px solid #e4ebf1;
+  border-radius:8px;
+  background:#fbfcfd;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid strong {
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid span {
+  font-size:11px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-conversation {
+  grid-column:auto;
+  padding:16px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-quote-create,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-workcard-create {
+  margin-top:8px;
+}
+@media (max-width:700px) {
+  .brv-admin-frame .brv-ticket-tabs {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .brv-admin-frame .brv-ticket-tabs [role="tab"] {
+    min-height:44px;
+    text-align:left;
+  }
+  .brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid {
+    grid-template-columns:1fr;
+  }
+}
+
+
+.brv-admin-frame .brv-admin-workcard-scope {
+  display:block;
+  max-width:900px;
+  margin-top:4px;
+  color:#52677c;
+  font-size:11px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+
+
+.brv-admin-frame .brv-ticket-tabs [role="tab"] span {
+  display:inline-grid;
+  min-width:19px;
+  height:19px;
+  margin-left:6px;
+  padding:0 5px;
+  place-items:center;
+  border-radius:10px;
+  background:#e5edf4;
+  color:#52677c;
+  font-size:10px;
+  font-weight:800;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"][aria-selected="true"] span {
+  background:#d4e7f6;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-attachments,
+.brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-history {
+  width:100%;
+}

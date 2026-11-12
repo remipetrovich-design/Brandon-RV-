@@ -42,17 +42,27 @@ test("declined Jobcards are excluded from active enquiry queues but remain filte
  assert.match(api,/query\.is\("archived_at",null\)/);
 });
 
-test("a Workcard can only be created from an accepted quote and confirmed booking",async()=>{
+test("a Workcard is created from an accepted quote before booking and only once",async()=>{
  const api=await source("../src/app/api/admin/jobs/route.ts");
- assert.match(api,/eq\("status","confirmed"\)/);
- assert.match(api,/eq\("status","accepted"\)/);
- assert.match(api,/Only a complete confirmed booking can create a Work Order/);
+ const create=api.slice(api.indexOf("export async function POST"));
+ const form=await source("../src/components/admin-create-job.tsx");
+ const bookingConfirmation=await source("../src/app/api/admin/[section]/[id]/route.ts");
+ assert.match(create,/eq\("status","accepted"\)/);
+ assert.match(create,/23505/);
+ assert.doesNotMatch(create,/appointmentId=String\(body\.appointmentId/);
+ assert.doesNotMatch(create,/eq\("status","confirmed"\)/);
+ assert.doesNotMatch(create,/Only a complete confirmed booking can create a Work Order/);
+ assert.doesNotMatch(form,/!selected\?\.confirmedBooking/);
+ assert.doesNotMatch(form,/appointmentId:selected\?\.confirmedBooking/);
+ assert.match(bookingConfirmation,/Create the Workcard from the accepted quote before confirming its booking/);
+ assert.match(bookingConfirmation,/update\(\{appointment_id:id/);
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
- const page=await source("../src/app/admin/enquiries/[id]/page.tsx");
- assert.match(page,/\["customer_enquiry","quote_request"\]\.includes\(item\.request_type\)/);
- assert.match(page,/General enquiries are handled by phone or email/);
+ const editor=await source("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/\["customer_enquiry","quote_request"\]\.includes\(record\.request_type\)/);
+ assert.match(editor,/record\.request_type==="general_enquiry"/);
+ assert.match(editor,/no customer reply composer/);
 });
 
 test("quotes can only be prepared for active Quote Request Jobcards",async()=>{
@@ -184,15 +194,16 @@ test("Workcard photo evidence is private by default and customer-visible only by
  assert.ok(customer.includes("attachments.map"));
 });
 
-test("guest and account booking requests use one quote and the configured availability rules",async()=>{
+test("only registered customer accounts can request bookings",async()=>{
  const account=await source("../src/app/api/portal/appointments/route.ts");
  const guest=await source("../src/app/api/tickets/[id]/booking-request/route.ts");
  assert.ok(account.includes("existingBooking"));
- assert.ok(guest.includes("existingBooking"));
- assert.ok(guest.includes("working_days"));
- assert.ok(guest.includes("unavailable_dates"));
- assert.ok(guest.includes("travel_buffer_minutes"));
- assert.ok(guest.includes("appointments"));
+ assert.ok(account.includes("working_days"));
+ assert.ok(account.includes("unavailable_dates"));
+ assert.ok(account.includes("travel_buffer_minutes"));
+ assert.ok(account.includes("appointments"));
+ assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
+ assert.match(guest,/return jsonError\(.*403\)/);
 });
 
 test("Workcard test/check entries are non-billable",async()=>{
@@ -216,10 +227,9 @@ test("account and guest final Workcard decisions issue the invoice in the same d
  assert.ok(migration.includes("guest_access_token_hash = p_guest_token_hash"));
  assert.ok(migration.includes("REVOKE ALL ON FUNCTION public.respond_to_completed_workcard"));
  assert.ok(account.includes('rpc("respond_to_completed_workcard"'));
- assert.ok(guest.includes('rpc("respond_to_completed_workcard"'));
- assert.ok(guest.includes("invoice_number,subtotal,tax_amount,total,status"));
+ assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
+ assert.match(guest,/return jsonError\(.*403\)/);
  assert.ok(!account.includes('.from("invoices").update'));
- assert.ok(!guest.includes('.from("invoices").update'));
 });
 
 test("full payment archives a quote-request Jobcard and revokes its guest access",async()=>{
@@ -231,4 +241,26 @@ test("full payment archives a quote-request Jobcard and revokes its guest access
  assert.ok(migration.includes("guest_access_expires_at = NULL"));
  assert.ok(migration.includes("Payment exceeds the outstanding balance."));
  assert.ok(route.includes('rpc("record_invoice_payment"'));
+});
+
+
+test("request workspace separates customer, request, conversation, attachments, activity and quote",async()=>{
+ const editor=await source("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/role="tablist"/);
+ for(const tab of ["Customer &amp; Vehicle","Job Request","Conversation","Attachments","Activity","Quote"])assert.ok(editor.includes(tab),tab);
+ for(const panel of ["brv-panel-customer","brv-panel-request","brv-panel-conversation","brv-panel-attachments","brv-panel-activity","brv-panel-quote"])assert.ok(editor.includes(panel),panel);
+ assert.match(editor,/role="tabpanel"/);
+ assert.match(editor,/record\.request_type==="general_enquiry"/);
+});
+
+
+test("Workcards retain and display customer, vehicle, accepted quote and booking context",async()=>{
+ const staffApi=await source("../src/app/api/staff/jobs/route.ts");
+ const staffUi=await source("../src/components/staff-work-orders.tsx");
+ const adminPage=await source("../src/app/admin/[section]/page.tsx");
+ assert.match(staffApi,/quotes\(quote_number,status,total,enquiries\(request_number,vehicle_description,vehicles\(make,model,year,vehicle_type,registration,vin\)\)\)/);
+ assert.match(staffUi,/Accepted quote/);
+ assert.match(staffUi,/Customer/);
+ assert.match(staffUi,/Vehicle/);
+ assert.match(adminPage,/quotes\(quote_number,status,total/);
 });
