@@ -16,13 +16,5 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(error.code==="P0001")return jsonError(error.message??"This quote cannot be issued yet.",409);
   return jsonError("Could not issue quote. No changes were made.",500);
  }
- await database().from("audit_events").insert({
-  business_id:access.membership!.business_id,
-  actor_user_id:access.user!.id,
-  action:"quote.issue_requested",
-  entity_type:"quote",
-  entity_id:id,
-  details:{result:data}
- });
  return Response.json(data);
 }
