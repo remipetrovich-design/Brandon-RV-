@@ -1,5 +1,5 @@
 "use client";
-import {FormEvent,useEffect,useState} from "react";
+import {FormEvent,KeyboardEvent,useEffect,useState} from "react";
 import AdminCreateQuote from "@/components/admin-create-quote";
 import AdminCreateJob from "@/components/admin-create-job";
 import AdminQuoteTools from "@/components/admin-quote-tools";
@@ -20,6 +20,13 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote">("customer");
+ function handleTabKeyDown(event:KeyboardEvent<HTMLDivElement>){
+  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?["quote"]:[])];
+  const current=tabIds.indexOf(selectedTab),key=event.key;
+  const next=key==="ArrowRight"?tabIds[(current+1)%tabIds.length]:key==="ArrowLeft"?tabIds[(current-1+tabIds.length)%tabIds.length]:key==="Home"?tabIds[0]:key==="End"?tabIds[tabIds.length-1]:null;
+  if(!next)return;
+  event.preventDefault();setSelectedTab(next as typeof selectedTab);window.requestAnimationFrame(()=>document.getElementById("brv-tab-"+next)?.focus());
+ }
  async function load(){
   try{
    const requests:[Promise<Response>,Promise<Response|null>]=[fetch("/api/admin/enquiries/"+enquiryId,{cache:"no-store"}),canManageQuotes?fetch("/api/admin/quotes",{cache:"no-store"}):Promise.resolve(null)];
@@ -51,7 +58,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
   <section className="portal-panel brv-ticket-summary">
    <div className="portal-panel-heading"><div><span className="panel-kicker">{isQuoteRequest?"CUSTOMER JOBCARD":"CUSTOMER ENQUIRY"} · {record.request_number}</span><h2>{record.requested_service||"Customer request"}</h2><p>{record.contact_name} · Received {new Date(record.created_at).toLocaleString("en-AU")} · {pretty(record.source??"website")}</p></div><span className="status-pill">{pretty(record.stage)}</span></div>
   </section>
-  <div className="brv-ticket-tabs" role="tablist" aria-label="Request workspace">
+  <div className="brv-ticket-tabs" role="tablist" aria-label="Request workspace" onKeyDown={handleTabKeyDown}>
    <button id="brv-tab-customer" type="button" role="tab" aria-selected={selectedTab==="customer"} aria-controls="brv-panel-customer" tabIndex={selectedTab==="customer"?0:-1} onClick={()=>setSelectedTab("customer")}>Customer &amp; Vehicle</button>
    <button id="brv-tab-request" type="button" role="tab" aria-selected={selectedTab==="request"} aria-controls="brv-panel-request" tabIndex={selectedTab==="request"?0:-1} onClick={()=>setSelectedTab("request")}>Job Request</button>
    <button id="brv-tab-conversation" type="button" role="tab" aria-selected={selectedTab==="conversation"} aria-controls="brv-panel-conversation" tabIndex={selectedTab==="conversation"?0:-1} onClick={()=>setSelectedTab("conversation")}>{record.request_type==="general_enquiry"?"Follow-up":"Conversation"}</button>
