@@ -51,7 +51,13 @@ export async function POST(request:Request){
    job_number:"BRV-"+Date.now().toString(36).toUpperCase(),title,scope_of_work:scope,status:"pending",
    scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at,workcard_review_status:"pending_review"
   }).select("id,job_number,title,status,workcard_review_status,quote_id,appointment_id").single();
-  if(error||!job)return jsonError("Could not create Workcard.",500);
+  if(error||!job){
+   if(error?.code==="23505"){
+    const {data:existingJob}=await db.from("jobs").select("id,job_number,title,status,workcard_review_status,quote_id,appointment_id").eq("business_id",businessId).eq("quote_id",quote.id).limit(1).maybeSingle();
+    if(existingJob)return Response.json({job:existingJob,alreadyCreated:true});
+   }
+   return jsonError("Could not create Workcard.",500);
+  }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_confirmed_booking",entity_type:"job",entity_id:job.id,details:{appointment_id:appointment.id,quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review"}});
   return Response.json({job},{status:201});
  }catch{return jsonError("Could not create Workcard.",500);}
