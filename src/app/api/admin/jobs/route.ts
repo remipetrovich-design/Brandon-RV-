@@ -8,7 +8,7 @@ export async function GET(request:Request){
  if(quoteId)query=query.eq("id",quoteId);
  const [{data:quotes,error},{data:jobs,error:jobsError}]=await Promise.all([
   query,
-  db.from("jobs").select("id,quote_id,job_number,title,status,senior_approval_status").eq("business_id",businessId).not("quote_id","is",null)
+  db.from("jobs").select("id,quote_id,job_number,title,status,senior_approval_status,workcard_review_status").eq("business_id",businessId).not("quote_id","is",null)
  ]);
  if(error||jobsError)return jsonError("Could not load accepted quotes and Workcards.",500);
  const jobsByQuote=new Map((jobs??[]).map(job=>[job.quote_id,job]));
