@@ -11,12 +11,13 @@ export async function GET(request:Request){
   db.from("jobs").select("id,quote_id,job_number,title,status,senior_approval_status,workcard_review_status").eq("business_id",businessId).not("quote_id","is",null)
  ]);
  if(error||jobsError)return jsonError("Could not load accepted quotes and Workcards.",500);
+ const availableQuotes=(quotes??[]).filter((quote:any)=>quote.enquiries?.request_type==="quote_request"&&!quote.enquiries?.archived_at);
  const jobsByQuote=new Map((jobs??[]).map(job=>[job.quote_id,job]));
- const quoteIds=(quotes??[]).map(q=>q.id);
+ const quoteIds=availableQuotes.map(q=>q.id);
  const {data:appointments,error:appointmentError}=quoteIds.length?await db.from("appointments").select("id,quote_id,status,starts_at,preferred_start,location").eq("business_id",businessId).in("quote_id",quoteIds).eq("status","confirmed").order("starts_at",{ascending:true}):{data:[],error:null};
  if(appointmentError)return jsonError("Could not load confirmed bookings.",500);
  const bookingByQuote=new Map((appointments??[]).map(a=>[a.quote_id,a]));
- return Response.json({acceptedQuotes:(quotes??[]).map(q=>({...q,existingWorkcard:jobsByQuote.get(q.id)??null,confirmedBooking:bookingByQuote.get(q.id)??null})),existingWorkcard:quoteId?jobsByQuote.get(quoteId)??null:null});
+ return Response.json({acceptedQuotes:availableQuotes.map(q=>({...q,existingWorkcard:jobsByQuote.get(q.id)??null,confirmedBooking:bookingByQuote.get(q.id)??null})),existingWorkcard:quoteId?jobsByQuote.get(quoteId)??null:null});
 }
 
 export async function POST(request:Request){
