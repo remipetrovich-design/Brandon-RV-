@@ -23,8 +23,8 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
  try{
-  const body=await request.json(),quoteId=String(body.quoteId??""),appointmentId=String(body.appointmentId??"");
-  if(!/^[0-9a-f-]{36}$/i.test(quoteId)||!/^[0-9a-f-]{36}$/i.test(appointmentId))return jsonError("Select an accepted quote and its confirmed booking.");
+  const body=await request.json(),quoteId=String(body.quoteId??"");
+  if(!/^[0-9a-f-]{36}$/i.test(quoteId))return jsonError("Select a customer-accepted quote.");
   const db=database(),businessId=access.membership!.business_id;
   const {data:quote,error:quoteError}=await db.from("quotes").select("id,business_id,customer_id,user_id,enquiry_id,quote_number,status,quote_items(description)").eq("id",quoteId).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").maybeSingle();
   if(quoteError||!quote||!quote.enquiry_id)return jsonError("Only a customer-accepted quote can create a Workcard.",409);
@@ -32,8 +32,6 @@ export async function POST(request:Request){
   if(!enquiry||enquiry.request_type!=="quote_request"||enquiry.archived_at)return jsonError("The linked Quote Request Jobcard is no longer active.",409);
   const {data:existing}=await db.from("jobs").select("id,job_number,title,status,senior_approval_status,quote_id").eq("business_id",businessId).eq("quote_id",quote.id).maybeSingle();
   if(existing)return Response.json({job:existing,alreadyCreated:true});
-  const {data:booking}=await db.from("appointments").select("id,quote_id,status").eq("id",appointmentId).eq("business_id",businessId).eq("quote_id",quote.id).eq("status","confirmed").maybeSingle();
-  if(!booking)return jsonError("Only a complete confirmed booking for this accepted quote can create a Workcard.",409);
   const title=String(body.title??("Work for "+quote.quote_number)).trim().slice(0,180);
   const defaultScope=(quote.quote_items??[]).map((item:any)=>item.description).join("\n")||enquiry.description;
   const scope=String(body.scope??defaultScope).trim().slice(0,5000);
@@ -41,7 +39,7 @@ export async function POST(request:Request){
   const {data:job,error}=await db.from("jobs").insert({
    business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,
    user_id:quote.user_id??enquiry.user_id??null,guest_name:enquiry.contact_name,guest_email:enquiry.email,
-   quote_id:quote.id,appointment_id:booking.id,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
+   quote_id:quote.id,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
   }).select("id,job_number,title,status,senior_approval_status,quote_id").single();
   if(error||!job){
    if(error?.code==="23505"){
@@ -50,7 +48,7 @@ export async function POST(request:Request){
    }
    return jsonError("Could not create Workcard.",500);
   }
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"not_submitted",appointment_id:booking.id}});
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review"}});
   return Response.json({job},{status:201});
  }catch{return jsonError("Could not create Workcard.",500);}
 }
