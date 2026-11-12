@@ -135,7 +135,7 @@ The public Request a Quote form is available without registration. Guest request
 
 Customer Enquiries and Quote Requests are ticket-backed records. Customers and staff can exchange messages against the ticket; staff can add internal-only notes. Guest quote requests use a time-limited access token and do not require a customer login. Quotes are attached to tickets where applicable, support revision history, and record customer acceptance or decline with a timestamp.
 
-A preferred appointment time is only a request. A confirmed Booking requires an accepted quote and the agreed date, start/end time and service location. Confirming the Booking creates the existing job record as a Pending Work Order. The customer and staff/admin interfaces remain views over the same user identity and Supabase database.
+A preferred appointment time is only a request. Once the customer accepts a quote, staff create exactly one Workcard from that accepted quote. The Workcard goes through senior setup review before management assigns a worker; the worker must accept the assignment before arranging a booking. Management confirms the agreed date, start/end time and service location, then links that confirmed Booking to the existing Workcard. Booking confirmation never creates a second job record. The customer and staff/admin interfaces remain views over the same user identity and Supabase database.
 
 The migration for this workflow is applied through the existing production Supabase migration workflow after it is merged to main. No production database change is made by creating the feature branch or pull request.
 
