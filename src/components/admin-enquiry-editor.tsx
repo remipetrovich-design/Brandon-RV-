@@ -56,7 +56,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    <div className="brv-ticket-request"><span className="panel-kicker">CUSTOMER REQUEST</span><p>{record.description}</p></div>
   </section>
   {customer&&<section className="portal-panel brv-ticket-linked-customer"><div><span className="panel-kicker">LINKED CUSTOMER RECORD</span><h3>{customer.full_name}</h3><p>{[customer.address,customer.suburb,customer.state,customer.postcode].filter(Boolean).join(", ")||"No postal address recorded"}</p></div><a className="text-link" href={"/admin/customers/"+customer.id}>Open customer record →</a></section>}
-  {vehicle?.notes&&<section className="portal-panel"><span className="panel-kicker">VEHICLE NOTES</span><p>{vehicle.notes}</p></section>}
+  {vehicle?.notes&&<section className="portal-panel brv-ticket-vehicle-notes"><span className="panel-kicker">VEHICLE NOTES</span><p>{vehicle.notes}</p></section>}
   {canManageEnquiries&&<section className="portal-panel brv-ticket-actions"><div><span className="panel-kicker">TICKET ACTIONS</span><h3>Move this request forward</h3></div><div className="brv-ticket-action-buttons">
    {record.stage==="new"&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("contacted")}>Mark contacted</button>}
    {["new","contacted"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("awaiting_information")}>Request information</button>}
@@ -85,8 +85,8 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    <label>Status change note (optional)<input value={stageNote} onChange={e=>setStageNote(e.target.value)} placeholder="Reason for changing the status"/></label>
    {canManageEnquiries&&<button className="button button-primary" disabled={busy}>Save Jobcard changes</button>}
   </form>
-  <section className="portal-panel"><span className="panel-kicker">CUSTOMER ATTACHMENTS</span><h2>Files supplied with the request</h2>{attachments.length?attachments.map(f=><p key={f.id}><a href={f.url??"#"} target="_blank" rel="noreferrer">{f.file_name}</a> · {f.mime_type} · {Math.round(Number(f.size_bytes??0)/1024)} KB</p>):<p className="panel-footnote">No customer files attached.</p>}</section>
-  <section className="portal-panel"><span className="panel-kicker">ACTIVITY HISTORY</span><h2>Ticket timeline</h2>{history.length?<div className="activity-list">{history.map(h=><article className="activity-item" key={h.id}><div className="activity-date">{new Date(h.created_at).toLocaleString("en-AU")}</div><div className="activity-copy"><strong>{h.from_stage?pretty(h.from_stage)+" → ":""}{pretty(h.to_stage)}</strong>{h.note&&<span>{h.note}</span>}</div></article>)}</div>:<p className="panel-footnote">No status changes recorded.</p>}</section>
+  <section className="portal-panel brv-ticket-attachments"><span className="panel-kicker">CUSTOMER ATTACHMENTS</span><h2>Files supplied with the request</h2>{attachments.length?attachments.map(f=><p key={f.id}><a href={f.url??"#"} target="_blank" rel="noreferrer">{f.file_name}</a> · {f.mime_type} · {Math.round(Number(f.size_bytes??0)/1024)} KB</p>):<p className="panel-footnote">No customer files attached.</p>}</section>
+  <section className="portal-panel brv-ticket-history"><span className="panel-kicker">ACTIVITY HISTORY</span><h2>Ticket timeline</h2>{history.length?<div className="activity-list">{history.map(h=><article className="activity-item" key={h.id}><div className="activity-date">{new Date(h.created_at).toLocaleString("en-AU")}</div><div className="activity-copy"><strong>{h.from_stage?pretty(h.from_stage)+" → ":""}{pretty(h.to_stage)}</strong>{h.note&&<span>{h.note}</span>}</div></article>)}</div>:<p className="panel-footnote">No status changes recorded.</p>}</section>
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
  </div>;
 }
