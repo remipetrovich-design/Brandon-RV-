@@ -4,6 +4,7 @@ import AdminCreateQuote from "@/components/admin-create-quote";
 import AdminCreateJob from "@/components/admin-create-job";
 import AdminQuoteTools from "@/components/admin-quote-tools";
 import AdminEnquiryTools from "@/components/admin-enquiry-tools";
+import TicketConversation from "@/components/ticket-conversation";
 
 type Staff={id:string;full_name:string;job_title:string|null};
 type RecordData={id:string;request_number:string;request_type:string;contact_name:string;email:string;phone:string|null;location:string|null;vehicle_description:string|null;requested_service:string|null;description:string;preferred_contact:string|null;internal_notes:string|null;stage:string;archived_at:string|null;source:string|null;created_at:string;customer_id:string|null};
@@ -18,7 +19,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null);
- const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false);
+ const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"quote">("customer");
  async function load(){
   try{
    const requests:[Promise<Response>,Promise<Response|null>]=[fetch("/api/admin/enquiries/"+enquiryId,{cache:"no-store"}),canManageQuotes?fetch("/api/admin/quotes",{cache:"no-store"}):Promise.resolve(null)];
@@ -46,47 +47,68 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  }
  if(!record)return <section className="portal-panel"><p>{notice||"Loading Jobcard…"}</p></section>;
  const isQuoteRequest=record.request_type==="quote_request",acceptedQuote=quotes.find(q=>q.status==="accepted"),activeQuotes=[...quotes].sort((a,b)=>b.revision_number-a.revision_number);
- return <div className="brv-enquiry-editor brv-ticket-workspace">
-  <section className="portal-panel brv-ticket-summary"><div className="portal-panel-heading"><div><span className="panel-kicker">{isQuoteRequest?"CUSTOMER JOBCARD":"CUSTOMER ENQUIRY"} · {record.request_number}</span><h2>{record.requested_service||"Customer request"}</h2><p>Received {new Date(record.created_at).toLocaleString("en-AU")} · {pretty(record.source??"website")}</p></div><span className="status-pill">{pretty(record.stage)}</span></div>
-   <div className="brv-ticket-customer-grid">
-    <div><small>Customer</small><strong>{record.contact_name||"Name not supplied"}</strong><a href={"mailto:"+record.email}>{record.email}</a>{record.phone&&<a href={"tel:"+record.phone}>{record.phone}</a>}</div>
-    <div><small>Vehicle</small><strong>{vehicle?[vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(" "):record.vehicle_description||"Vehicle details not supplied"}</strong><span>{vehicle?.vehicle_type??"Vehicle type not confirmed"}{vehicle?.registration?" · "+vehicle.registration:""}</span>{vehicle?.vin&&<span>VIN {vehicle.vin}</span>}</div>
-    <div><small>Service location</small><strong>{record.location||"To be confirmed"}</strong><span>Preferred contact: {pretty(record.preferred_contact??"email")}</span></div>
-   </div>
-   <div className="brv-ticket-request"><span className="panel-kicker">CUSTOMER REQUEST</span><p>{record.description}</p></div>
+ return <div className="brv-enquiry-editor brv-ticket-workspace brv-ticket-tabbed-workspace">
+  <section className="portal-panel brv-ticket-summary">
+   <div className="portal-panel-heading"><div><span className="panel-kicker">{isQuoteRequest?"CUSTOMER JOBCARD":"CUSTOMER ENQUIRY"} · {record.request_number}</span><h2>{record.requested_service||"Customer request"}</h2><p>{record.contact_name} · Received {new Date(record.created_at).toLocaleString("en-AU")} · {pretty(record.source??"website")}</p></div><span className="status-pill">{pretty(record.stage)}</span></div>
   </section>
-  {customer&&<section className="portal-panel brv-ticket-linked-customer"><div><span className="panel-kicker">LINKED CUSTOMER RECORD</span><h3>{customer.full_name}</h3><p>{[customer.address,customer.suburb,customer.state,customer.postcode].filter(Boolean).join(", ")||"No postal address recorded"}</p></div><a className="text-link" href={"/admin/customers/"+customer.id}>Open customer record →</a></section>}
-  {vehicle?.notes&&<section className="portal-panel brv-ticket-vehicle-notes"><span className="panel-kicker">VEHICLE NOTES</span><p>{vehicle.notes}</p></section>}
-  {canManageEnquiries&&<section className="portal-panel brv-ticket-actions"><div><span className="panel-kicker">TICKET ACTIONS</span><h3>Move this request forward</h3></div><div className="brv-ticket-action-buttons">
-   {record.stage==="new"&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("contacted")}>Mark contacted</button>}
-   {["new","contacted"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("awaiting_information")}>Request information</button>}
-   {["new","contacted","awaiting_information"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("assessment_required")}>Assessment required</button>}
-   {isQuoteRequest&&["new","contacted","awaiting_information","assessment_required"].includes(record.stage)&&<button className="button button-primary" type="button" disabled={busy} onClick={()=>void changeStage("quote_in_progress")}>Start preparing quote</button>}
-   {!["closed","declined","archived"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("closed")}>Close ticket</button>}
-  </div></section>}
-  {isQuoteRequest&&canManageQuotes&&<section className="portal-panel brv-ticket-quotes"><div className="portal-panel-heading"><div><span className="panel-kicker">QUOTES ATTACHED TO THIS JOBCARD</span><h2>Quote history</h2></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
+  <div className="brv-ticket-tabs" role="tablist" aria-label="Request workspace">
+   <button id="brv-tab-customer" type="button" role="tab" aria-selected={selectedTab==="customer"} aria-controls="brv-panel-customer" className={selectedTab==="customer"?"active":""} onClick={()=>setSelectedTab("customer")}>Customer &amp; Vehicle</button>
+   <button id="brv-tab-request" type="button" role="tab" aria-selected={selectedTab==="request"} aria-controls="brv-panel-request" className={selectedTab==="request"?"active":""} onClick={()=>setSelectedTab("request")}>Job Request</button>
+   {isQuoteRequest&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" className={selectedTab==="quote"?"active":""} onClick={()=>setSelectedTab("quote")}>Quote</button>}
+  </div>
+
+  <section id="brv-panel-customer" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-customer" hidden={selectedTab!=="customer"}>
+   <div className="portal-panel-heading"><div><span className="panel-kicker">CUSTOMER &amp; VEHICLE</span><h2>Customer details</h2><p>Contact details and vehicle information linked to this Jobcard.</p></div></div>
+   <form className="auth-form brv-ticket-edit" onSubmit={save}>
+    <div className="form-grid">
+     <label>Customer name<input required value={record.contact_name??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,contact_name:e.target.value})}/></label>
+     <label>Email<input required type="email" value={record.email??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,email:e.target.value})}/></label>
+     <label>Phone<input value={record.phone??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,phone:e.target.value})}/></label>
+     <label>Service location<input value={record.location??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,location:e.target.value})}/></label>
+     <label>Preferred contact<select value={record.preferred_contact??"email"} disabled={!canManageEnquiries} onChange={e=>setRecord({...record,preferred_contact:e.target.value})}><option value="email">Email</option><option value="phone">Phone</option><option value="sms">SMS</option></select></label>
+     <label>Vehicle details<input value={record.vehicle_description??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,vehicle_description:e.target.value})}/></label>
+    </div>
+    {vehicle&&<div className="brv-ticket-customer-grid"><div><small>Vehicle</small><strong>{[vehicle.year,vehicle.make,vehicle.model].filter(Boolean).join(" ")||"Vehicle details incomplete"}</strong><span>{vehicle.vehicle_type??"Vehicle type not recorded"}</span></div><div><small>Registration</small><strong>{vehicle.registration||"Not supplied"}</strong></div><div><small>VIN / chassis</small><strong>{vehicle.vin||"Not supplied"}</strong></div></div>}
+    {vehicle?.notes&&<div className="brv-ticket-vehicle-notes"><span className="panel-kicker">VEHICLE NOTES</span><p>{vehicle.notes}</p></div>}
+    {customer&&<div className="brv-ticket-linked-customer"><span className="panel-kicker">LINKED CUSTOMER RECORD</span><h3>{customer.full_name}</h3><p>{[customer.address,customer.suburb,customer.state,customer.postcode].filter(Boolean).join(", ")||"No postal address recorded"}</p><a className="text-link" href={"/admin/customers/"+customer.id}>Open customer record →</a></div>}
+    {!customer&&canManageEnquiries&&<AdminEnquiryTools enquiryId={enquiryId} customerId={record.customer_id??null}/>}
+    {canManageEnquiries&&<button className="button button-primary" disabled={busy}>{busy?"Saving…":"Save customer details"}</button>}
+   </form>
+  </section>
+
+  <section id="brv-panel-request" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-request" hidden={selectedTab!=="request"}>
+   <div className="portal-panel-heading"><div><span className="panel-kicker">JOB REQUEST</span><h2>Request details &amp; follow-up</h2><p>Manage the request, intake stage, staff follow-up and internal notes.</p></div></div>
+   {canManageEnquiries&&<section className="brv-ticket-actions"><div><span className="panel-kicker">TICKET ACTIONS</span><h3>Move this request forward</h3></div><div className="brv-ticket-action-buttons">
+    {record.stage==="new"&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("contacted")}>Mark contacted</button>}
+    {["new","contacted"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("awaiting_information")}>Request information</button>}
+    {["new","contacted","awaiting_information"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("assessment_required")}>Assessment required</button>}
+    {isQuoteRequest&&["new","contacted","awaiting_information","assessment_required"].includes(record.stage)&&<button className="button button-primary" type="button" disabled={busy} onClick={()=>void changeStage("quote_in_progress")}>Start preparing quote</button>}
+    {!["closed","declined","archived"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("closed")}>Close ticket</button>}
+   </div></section>}
+   <form className="auth-form brv-ticket-edit" onSubmit={save}>
+    <label>Pipeline status<select value={record.stage} disabled={!canManageEnquiries} onChange={e=>setRecord({...record,stage:e.target.value})}>{stages.map(s=><option key={s} value={s}>{pretty(s)}</option>)}</select></label>
+    <label>Customer request<textarea rows={6} required value={record.description??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,description:e.target.value})}/></label>
+    <fieldset className="brv-ticket-staff-fieldset" disabled={!canManageEnquiries}><legend>Assign staff to follow up</legend><p className="panel-footnote">Choose everyone responsible for contacting the customer. Workcard assignment happens separately after senior setup review.</p>
+     {staff.length?<div className="brv-ticket-staff-options">{staff.map(s=><label className="brv-ticket-staff-option" key={s.id}><input type="checkbox" checked={assigned.includes(s.id)} onChange={e=>setAssigned(current=>e.target.checked?[...current,s.id]:current.filter(id=>id!==s.id))}/><span><strong>{s.full_name}</strong>{s.job_title&&<small>{s.job_title}</small>}</span></label>)}</div>:<p className="panel-footnote">No active staff are available for assignment.</p>}
+    </fieldset>
+    <label>Internal notes<textarea rows={4} value={record.internal_notes??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,internal_notes:e.target.value})}/></label>
+    <label>Status change note (optional)<input value={stageNote} onChange={e=>setStageNote(e.target.value)} placeholder="Reason for changing the status"/></label>
+    {canManageEnquiries&&<button className="button button-primary" disabled={busy}>{busy?"Saving…":"Save Job Request"}</button>}
+   </form>
+   <section className="brv-ticket-attachments"><span className="panel-kicker">CUSTOMER ATTACHMENTS</span><h2>Files supplied with the request</h2>{attachments.length?attachments.map(f=><p key={f.id}><a href={f.url??"#"} target="_blank" rel="noreferrer">{f.file_name}</a> · {f.mime_type} · {Math.round(Number(f.size_bytes??0)/1024)} KB</p>):<p className="panel-footnote">No customer files attached.</p>}</section>
+   <section className="brv-ticket-history"><span className="panel-kicker">ACTIVITY HISTORY</span><h2>Jobcard timeline</h2>{history.length?<div className="activity-list">{history.map(h=><article className="activity-item" key={h.id}><div className="activity-date">{new Date(h.created_at).toLocaleString("en-AU")}</div><div className="activity-copy"><strong>{h.from_stage?pretty(h.from_stage)+" → ":""}{pretty(h.to_stage)}</strong>{h.note&&<span>{h.note}</span>}</div></article>)}</div>:<p className="panel-footnote">No status changes recorded.</p>}</section>
+   {["customer_enquiry","quote_request"].includes(record.request_type)&&<TicketConversation ticketId={enquiryId} staff/>}
+   {record.request_type==="general_enquiry"&&<section className="portal-panel"><span className="panel-kicker">FOLLOW-UP</span><h3>Contact the customer directly</h3><p>General enquiries are handled by phone or email. Record call attempts and outcomes in internal notes; this record has no customer reply composer.</p></section>}
+  </section>
+
+  {isQuoteRequest&&<section id="brv-panel-quote" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-quote" hidden={selectedTab!=="quote"}>
+   <div className="portal-panel-heading"><div><span className="panel-kicker">QUOTE</span><h2>Quote history &amp; preparation</h2><p>Each revision is retained against this Jobcard. Issued quotes require separate senior approval.</p></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
    {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div><AdminQuoteTools quoteId={q.id}/></article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
    {quotePanelOpen&&<div className="brv-ticket-quote-create"><AdminCreateQuote initialEnquiryId={enquiryId} onCreated={()=>void load()}/></div>}
    {acceptedQuote&&canManageJobs&&(workcard?<div className="brv-ticket-workcard-create"><span className="panel-kicker">WORKCARD CREATED</span><h3>{workcard.job_number} · {workcard.title}</h3><p>{pretty(workcard.status)} · Setup review: {pretty(workcard.workcard_review_status??"legacy_approved")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a></div>:<div className="brv-ticket-workcard-create"><AdminCreateJob initialQuoteId={acceptedQuote.id}/></div>)}
    {acceptedQuote&&!canManageJobs&&<p className="panel-footnote">The quote has been accepted. A user with Workcard management permission can create the Workcard.</p>}
+   {!acceptedQuote&&canManageJobs&&<p className="panel-footnote">A Workcard becomes available after the customer accepts a quote.</p>}
   </section>}
-  {isQuoteRequest&&canManageJobs&&!acceptedQuote&&<section className="portal-panel"><span className="panel-kicker">WORKCARD</span><p>A Workcard becomes available after the customer accepts a quote.</p></section>}
-  <AdminEnquiryTools enquiryId={enquiryId} customerId={record.customer_id??null}/>
-  <form className="portal-panel auth-form brv-ticket-edit" onSubmit={save}>
-   <div className="portal-panel-heading"><div><span className="panel-kicker">RECORD MANAGEMENT</span><h2>Update Jobcard details</h2></div><span>{record.archived_at?"Archived":pretty(record.stage)}</span></div>
-   <div className="form-grid"><label>Pipeline status<select value={record.stage} disabled={!canManageEnquiries} onChange={e=>setRecord({...record,stage:e.target.value})}>{stages.map(s=><option key={s} value={s}>{pretty(s)}</option>)}</select></label><label>Preferred contact<select value={record.preferred_contact??"email"} disabled={!canManageEnquiries} onChange={e=>setRecord({...record,preferred_contact:e.target.value})}><option value="email">Email</option><option value="phone">Phone</option><option value="sms">SMS</option></select></label><label>Customer name<input required value={record.contact_name??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,contact_name:e.target.value})}/></label><label>Email<input required type="email" value={record.email??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,email:e.target.value})}/></label><label>Phone<input value={record.phone??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,phone:e.target.value})}/></label><label>Requested service<input value={record.requested_service??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,requested_service:e.target.value})}/></label><label>Service location<input value={record.location??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,location:e.target.value})}/></label><label>Vehicle details<input value={record.vehicle_description??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,vehicle_description:e.target.value})}/></label></div>
-   <label>Request details<textarea rows={5} required value={record.description??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,description:e.target.value})}/></label>
-   <fieldset className="brv-ticket-staff-fieldset" disabled={!canManageEnquiries}>
-    <legend>Assign staff to follow up</legend>
-    <p className="panel-footnote">Choose everyone responsible for contacting the customer. Workcard assignment happens separately after senior setup review.</p>
-    {staff.length?<div className="brv-ticket-staff-options">{staff.map(s=><label className="brv-ticket-staff-option" key={s.id}><input type="checkbox" checked={assigned.includes(s.id)} onChange={e=>setAssigned(current=>e.target.checked?[...current,s.id]:current.filter(id=>id!==s.id))}/><span><strong>{s.full_name}</strong>{s.job_title&&<small>{s.job_title}</small>}</span></label>)}</div>:<p className="panel-footnote">No active staff are available for assignment.</p>}
-   </fieldset>
-   <label>Internal notes<textarea rows={3} value={record.internal_notes??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,internal_notes:e.target.value})}/></label>
-   <label>Status change note (optional)<input value={stageNote} onChange={e=>setStageNote(e.target.value)} placeholder="Reason for changing the status"/></label>
-   {canManageEnquiries&&<button className="button button-primary" disabled={busy}>Save Jobcard changes</button>}
-  </form>
-  <section className="portal-panel brv-ticket-attachments"><span className="panel-kicker">CUSTOMER ATTACHMENTS</span><h2>Files supplied with the request</h2>{attachments.length?attachments.map(f=><p key={f.id}><a href={f.url??"#"} target="_blank" rel="noreferrer">{f.file_name}</a> · {f.mime_type} · {Math.round(Number(f.size_bytes??0)/1024)} KB</p>):<p className="panel-footnote">No customer files attached.</p>}</section>
-  <section className="portal-panel brv-ticket-history"><span className="panel-kicker">ACTIVITY HISTORY</span><h2>Ticket timeline</h2>{history.length?<div className="activity-list">{history.map(h=><article className="activity-item" key={h.id}><div className="activity-date">{new Date(h.created_at).toLocaleString("en-AU")}</div><div className="activity-copy"><strong>{h.from_stage?pretty(h.from_stage)+" → ":""}{pretty(h.to_stage)}</strong>{h.note&&<span>{h.note}</span>}</div></article>)}</div>:<p className="panel-footnote">No status changes recorded.</p>}</section>
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
  </div>;
 }
