@@ -1,5 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
+import {getWorkforceRankGroup} from "@/lib/workforce-rank-groups.mjs";
 export const runtime="nodejs";
 const roleKeys=["ceo_founder","website_development_specialist","owner","website_developer"];
 const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
@@ -25,7 +26,7 @@ export async function GET(){
   db.from("permissions").select("permission_key,description").order("permission_key")
  ]):[{data:[]},{data:[]}];
  const grantsByUser=new Map<string,string[]>();for(const grant of grants??[]){const current=grantsByUser.get(grant.user_id)??[];current.push(grant.permission_key);grantsByUser.set(grant.user_id,current);}
- const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),additional_permissions:grantsByUser.get(x.id)??[]}));
+ const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),workforce_group:getWorkforceRankGroup(x.user_role),additional_permissions:grantsByUser.get(x.id)??[]}));
  return Response.json({employees:directory,permissions:catalogue??[],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
 
 }
