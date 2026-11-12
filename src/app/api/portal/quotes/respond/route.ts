@@ -13,7 +13,9 @@ export async function POST(request:Request){
  const prefix="/portal/jobcards/";
  const destination=returnTo.startsWith(prefix)&&/^[0-9a-f-]{36}$/i.test(returnTo.slice(prefix.length))?returnTo:"/portal/quotes";
  const db=database();
- const {data,error}=await db.rpc("respond_to_customer_quote",{
+ const {data:quote}=await db.from("quotes").select("quote_kind").eq("id",quoteId).eq("user_id",user.id).maybeSingle();
+ const rpcName=quote?.quote_kind==="variation"?"respond_to_job_variation":"respond_to_customer_quote";
+ const {data,error}=await db.rpc(rpcName,{
   p_quote_id:quoteId,p_user_id:user.id,p_response:response,p_response_note:responseNote||null
  });
  if(error){
