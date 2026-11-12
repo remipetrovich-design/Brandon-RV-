@@ -42,11 +42,19 @@ test("declined Jobcards are excluded from active enquiry queues but remain filte
  assert.match(api,/query\.is\("archived_at",null\)/);
 });
 
-test("a Workcard can only be created from an accepted quote and confirmed booking",async()=>{
+test("a Workcard is created from an accepted quote before booking and only once",async()=>{
  const api=await source("../src/app/api/admin/jobs/route.ts");
- assert.match(api,/eq\("status","confirmed"\)/);
+ const form=await source("../src/components/admin-create-job.tsx");
+ const bookingConfirmation=await source("../src/app/api/admin/[section]/[id]/route.ts");
  assert.match(api,/eq\("status","accepted"\)/);
- assert.match(api,/Only a complete confirmed booking can create a Work Order/);
+ assert.match(api,/jobs_one_workcard_per_quote|23505/);
+ assert.doesNotMatch(api,/appointmentId=String\(body\.appointmentId/);
+ assert.doesNotMatch(api,/eq\("status","confirmed"\)/);
+ assert.doesNotMatch(api,/Only a complete confirmed booking can create a Workcard/);
+ assert.doesNotMatch(form,/!selected\?\.confirmedBooking/);
+ assert.doesNotMatch(form,/appointmentId:selected\?\.confirmedBooking/);
+ assert.match(bookingConfirmation,/Create the Workcard from the accepted quote before confirming its booking/);
+ assert.match(bookingConfirmation,/workcard\.appointment_id=id/);
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
@@ -231,4 +239,14 @@ test("full payment archives a quote-request Jobcard and revokes its guest access
  assert.ok(migration.includes("guest_access_expires_at = NULL"));
  assert.ok(migration.includes("Payment exceeds the outstanding balance."));
  assert.ok(route.includes('rpc("record_invoice_payment"'));
+});
+
+
+test("Quote Request detail is organised into the three planned workspace tabs",async()=>{
+ const editor=await source("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/role="tablist"/);
+ assert.match(editor,/Customer & Vehicle/);
+ assert.match(editor,/Job Request/);
+ assert.match(editor,/Quote/);
+ assert.match(editor,/role="tabpanel"/);
 });
