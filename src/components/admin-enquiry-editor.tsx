@@ -7,7 +7,7 @@ import AdminEnquiryTools from "@/components/admin-enquiry-tools";
 
 type Staff={id:string;full_name:string;job_title:string|null};
 type RecordData={id:string;request_number:string;request_type:string;contact_name:string;email:string;phone:string|null;location:string|null;vehicle_description:string|null;requested_service:string|null;description:string;preferred_contact:string|null;internal_notes:string|null;stage:string;archived_at:string|null;source:string|null;created_at:string;customer_id:string|null};
-type Quote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;total:number;created_at:string};
+type Quote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;quote_kind?:string;total:number;created_at:string};
 type LinkedCustomer={id:string;full_name:string;email:string|null;phone:string|null;address:string|null;suburb:string|null;state:string|null;postcode:string|null};
 type Vehicle={id:string;make:string|null;model:string|null;year:number|null;vehicle_type:string|null;registration:string|null;vin:string|null;notes:string|null};
 const stages=["new","contacted","awaiting_information","assessment_required","quote_in_progress","quote_sent","awaiting_approval","approved","declined","converted","closed"];
@@ -26,7 +26,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    if(!r.ok){setNotice(d.error??"Could not load Jobcard.");return;}
    setRecord(d.enquiry);setCustomer(d.customer??null);setVehicle(d.vehicle??null);setStaff(d.staff??[]);
    setAssigned((d.assignments??[]).map((x:any)=>x.staff_id));setHistory(d.history??[]);setAttachments(d.attachments??[]);
-   if(qr){const qd=await qr.json();if(qr.ok){const ticketQuotes=(qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId);setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}}
+   if(qr){const qd=await qr.json();if(qr.ok){const ticketQuotes=(qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard");setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}}
   }catch{setNotice("Could not load Jobcard details.");}
  }
  useEffect(()=>{void load();},[enquiryId]);
