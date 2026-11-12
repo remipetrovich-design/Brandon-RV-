@@ -22,8 +22,8 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid tax rate.");
   const db=database(),businessId=access.membership!.business_id;
   const {data:job}=await db.from("jobs").select("id,business_id,user_id,customer_id,quote_id,status").eq("id",id).eq("business_id",businessId).maybeSingle();
-  if(!job||!job.quote_id||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status))return jsonError("This Workcard is not open for variations.",409);
-  const {data:baseQuote}=await db.from("quotes").select("id,enquiry_id,status,customer_id,user_id").eq("id",job.quote_id).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").maybeSingle();
+  if(!job||!job.user_id||!job.quote_id||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status))return jsonError("Workcard variations require a linked customer account. Guest quote requests cannot proceed through the Workcard process.",409);
+  const {data:baseQuote}=await db.from("quotes").select("id,enquiry_id,status,customer_id,user_id").eq("id",job.quote_id).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").not("user_id","is",null).maybeSingle();
   if(!baseQuote||!baseQuote.enquiry_id)return jsonError("The original customer-accepted quote could not be found.",409);
   const {data:openVariation}=await db.from("quotes").select("id").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").in("status",["draft","sent"]).maybeSingle();
   if(openVariation)return jsonError("A variation is already awaiting senior review or customer approval. Resolve it before creating another.",409);
