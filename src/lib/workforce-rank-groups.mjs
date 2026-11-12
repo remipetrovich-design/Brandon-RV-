@@ -1,9 +1,9 @@
 export const WORKFORCE_RANK_GROUPS = [
   { key: "customers", label: "Customers", roles: ["customer"] },
-  { key: "base_workers", label: "Base Workers", roles: ["trial_apprentice", "apprentice"] },
+  { key: "base_workers", label: "Base Workers", roles: ["trial_apprentice", "apprentice", "worker", "technician"] },
   { key: "senior_staff", label: "Senior Staff", roles: ["senior_apprentice", "team_leader"] },
-  { key: "supervision_team", label: "Supervision Team", roles: ["supervisor", "office_admin", "office_supervisor"] },
-  { key: "management", label: "Management", roles: ["office_manager", "manager", "senior_manager"] },
+  { key: "supervision_team", label: "Supervision Team", roles: ["supervisor", "office_admin", "office_supervisor", "accounts"] },
+  { key: "management", label: "Management", roles: ["office_manager", "manager", "senior_manager", "administrator"] },
   { key: "executive", label: "Executive", roles: ["general_manager", "website_development_specialist", "ceo_founder", "owner", "website_developer"] },
 ];
 
