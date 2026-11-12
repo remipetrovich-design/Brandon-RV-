@@ -8,7 +8,7 @@ export async function GET(request:Request){
  if(quoteId)bookingQuery=bookingQuery.eq("quote_id",quoteId);
  const [{data:bookings,error},{data:jobs,error:jobsError},{data:staff,error:staffError}]=await Promise.all([
   bookingQuery,
-  db.from("jobs").select("id,appointment_id,quote_id,job_number,title,status,workcard_review_status").eq("business_id",businessId).not("appointment_id","is",null),
+  db.from("jobs").select("id,appointment_id,quote_id,job_number,title,status,workcard_review_status").eq("business_id",businessId),
   db.from("staff").select("id,job_title,full_name,email").eq("business_id",businessId).eq("employment_status","active").order("full_name")
  ]);
  if(error||jobsError||staffError)return jsonError("Could not load confirmed bookings and Workcards.",500);
