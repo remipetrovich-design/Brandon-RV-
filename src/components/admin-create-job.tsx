@@ -1,51 +1,35 @@
 "use client";
 import {FormEvent,useCallback,useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
-type Booking={
- id:string;quote_id:string;location:string;starts_at:string;ends_at:string;guest_name:string|null;
- quotes:{quote_number:string;status:string;quote_items:{description:string;sort_order:number}[]}|null;
- enquiries:{contact_name:string;request_number:string;request_type:string}|null;
-};
+type Quote={id:string;quote_number:string;total:number;revision_number:number;users:{full_name:string}|null;enquiries:{contact_name:string;request_number:string;request_type:string}|null;quote_items:{description:string;quantity:number;unit_price:number}[];existingWorkcard?:{id:string;job_number:string;title:string;status:string;senior_approval_status:string}|null};
+const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v||0));
 export default function AdminCreateJob({initialQuoteId=""}:{initialQuoteId?:string}){
- const [bookings,setBookings]=useState<Booking[]>([]),[appointmentId,setAppointmentId]=useState(""),[title,setTitle]=useState(""),[scope,setScope]=useState(""),[notice,setNotice]=useState(""),[loadError,setLoadError]=useState(""),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
+ const [quotes,setQuotes]=useState<Quote[]>([]),[quoteId,setQuoteId]=useState(initialQuoteId),[title,setTitle]=useState(""),[scope,setScope]=useState(""),[notice,setNotice]=useState(""),[loadError,setLoadError]=useState(""),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const router=useRouter();
- const loadBookings=useCallback(async()=>{
+ const loadQuotes=useCallback(async()=>{
   setLoading(true);setLoadError("");
-  try{
-   const url="/api/admin/jobs"+(initialQuoteId?"?quoteId="+encodeURIComponent(initialQuoteId):"");
-   const r=await fetch(url,{cache:"no-store"}),d=await r.json();
-   if(!r.ok){setLoadError(d.error??"Could not load confirmed bookings.");return;}
-   setBookings(d.bookings??[]);
-  }catch{setLoadError("Could not load confirmed bookings. Check the connection and try again.");}
+  try{const url="/api/admin/jobs"+(initialQuoteId?"?quoteId="+encodeURIComponent(initialQuoteId):"");const r=await fetch(url,{cache:"no-store"}),d=await r.json();if(!r.ok){setLoadError(d.error??"Could not load accepted quotes.");return;}setQuotes(d.acceptedQuotes??[]);}
+  catch{setLoadError("Could not load accepted quotes. Check the connection and try again.");}
   finally{setLoading(false);}
  },[initialQuoteId]);
- useEffect(()=>{void loadBookings();},[loadBookings]);
- function chooseBooking(id:string){
-  setAppointmentId(id);
-  const booking=bookings.find(item=>item.id===id);
-  if(!booking)return;
-  setTitle("Work for "+(booking.quotes?.quote_number??"accepted quote"));
-  setScope((booking.quotes?.quote_items??[]).map(item=>item.description).join("\n"));
- }
- async function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault();setBusy(true);setNotice("");
-  try{
-   const r=await fetch("/api/admin/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({appointmentId,title,scope})}),d=await r.json();
-   if(!r.ok){setNotice(d.error??"Could not create Workcard.");return;}
-   setNotice("Workcard "+d.job.job_number+" created. It is awaiting senior setup review before assignment.");
-   setAppointmentId("");setTitle("");setScope("");await loadBookings();router.refresh();
-  }catch{setNotice("Could not create Workcard.");}
-  finally{setBusy(false);}
- }
- const date=(value:string)=>new Date(value).toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"});
- return <section className="portal-panel"><span className="panel-kicker">NEW WORKCARD</span><h2>Create a Workcard from a confirmed booking</h2>
-  {loading?<p className="panel-footnote" role="status">Loading confirmed bookings…</p>:loadError?<div className="inline-notice" role="alert"><p>{loadError}</p><button type="button" className="button button-secondary" onClick={()=>void loadBookings()}>Retry loading bookings</button></div>:bookings.length?<form className="auth-form" onSubmit={submit}>
-   <label>Confirmed booking<select value={appointmentId} onChange={e=>chooseBooking(e.target.value)} required><option value="">Select a confirmed booking</option>{bookings.map(item=><option key={item.id} value={item.id}>{item.quotes?.quote_number??"Accepted quote"} · {item.enquiries?.request_number??"Jobcard"} · {item.guest_name??item.enquiries?.contact_name??"Customer"} · {date(item.starts_at)}</option>)}</select></label>
-   {appointmentId&&<p className="panel-footnote">Service location: {bookings.find(item=>item.id===appointmentId)?.location} · {date(bookings.find(item=>item.id===appointmentId)!.starts_at)} – {date(bookings.find(item=>item.id===appointmentId)!.ends_at)}</p>}
+ useEffect(()=>{void loadQuotes();},[loadQuotes]);
+ function chooseQuote(id:string){setQuoteId(id);const q=quotes.find(item=>item.id===id);if(q){setTitle("Work for "+q.quote_number);setScope((q.quote_items??[]).map(item=>item.description+" (Qty "+item.quantity+" × "+money(item.unit_price)+")").join("\n"));}}
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice("");try{
+  const r=await fetch("/api/admin/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quoteId,title,scope})}),d=await r.json();
+  if(!r.ok){setNotice(d.error??"Could not create Workcard.");return;}
+  setNotice(d.alreadyCreated?"This accepted quote already has Workcard "+d.job.job_number+".":"Workcard "+d.job.job_number+" created. It is awaiting senior setup review before assignment.");
+  await loadQuotes();router.refresh();
+ }catch{setNotice("Could not create Workcard.");}finally{setBusy(false);}}
+ const selected=quotes.find(q=>q.id===quoteId);
+ if(selected?.existingWorkcard)return <section className="portal-panel"><span className="panel-kicker">WORKCARD CREATED</span><h3>{selected.existingWorkcard.job_number} · {selected.existingWorkcard.title}</h3><p>{selected.existingWorkcard.status.replaceAll("_"," ")} · Setup review: {selected.existingWorkcard.senior_approval_status.replaceAll("_"," ")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a></section>;
+ return <section className="portal-panel"><span className="panel-kicker">NEW WORKCARD</span><h2>Create a Workcard from an accepted quote</h2>
+  {loading?<p className="panel-footnote" role="status">Loading accepted quotes…</p>:loadError?<div className="inline-notice" role="alert"><p>{loadError}</p><button type="button" className="button button-secondary" onClick={()=>void loadQuotes()}>Retry loading accepted quotes</button></div>:quotes.length?<form className="auth-form" onSubmit={submit}>
+   <label>Customer-accepted quote<select value={quoteId} onChange={e=>chooseQuote(e.target.value)} required><option value="">Select an accepted quote</option>{quotes.map(q=><option key={q.id} value={q.id}>{q.quote_number} · {q.enquiries?.request_number??"Jobcard"} · {q.users?.full_name??q.enquiries?.contact_name??"Customer"} · {money(q.total)}</option>)}</select></label>
+   {selected&&<p className="panel-footnote">Customer accepted Revision {selected.revision_number}. The Workcard will retain this exact quote as its approved source.</p>}
    <label>Workcard title<input value={title} onChange={e=>setTitle(e.target.value)} required minLength={3} maxLength={180}/></label>
-   <label>Approved work scope<textarea value={scope} onChange={e=>setScope(e.target.value)} rows={4} required minLength={3} maxLength={5000} placeholder="The accepted quote scope is prefilled. Record the approved deliverables and instructions for the worker."/></label>
-   <button className="button button-primary" disabled={busy||!appointmentId||!title.trim()||scope.trim().length<3}>{busy?"Creating Workcard…":"Create Workcard →"}</button>
-  </form>:<p className="panel-footnote">{initialQuoteId?"The customer has accepted this quote. A Workcard becomes available once the booking is confirmed.":"No confirmed bookings are currently available for Workcard creation. A Workcard is created after quote acceptance and booking confirmation."}</p>}
+   <label>Approved work scope<textarea value={scope} onChange={e=>setScope(e.target.value)} rows={4} required minLength={3} maxLength={5000} placeholder="The accepted quote lines are prefilled. Confirm the approved deliverables and worker instructions."/></label>
+   <button className="button button-primary" disabled={busy||!quoteId||!title.trim()||scope.trim().length<3}>{busy?"Creating Workcard…":"Create Workcard →"}</button>
+  </form>:<p className="panel-footnote">{initialQuoteId?"This accepted quote is already linked to a Workcard, or it is no longer available for creation. Refresh the Jobcard to see its current state.":"No accepted quotes are currently available for a new Workcard. A Workcard can be created as soon as the customer accepts a quote; booking coordination remains a separate step."}</p>}
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
  </section>;
 }
