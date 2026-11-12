@@ -19,7 +19,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null);
- const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"quote">("customer");
+ const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote">("customer");
  async function load(){
   try{
    const requests:[Promise<Response>,Promise<Response|null>]=[fetch("/api/admin/enquiries/"+enquiryId,{cache:"no-store"}),canManageQuotes?fetch("/api/admin/quotes",{cache:"no-store"}):Promise.resolve(null)];
@@ -52,9 +52,12 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    <div className="portal-panel-heading"><div><span className="panel-kicker">{isQuoteRequest?"CUSTOMER JOBCARD":"CUSTOMER ENQUIRY"} · {record.request_number}</span><h2>{record.requested_service||"Customer request"}</h2><p>{record.contact_name} · Received {new Date(record.created_at).toLocaleString("en-AU")} · {pretty(record.source??"website")}</p></div><span className="status-pill">{pretty(record.stage)}</span></div>
   </section>
   <div className="brv-ticket-tabs" role="tablist" aria-label="Request workspace">
-   <button id="brv-tab-customer" type="button" role="tab" aria-selected={selectedTab==="customer"} aria-controls="brv-panel-customer" className={selectedTab==="customer"?"active":""} onClick={()=>setSelectedTab("customer")}>Customer &amp; Vehicle</button>
-   <button id="brv-tab-request" type="button" role="tab" aria-selected={selectedTab==="request"} aria-controls="brv-panel-request" className={selectedTab==="request"?"active":""} onClick={()=>setSelectedTab("request")}>Job Request</button>
-   {isQuoteRequest&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" className={selectedTab==="quote"?"active":""} onClick={()=>setSelectedTab("quote")}>Quote</button>}
+   <button id="brv-tab-customer" type="button" role="tab" aria-selected={selectedTab==="customer"} aria-controls="brv-panel-customer" tabIndex={selectedTab==="customer"?0:-1} onClick={()=>setSelectedTab("customer")}>Customer &amp; Vehicle</button>
+   <button id="brv-tab-request" type="button" role="tab" aria-selected={selectedTab==="request"} aria-controls="brv-panel-request" tabIndex={selectedTab==="request"?0:-1} onClick={()=>setSelectedTab("request")}>Job Request</button>
+   <button id="brv-tab-conversation" type="button" role="tab" aria-selected={selectedTab==="conversation"} aria-controls="brv-panel-conversation" tabIndex={selectedTab==="conversation"?0:-1} onClick={()=>setSelectedTab("conversation")}>{record.request_type==="general_enquiry"?"Follow-up":"Conversation"}</button>
+   <button id="brv-tab-attachments" type="button" role="tab" aria-selected={selectedTab==="attachments"} aria-controls="brv-panel-attachments" tabIndex={selectedTab==="attachments"?0:-1} onClick={()=>setSelectedTab("attachments")}>Attachments <span>{attachments.length}</span></button>
+   <button id="brv-tab-activity" type="button" role="tab" aria-selected={selectedTab==="activity"} aria-controls="brv-panel-activity" tabIndex={selectedTab==="activity"?0:-1} onClick={()=>setSelectedTab("activity")}>Activity <span>{history.length}</span></button>
+   {isQuoteRequest&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" tabIndex={selectedTab==="quote"?0:-1} onClick={()=>setSelectedTab("quote")}>Quote <span>{quotes.length}</span></button>}
   </div>
 
   <section id="brv-panel-customer" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-customer" hidden={selectedTab!=="customer"}>
@@ -95,10 +98,22 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
     <label>Status change note (optional)<input value={stageNote} onChange={e=>setStageNote(e.target.value)} placeholder="Reason for changing the status"/></label>
     {canManageEnquiries&&<button className="button button-primary" disabled={busy}>{busy?"Saving…":"Save Job Request"}</button>}
    </form>
+  </section>
+
+  <section id="brv-panel-attachments" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-attachments" hidden={selectedTab!=="attachments"}>
    <section className="brv-ticket-attachments"><span className="panel-kicker">CUSTOMER ATTACHMENTS</span><h2>Files supplied with the request</h2>{attachments.length?attachments.map(f=><p key={f.id}><a href={f.url??"#"} target="_blank" rel="noreferrer">{f.file_name}</a> · {f.mime_type} · {Math.round(Number(f.size_bytes??0)/1024)} KB</p>):<p className="panel-footnote">No customer files attached.</p>}</section>
+  </section>
+
+  <section id="brv-panel-activity" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-activity" hidden={selectedTab!=="activity"}>
    <section className="brv-ticket-history"><span className="panel-kicker">ACTIVITY HISTORY</span><h2>Jobcard timeline</h2>{history.length?<div className="activity-list">{history.map(h=><article className="activity-item" key={h.id}><div className="activity-date">{new Date(h.created_at).toLocaleString("en-AU")}</div><div className="activity-copy"><strong>{h.from_stage?pretty(h.from_stage)+" → ":""}{pretty(h.to_stage)}</strong>{h.note&&<span>{h.note}</span>}</div></article>)}</div>:<p className="panel-footnote">No status changes recorded.</p>}</section>
+  </section>
+
+  <section id="brv-panel-conversation" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-conversation" hidden={selectedTab!=="conversation"}>
    {["customer_enquiry","quote_request"].includes(record.request_type)&&<TicketConversation ticketId={enquiryId} staff/>}
-   {record.request_type==="general_enquiry"&&<section className="portal-panel"><span className="panel-kicker">FOLLOW-UP</span><h3>Contact the customer directly</h3><p>General enquiries are handled by phone or email. Record call attempts and outcomes in internal notes; this record has no customer reply composer.</p></section>}
+   {record.request_type==="general_enquiry"&&<><span className="panel-kicker">FOLLOW-UP</span><h2>Contact the customer directly</h2><p>General enquiries are handled by phone or email. Record call attempts and outcomes in internal notes; this record has no customer reply composer.</p></>}
+  </section>
+
+
   </section>
 
   {isQuoteRequest&&<section id="brv-panel-quote" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-quote" hidden={selectedTab!=="quote"}>
