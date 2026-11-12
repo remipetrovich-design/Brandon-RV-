@@ -4,7 +4,7 @@ export const runtime="nodejs";
 export async function GET(request:Request){
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id,url=new URL(request.url),quoteId=url.searchParams.get("quoteId");
- let query=db.from("quotes").select("id,quote_number,total,customer_id,user_id,enquiry_id,customers(full_name),enquiries(contact_name,request_number,request_type)").eq("business_id",businessId).eq("status","accepted").not("enquiry_id","is",null).order("created_at",{ascending:false});
+ let query=db.from("quotes").select("id,quote_number,total,customer_id,user_id,enquiry_id,users(full_name),enquiries(contact_name,request_number,request_type)").eq("business_id",businessId).eq("status","accepted").not("enquiry_id","is",null).order("created_at",{ascending:false});
  if(quoteId)query=query.eq("id",quoteId);
  const [{data:quotes,error},{data:jobs},{data:staff}]=await Promise.all([
   query,
