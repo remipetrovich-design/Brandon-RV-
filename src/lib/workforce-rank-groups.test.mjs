@@ -20,6 +20,10 @@ test("keeps existing additional system roles classified without changing their r
   assert.equal(getWorkforceRankGroup("senior_manager").label, "Management");
   assert.equal(getWorkforceRankGroup("office_admin").label, "Supervision Team");
   assert.equal(getWorkforceRankGroup("general_manager").label, "Executive");
+  assert.equal(getWorkforceRankGroup("technician").label, "Base Workers");
+  assert.equal(getWorkforceRankGroup("worker").label, "Base Workers");
+  assert.equal(getWorkforceRankGroup("accounts").label, "Supervision Team");
+  assert.equal(getWorkforceRankGroup("administrator").label, "Management");
 });
 
 test("groups members automatically from their existing user_role", () => {
