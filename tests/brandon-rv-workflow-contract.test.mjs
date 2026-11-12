@@ -245,7 +245,7 @@ test("full payment archives a quote-request Jobcard and revokes its guest access
 test("Quote Request detail is organised into the three planned workspace tabs",async()=>{
  const editor=await source("../src/components/admin-enquiry-editor.tsx");
  assert.match(editor,/role="tablist"/);
- assert.match(editor,/Customer & Vehicle/);
+ assert.match(editor,/Customer &amp; Vehicle/);
  assert.match(editor,/Job Request/);
  assert.match(editor,/Quote/);
  assert.match(editor,/role="tabpanel"/);
