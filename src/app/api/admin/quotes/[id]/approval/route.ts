@@ -1,7 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
- const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
+ const access=await authorizePermission("quotes.approve");if(access.response)return access.response;
  const {id}=await params;
  const {data:quote,error}=await database().from("quotes").select("id,quote_number,status,prepared_by,senior_approval_status,senior_approved_by,senior_approved_at,senior_approval_note,issue_date").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
  if(error||!quote)return jsonError("Quote not found.",404);
@@ -9,7 +9,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
+ const access=await authorizePermission("quotes.approve");if(access.response)return access.response;
  try{
   const {id}=await params,body=await request.json(),decision=String(body.decision??""),note=String(body.note??"").trim().slice(0,2000);
   if(!["approved","changes_requested"].includes(decision))return jsonError("Choose approve or request changes.");
