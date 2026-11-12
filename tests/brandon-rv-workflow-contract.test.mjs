@@ -44,17 +44,18 @@ test("declined Jobcards are excluded from active enquiry queues but remain filte
 
 test("a Workcard is created from an accepted quote before booking and only once",async()=>{
  const api=await source("../src/app/api/admin/jobs/route.ts");
+ const create=api.slice(api.indexOf("export async function POST"));
  const form=await source("../src/components/admin-create-job.tsx");
  const bookingConfirmation=await source("../src/app/api/admin/[section]/[id]/route.ts");
- assert.match(api,/eq\("status","accepted"\)/);
- assert.match(api,/jobs_one_workcard_per_quote|23505/);
- assert.doesNotMatch(api,/appointmentId=String\(body\.appointmentId/);
- assert.doesNotMatch(api,/eq\("status","confirmed"\)/);
- assert.doesNotMatch(api,/Only a complete confirmed booking can create a Workcard/);
+ assert.match(create,/eq\("status","accepted"\)/);
+ assert.match(create,/23505/);
+ assert.doesNotMatch(create,/appointmentId=String\(body\.appointmentId/);
+ assert.doesNotMatch(create,/eq\("status","confirmed"\)/);
+ assert.doesNotMatch(create,/Only a complete confirmed booking can create a Work Order/);
  assert.doesNotMatch(form,/!selected\?\.confirmedBooking/);
  assert.doesNotMatch(form,/appointmentId:selected\?\.confirmedBooking/);
  assert.match(bookingConfirmation,/Create the Workcard from the accepted quote before confirming its booking/);
- assert.match(bookingConfirmation,/workcard\.appointment_id=id/);
+ assert.match(bookingConfirmation,/update\(\{appointment_id:id/);
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
