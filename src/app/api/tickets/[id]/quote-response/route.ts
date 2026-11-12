@@ -26,7 +26,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const db=database();
   const {data:quote}=await db.from("quotes").select("id").eq("id",quoteId).eq("enquiry_id",id).eq("quote_kind","standard").maybeSingle();
   if(!quote)return jsonError("Guest access is limited to standard quotes. Workcard variations require a customer account.",403);
-  const {data,error}=await db.rpc("respond_to_guest_quote",{p_ticket_id:id,p_quote_id:quoteId,p_guest_token_hash:digest(token),p_response,p_response_note:responseNote||null});
+  const {data,error}=await db.rpc("respond_to_guest_quote",{p_ticket_id:id,p_quote_id:quoteId,p_guest_token_hash:digest(token),p_response:response,p_response_note:responseNote||null});
   if(error){
    if(error.code==="P0001")return jsonError("This quote or guest access is no longer available.",409);
    return jsonError("Could not save your quote response. No changes were made.",500);
