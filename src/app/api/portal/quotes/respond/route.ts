@@ -23,5 +23,6 @@ export async function POST(request:Request){
   return jsonError("Could not record your quote response. No changes were made.",500);
  }
  if(!data?.success)return jsonError("Could not confirm your quote response. No changes were made.",500);
- return Response.redirect(new URL(destination+"?notice="+(response==="declined"?"declined":"accepted"),request.url),303);
+ const notice=quote?.quote_kind==="variation"?(response==="declined"?"variation_declined":"variation_accepted"):(response==="declined"?"declined":"accepted");
+ return Response.redirect(new URL(destination+"?notice="+notice,request.url),303);
 }
