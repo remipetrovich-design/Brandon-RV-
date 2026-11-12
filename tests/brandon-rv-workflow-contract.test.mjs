@@ -252,3 +252,15 @@ test("Quote Request detail is organised into the three planned workspace tabs",a
  assert.match(editor,/Quote/);
  assert.match(editor,/role="tabpanel"/);
 });
+
+
+test("Workcards retain and display customer, vehicle, accepted quote and booking context",async()=>{
+ const staffApi=await source("../src/app/api/staff/jobs/route.ts");
+ const staffUi=await source("../src/components/staff-work-orders.tsx");
+ const adminPage=await source("../src/app/admin/[section]/page.tsx");
+ assert.match(staffApi,/quotes\(quote_number,status,total,enquiries\(request_number,vehicle_description,vehicles\(make,model,year,vehicle_type,registration,vin\)\)\)/);
+ assert.match(staffUi,/Accepted quote/);
+ assert.match(staffUi,/Customer/);
+ assert.match(staffUi,/Vehicle/);
+ assert.match(adminPage,/quotes\(quote_number,status,total/);
+});
