@@ -36,14 +36,16 @@ The customer Jobcard view aggregates these related records. The staff Workcard v
 
 ## Workcard workflow
 
-8. After accepted quote and confirmed booking, create one unassigned Workcard.
-9. Management assigns an eligible active worker. Record the assigning manager and time.
-10. Worker accepts assignment before starting. Worker sees only assigned Workcards.
-11. Worker records arrival, site permission/safety checks, existing condition, notes, photos, time, labour, parts/materials, tests and handover. Internal notes and supplier costs remain private.
-12. If scope/cost changes, worker stops the affected extra work and submits a variation with evidence. Senior staff reviews it and sends a variation quote. No extra work proceeds until customer approval.
-13. Worker submits and signs off the Workcard.
-14. Senior staff separately reviews and signs off or returns it for correction. A worker cannot approve their own Workcard.
-15. Approved Workcard details are consolidated into the Jobcard, including scope, variations, work performed, parts, time, photos, tests, costs, approvals and handover.
+8. Once the customer accepts a specific quote revision, create exactly one Workcard linked to that quote and the Jobcard. Booking confirmation is not required for Workcard creation.
+9. The Workcard begins in Pending setup review. Senior staff checks the accepted scope, customer/vehicle details, site information and worker instructions; they approve it for assignment or return it for changes. Record the reviewer and time.
+10. Management assigns an eligible active worker to the approved Workcard. Record the assigning manager and time.
+11. The assigned worker accepts the assignment before starting or arranging the visit. Workers see only their assigned Workcards.
+12. After accepting the assignment, the worker requests a preferred booking time and customer-site location. Management confirms the agreed date, start/end time and location, then links the confirmed appointment to the existing Workcard. Booking confirmation must never create a second Workcard.
+13. Worker records arrival, site permission/safety checks, existing condition, notes, photos, time, labour, parts/materials, tests and handover. Internal notes and supplier costs remain private.
+14. If scope/cost changes, worker stops the affected extra work and submits a variation with evidence. Senior staff reviews it and sends a variation quote. No extra work proceeds until customer approval.
+15. Worker submits and signs off the Workcard.
+16. Senior staff separately reviews and signs off or returns it for correction. A worker cannot approve their own Workcard.
+17. Approved Workcard details are consolidated into the Jobcard, including scope, variations, work performed, parts, time, photos, tests, costs, approvals and handover.
 
 ## Final customer approval and payment
 
@@ -62,14 +64,14 @@ Implemented on the draft branch:
 - Quotes are itemised (up to 30 lines), GST uses the configured business setting, and quote preparation is restricted to active Quote Request Jobcards. A separate authorised senior reviewer must approve a draft prepared by another staff member before the quote can be issued. Quote issue advances the Jobcard through an atomic database function.
 - Customer quote acceptance/decline is atomic for account and guest users. Decline reason is optional; the quote and Jobcard close, archive timestamp is recorded, guest access is revoked and the event is audited.
 - Account and guest booking requests require an accepted quote, prevent duplicate requests and apply the configured notice period, working days, unavailable dates, opening hours, advance window and appointment/travel conflict checks. A preferred time is still only a request.
-- A Workcard is created only after an accepted quote and confirmed booking. Management assigns workers; workers must accept the assignment before starting or recording work. Assignment edits preserve accepted assignments.
+- A Workcard is created once from the accepted quote, before booking. Senior setup review must approve it before assignment; the assigned worker must accept before starting or requesting a booking. Management confirms the agreed appointment and links it to that Workcard. Assignment edits preserve accepted assignments.
 - Staff Workcards use a compact one-at-a-time detail view. Workers can record labour, parts, non-billable notes and tests/checks, upload private photos, explicitly choose which photos are customer-visible, and print the submitted Workcard. Non-billable tests and notes are excluded from invoice totals.
 - Worker completion records a sign-off. A different authorised senior staff member from the worker who signed off can approve the Workcard or return it for correction. Returning it reopens the Workcard, records the reason and removes the draft invoice. The final report is not shown to the customer until senior approval.
 - The customer can approve or request changes to the final report. Customer decision and invoice issue are one database transaction for account and guest users; a failure cannot leave an approved Jobcard with an unissued invoice. Draft invoice details remain hidden until customer approval; the itemised invoice, GST and payments are then shown in the Jobcard.
 - Admin enquiry detail panels are aligned in a two-column supporting layout. Workcard and quote controls are collapsed and lazy-loaded; the staff Workcard list opens one detailed record at a time. The public site styles remain separate. The Jobcard includes responsive and A4 print styling.
 
 Still required before the workflow can be called complete:
-- A formal variation workflow is not implemented yet. The worker must be able to request a variation, senior staff must review it, the customer must approve/decline the cost and scope, and the Workcard must prevent the extra work until approval. The current quote API deliberately blocks revising an accepted quote rather than silently changing the agreed scope.
+- Formal variations are implemented as separate quote records linked to the Workcard. Senior approval and customer acceptance are required; the original accepted quote remains unchanged and the Workcard blocks the affected extra work until approval.
 - Successful closeout now records payments transactionally. A fully paid invoice closes and archives its quote-request Jobcard, records the stage-history and audit event, and revokes the guest access token. Part-paid invoices remain open.
 - Final customer approval and invoice issuance are transactionally locked together; payment recording and successful-closeout archive are also transactional.
 - Guest and signed-in workflows still need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior. The repository CI does not apply or execute the SQL migrations against a live database.
@@ -82,7 +84,7 @@ Still required before the workflow can be called complete:
 - P1 — customer Jobcard master, itemised quote revisions, senior quote approval, customer accept/decline and confirmed-booking gate. Implemented on this branch.
 - P2 — Workcard assignment, worker execution, photos/tests, worker sign-off and independent senior review. Implemented on this branch.
 - P3 — customer final approval, invoice issue, payment recording and paid-closeout archive. Implemented transactionally on this branch.
-- P4 — formal variations, browser-rendered desktop/tablet/mobile QA, A4 print verification, role isolation, failure/concurrency tests and migration validation. Still required before production release.
+- P4 — browser-rendered desktop/tablet/mobile QA, A4 print verification, role isolation, failure/concurrency tests and migration validation. Still required before production release.
 
 ## Non-negotiable safeguards
 
