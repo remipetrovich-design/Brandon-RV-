@@ -905,3 +905,43 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
  body:has(.brv-staff-work-orders) .brv-workcard-detail button { display:none!important; }
  body:has(.brv-staff-work-orders) .brv-workcard-detail .brv-workcard-photo-grid img { height:90px!important; }
 }
+
+
+.brv-workcard-context {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  padding:13px;
+  border:1px solid var(--line);
+  background:#fff;
+}
+.brv-workcard-context > div {
+  display:grid;
+  align-content:start;
+  gap:4px;
+  min-width:0;
+}
+.brv-workcard-context small {
+  color:var(--muted);
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.brv-workcard-context strong {
+  font-size:12px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.brv-workcard-context span {
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+@media (max-width:760px) {
+  .brv-workcard-context { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:420px) {
+  .brv-workcard-context { grid-template-columns:1fr; }
+}
