@@ -7,7 +7,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  if(access.response)return access.response;
  const {id}=await params;
  if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Invalid quote ID.");
- const {data,error}=await database().rpc("issue_quote_for_jobcard",{
+ const db=database();\n const {data:quote}=await db.from("quotes").select("quote_kind").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();\n const rpcName=quote?.quote_kind==="variation"?"issue_job_variation_quote":"issue_quote_for_jobcard";\n const {data,error}=await db.rpc(rpcName,{
   p_quote_id:id,
   p_business_id:access.membership!.business_id,
   p_actor_user_id:access.user!.id
