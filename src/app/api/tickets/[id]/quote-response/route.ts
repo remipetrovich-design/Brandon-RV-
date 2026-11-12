@@ -27,9 +27,12 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(!["accepted","declined"].includes(response)||!/^[0-9a-f-]{36}$/i.test(quoteId))return jsonError("Invalid quote response.");
   if(!token||token.length<20)return jsonError("Request not found or guest access expired.",404);
   const db=database();
-  const {data,error}=await db.rpc("respond_to_guest_quote",{
-   p_ticket_id:id,p_quote_id:quoteId,p_guest_token_hash:digest(token),p_response:response,p_response_note:responseNote||null
-  });
+  const {data:quote}=await db.from("quotes").select("quote_kind").eq("id",quoteId).eq("enquiry_id",id).maybeSingle();
+  const rpcName=quote?.quote_kind==="variation"?"respond_to_guest_job_variation":"respond_to_guest_quote";
+  const args=quote?.quote_kind==="variation"
+   ?{p_ticket_id:id,p_quote_id:quoteId,p_guest_token_hash:digest(token),p_response,p_response_note:responseNote||null}
+   :{p_ticket_id:id,p_quote_id:quoteId,p_guest_token_hash:digest(token),p_response,p_response_note:responseNote||null};
+  const {data,error}=await db.rpc(rpcName,args);
   if(error){
    if(error.code==="P0001")return jsonError("This quote or guest access is no longer available.",409);
    return jsonError("Could not save your quote response. No changes were made.",500);
