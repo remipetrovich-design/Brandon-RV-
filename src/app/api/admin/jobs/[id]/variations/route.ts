@@ -23,6 +23,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const db=database(),businessId=access.membership!.business_id;
   const {data:job}=await db.from("jobs").select("id,business_id,user_id,customer_id,quote_id,status").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(!job||!job.quote_id||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status))return jsonError("This Workcard is not open for variations.",409);
+  if(!job.user_id)return jsonError("This Workcard belongs to a guest customer. Link the customer to a verified account before raising a variation so they can authorise additional work securely.",409);
   const {data:baseQuote}=await db.from("quotes").select("id,enquiry_id,status,customer_id,user_id").eq("id",job.quote_id).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").maybeSingle();
   if(!baseQuote||!baseQuote.enquiry_id)return jsonError("The original customer-accepted quote could not be found.",409);
   const {data:openVariation}=await db.from("quotes").select("id").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").in("status",["draft","sent"]).maybeSingle();
