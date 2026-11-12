@@ -192,3 +192,68 @@
  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:1 / -1; }
  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:1; grid-row:auto; }
 }
+
+
+/* Desktop-first Jobcard workspace: operational details on the left, decisions on the right. */
+.brv-admin-frame .brv-ticket-workspace {
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(340px,.85fr);
+  align-items:start;
+  gap:16px;
+  max-width:1500px;
+}
+.brv-admin-frame .brv-ticket-workspace > * { min-width:0; margin:0 !important; }
+.brv-admin-frame .brv-ticket-summary { grid-column:1 / -1; padding:24px 26px; border-top:3px solid #1767ad; }
+.brv-admin-frame .brv-ticket-summary .portal-panel-heading { align-items:flex-start; margin-bottom:18px; }
+.brv-admin-frame .brv-ticket-summary .portal-panel-heading h2 { margin:6px 0 5px; color:#10283f; font-size:25px; line-height:1.2; letter-spacing:-.025em; }
+.brv-admin-frame .brv-ticket-summary .portal-panel-heading p { color:#65788b; font-size:13px; }
+.brv-admin-frame .brv-ticket-workspace .panel-kicker { font-size:10px; font-weight:750; letter-spacing:.09em; }
+.brv-admin-frame .brv-ticket-customer-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:18px 0; border-block:1px solid #e4ebf1; }
+.brv-admin-frame .brv-ticket-customer-grid > div { display:flex; min-width:0; flex-direction:column; align-items:flex-start; gap:6px; }
+.brv-admin-frame .brv-ticket-customer-grid small { color:#718196; font-size:11px; font-weight:750; letter-spacing:.04em; text-transform:uppercase; }
+.brv-admin-frame .brv-ticket-customer-grid strong { color:#203449; font-size:15px; line-height:1.4; }
+.brv-admin-frame .brv-ticket-customer-grid span,.brv-admin-frame .brv-ticket-customer-grid a { color:#52677c; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.brv-admin-frame .brv-ticket-request { padding-top:16px; }
+.brv-admin-frame .brv-ticket-request p { margin:8px 0 0; color:#263e53; font-size:14px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.brv-admin-frame .brv-ticket-actions { grid-column:2; grid-row:2; padding:20px; border-left:3px solid #1767ad; background:#f9fbfd; }
+.brv-admin-frame .brv-ticket-actions h3 { margin:5px 0 14px; color:#10283f; font-size:18px; line-height:1.3; }
+.brv-admin-frame .brv-ticket-action-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+.brv-admin-frame .brv-ticket-action-buttons .button { min-height:38px; padding-inline:14px; font-size:12px; }
+.brv-admin-frame .brv-ticket-edit { grid-column:1; grid-row:2 / span 4; display:grid; align-content:start; gap:16px; padding:24px; }
+.brv-admin-frame .brv-ticket-edit .portal-panel-heading { margin-bottom:2px; padding-bottom:14px; border-bottom:1px solid #e6edf3; }
+.brv-admin-frame .brv-ticket-edit .portal-panel-heading h2 { margin:4px 0 0; color:#10283f; font-size:21px; }
+.brv-admin-frame .brv-ticket-edit .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; }
+.brv-admin-frame .brv-ticket-edit label { display:grid; min-width:0; gap:7px; color:#344b60; font-size:12px; font-weight:700; }
+.brv-admin-frame .brv-ticket-edit input:not([type=checkbox]),.brv-admin-frame .brv-ticket-edit select,.brv-admin-frame .brv-ticket-edit textarea { width:100%; min-height:42px; padding:10px 12px; border:1px solid #cbd8e3; border-radius:6px; color:#183047; background:#fff; font:inherit; font-size:13px; line-height:1.45; }
+.brv-admin-frame .brv-ticket-edit textarea { min-height:104px; resize:vertical; }
+.brv-admin-frame .brv-ticket-edit input:focus,.brv-admin-frame .brv-ticket-edit select:focus,.brv-admin-frame .brv-ticket-edit textarea:focus { border-color:#1767ad; outline:3px solid rgba(23,103,173,.13); }
+.brv-admin-frame .brv-ticket-edit .brv-ticket-staff-fieldset { display:grid; gap:10px; min-width:0; margin:0; padding:16px; border:1px solid #d7e1ea; border-radius:7px; background:#f8fafc; }
+.brv-admin-frame .brv-ticket-edit .brv-ticket-staff-fieldset legend { padding:0 5px; color:#203c55; font-size:13px; font-weight:750; }
+.brv-admin-frame .brv-ticket-staff-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.brv-admin-frame .brv-ticket-staff-option { display:flex !important; min-height:48px; align-items:center; gap:10px !important; padding:9px 11px; border:1px solid #dce5ed; border-radius:6px; background:#fff; cursor:pointer; }
+.brv-admin-frame .brv-ticket-staff-option input[type=checkbox] { width:17px; height:17px; flex:0 0 auto; accent-color:#1767ad; }
+.brv-admin-frame .brv-ticket-staff-option span { display:grid; gap:2px; }
+.brv-admin-frame .brv-ticket-staff-option strong { color:#203449; font-size:12px; }
+.brv-admin-frame .brv-ticket-staff-option small { color:#718196; font-size:11px; font-weight:500; }
+.brv-admin-frame .brv-ticket-edit > .button { justify-self:start; min-width:190px; min-height:42px; padding-inline:20px; font-size:13px; }
+.brv-admin-frame .brv-ticket-customer-convert { grid-column:2; grid-row:3; padding:18px 20px; }
+.brv-admin-frame .brv-ticket-linked-customer { grid-column:2; grid-row:4; padding:18px 20px; }
+.brv-admin-frame .brv-ticket-vehicle-notes { grid-column:2; grid-row:5; padding:18px 20px; }
+.brv-admin-frame .brv-ticket-customer-convert p,.brv-admin-frame .brv-ticket-linked-customer p,.brv-admin-frame .brv-ticket-vehicle-notes p { color:#52677c; font-size:13px; line-height:1.6; }
+.brv-admin-frame .brv-ticket-quotes { grid-column:1 / -1; padding:22px 24px; }
+.brv-admin-frame .brv-ticket-quotes .portal-panel-heading h2 { font-size:20px; }
+.brv-admin-frame .brv-ticket-quote { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 0; border-top:1px solid #e6edf3; }
+.brv-admin-frame .brv-ticket-quote > div:first-child { display:grid; gap:5px; }
+.brv-admin-frame .brv-ticket-quote strong { font-size:14px; }
+.brv-admin-frame .brv-ticket-quote span,.brv-admin-frame .brv-ticket-quote small { color:#65788b; font-size:12px; }
+.brv-admin-frame .brv-ticket-quote-create,.brv-admin-frame .brv-ticket-workcard-create { margin-top:16px; padding:18px; border:1px solid #dce5ee; border-radius:7px; background:#f8fafc; }
+.brv-admin-frame .brv-ticket-attachments { grid-column:1; padding:20px; }
+.brv-admin-frame .brv-ticket-history { grid-column:2; padding:20px; }
+.brv-admin-frame .brv-ticket-attachments h2,.brv-admin-frame .brv-ticket-history h2 { font-size:18px; }
+.brv-admin-frame .brv-ticket-history .activity-date,.brv-admin-frame .brv-ticket-history .activity-copy > span { font-size:12px; }
+.brv-admin-frame .brv-ticket-workspace .panel-footnote { color:#65788b; font-size:12px; line-height:1.55; }
+@media (max-width:1100px) {
+ .brv-admin-frame .brv-ticket-workspace { grid-template-columns:minmax(0,1fr); }
+ .brv-admin-frame .brv-ticket-workspace > * { grid-column:1 !important; grid-row:auto !important; }
+ .brv-admin-frame .brv-ticket-customer-grid,.brv-admin-frame .brv-ticket-staff-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
