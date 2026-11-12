@@ -3,7 +3,7 @@ import {FormEvent,useCallback,useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
 type Quote={id:string;quote_number:string;total:number;revision_number:number;confirmedBooking:{id:string;starts_at:string|null;preferred_start:string|null;location:string|null}|null;users:{full_name:string}|null;enquiries:{contact_name:string;request_number:string;request_type:string}|null;quote_items:{description:string;quantity:number;unit_price:number}[];existingWorkcard?:{id:string;job_number:string;title:string;status:string;workcard_review_status:string}|null};
 const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v||0));
-export default function AdminCreateJob({initialQuoteId=""}:{initialQuoteId?:string}){
+export default function AdminCreateJob({initialQuoteId="",onCreated}:{initialQuoteId?:string;onCreated?:()=>void}){
  const [quotes,setQuotes]=useState<Quote[]>([]),[quoteId,setQuoteId]=useState(initialQuoteId),[title,setTitle]=useState(""),[scope,setScope]=useState(""),[notice,setNotice]=useState(""),[loadError,setLoadError]=useState(""),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const router=useRouter();
  const loadQuotes=useCallback(async()=>{
@@ -19,7 +19,7 @@ export default function AdminCreateJob({initialQuoteId=""}:{initialQuoteId?:stri
   const r=await fetch("/api/admin/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quoteId,title,scope})}),d=await r.json();
   if(!r.ok){setNotice(d.error??"Could not create Workcard.");return;}
   setNotice(d.alreadyCreated?"This accepted quote already has Workcard "+d.job.job_number+".":"Workcard "+d.job.job_number+" created. It is awaiting senior setup review before assignment.");
-  await loadQuotes();router.refresh();
+  await loadQuotes();onCreated?.();router.refresh();
  }catch{setNotice("Could not create Workcard.");}finally{setBusy(false);}}
  const selected=quotes.find(q=>q.id===quoteId);
  if(selected?.existingWorkcard)return <section className="portal-panel"><span className="panel-kicker">WORKCARD CREATED</span><h3>{selected.existingWorkcard.job_number} · {selected.existingWorkcard.title}</h3><p>{selected.existingWorkcard.status.replaceAll("_"," ")} · Setup review: {selected.existingWorkcard.workcard_review_status.replaceAll("_"," ")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a></section>;
