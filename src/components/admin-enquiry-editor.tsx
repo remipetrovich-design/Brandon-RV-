@@ -113,9 +113,6 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    {record.request_type==="general_enquiry"&&<><span className="panel-kicker">FOLLOW-UP</span><h2>Contact the customer directly</h2><p>General enquiries are handled by phone or email. Record call attempts and outcomes in internal notes; this record has no customer reply composer.</p></>}
   </section>
 
-
-  </section>
-
   {isQuoteRequest&&<section id="brv-panel-quote" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-quote" hidden={selectedTab!=="quote"}>
    <div className="portal-panel-heading"><div><span className="panel-kicker">QUOTE</span><h2>Quote history &amp; preparation</h2><p>Each revision is retained against this Jobcard. Issued quotes require separate senior approval.</p></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
    {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div><AdminQuoteTools quoteId={q.id}/></article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
