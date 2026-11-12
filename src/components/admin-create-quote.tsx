@@ -1,7 +1,7 @@
 "use client";
 import {FormEvent,useEffect,useMemo,useState} from "react";
 type Enquiry={id:string;request_number:string;request_type:string;contact_name:string;email:string;requested_service:string};
-type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string};
+type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;quote_kind?:string};
 type QuoteLine={id:number;description:string;quantity:string;unitPrice:string};
 const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(value);
 export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initialEnquiryId?:string;onCreated?:()=>void}){
@@ -20,7 +20,7 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
  const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);
  useEffect(()=>{void(async()=>{try{const r=await fetch("/api/admin/quotes");const d=await r.json();if(r.ok){setEnquiries(d.enquiries??[]);setPriorQuotes(d.quotes??[]);const status=d.pricing?.gst_status??"not_configured";const rate=Number(d.pricing?.gst_rate??10);setGstStatus(status);setConfiguredGstRate(rate);setTaxRate(status==="registered"?String(rate):"0");}else setNotice(d.error??"Could not load quote records.");}catch{setNotice("Could not load quote records.");}})();},[]);
- const ticketQuotes=priorQuotes.filter(q=>q.enquiry_id===enquiryId&&!["accepted","converted"].includes(q.status));
+ const ticketQuotes=priorQuotes.filter(q=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard"&&!["accepted","converted"].includes(q.status));
  const subtotal=useMemo(()=>items.reduce((sum,item)=>sum+Math.max(0,Number(item.quantity)||0)*Math.max(0,Number(item.unitPrice)||0),0),[items]);
  const tax=useMemo(()=>subtotal*(Number(taxRate)||0)/100,[subtotal,taxRate]);
  function updateLine(id:number,key:"description"|"quantity"|"unitPrice",value:string){setItems(current=>current.map(item=>item.id===id?{...item,[key]:value}:item));}
