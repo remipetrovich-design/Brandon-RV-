@@ -4,6 +4,8 @@ async function accessFor(request:Request,id:string){
  const db=database();const {data:enquiry,error}=await db.from("enquiries").select("id,business_id,user_id,customer_id,contact_name,email,request_type,guest_access_token_hash,guest_access_expires_at").eq("id",id).maybeSingle();
  if(error||!enquiry||!["public_enquiry","general_enquiry","customer_enquiry","quote_request"].includes(enquiry.request_type))return {db,enquiry:null,mode:null as string|null,user:null};
  const user=await currentUser();
+ const staffRequested=new URL(request.url).searchParams.get("view")==="staff";
+ if(user&&staffRequested){const membership=await currentMembership(user.id);if(membership?.business_id===enquiry.business_id&&(await userHasPermission(user.id,"enquiries.view")))return {db,enquiry,mode:"staff",user};}
  if(user&&enquiry.user_id===user.id)return {db,enquiry,mode:"customer",user};
  if(user){const membership=await currentMembership(user.id);if(membership?.business_id===enquiry.business_id&&(await userHasPermission(user.id,"enquiries.view")))return {db,enquiry,mode:"staff",user};}
  const token=new URL(request.url).searchParams.get("guestToken")??request.headers.get("x-guest-access-token")??"";
