@@ -1,0 +1,248 @@
+openapi: 3.1.0
+info:
+  title: Brandon RV Automation API
+  version: 1.0.0
+  description: Vendor-neutral API contract for authorised external automation platforms. Implementation status is tracked in docs/AUTOMATION_INTEGRATION.md.
+servers:
+  - url: https://{brandonRvHost}/api/integrations/v1
+    variables:
+      brandonRvHost:
+        default: your-brandon-rv-domain
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+  - name: Business
+  - name: Customers
+  - name: Enquiries
+  - name: Quotes
+  - name: Availability
+  - name: Appointments
+  - name: Workcards
+  - name: Parts
+  - name: Invoices
+paths:
+  /:
+    get:
+      tags: [System]
+      operationId: getIntegrationCapabilities
+      summary: Discover API version and available capabilities
+      responses:
+        '200':
+          description: API capabilities and version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiVersion: { type: string }
+                  capabilities: { type: array, items: { type: string } }
+                  documentation: { type: string }
+  /business:
+    get:
+      tags: [Business]
+      operationId: getBusinessProfile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Business profile and operating configuration }
+  /services:
+    get:
+      tags: [Business]
+      operationId: listServices
+      responses:
+        '200': { description: Active Brandon RV service catalogue }
+  /customers:
+    get:
+      tags: [Customers]
+      operationId: searchCustomers
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        '200': { description: Matching customer records }
+    post:
+      tags: [Customers]
+      operationId: createCustomer
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, email]
+              properties:
+                firstName: { type: string }
+                lastName: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+      responses:
+        '201': { description: Customer created }
+        '409': { description: Duplicate or conflicting customer }
+  /enquiries:
+    get:
+      tags: [Enquiries]
+      operationId: listEnquiries
+      responses:
+        '200': { description: Enquiries visible to the integration }
+    post:
+      tags: [Enquiries]
+      operationId: createEnquiry
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '201': { description: Enquiry created }
+  /quotes:
+    get:
+      tags: [Quotes]
+      operationId: listQuotes
+      responses:
+        '200': { description: Quotes and quote request status }
+    post:
+      tags: [Quotes]
+      operationId: createQuoteDraft
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '201': { description: Quote draft created; not automatically sent }
+  /availability:
+    get:
+      tags: [Availability]
+      operationId: checkAvailability
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: true
+          schema: { type: string, format: date-time }
+      responses:
+        '200': { description: Available appointment windows after applying business rules }
+  /appointments:
+    get:
+      tags: [Appointments]
+      operationId: listAppointments
+      responses:
+        '200': { description: Appointment records and statuses }
+    post:
+      tags: [Appointments]
+      operationId: createAppointment
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workcardId, startsAt, endsAt, location]
+              properties:
+                workcardId: { type: string, format: uuid }
+                startsAt: { type: string, format: date-time }
+                endsAt: { type: string, format: date-time }
+                location: { type: string }
+      responses:
+        '201': { description: Appointment created or queued for approval }
+        '409': { description: Booking conflict or policy violation }
+  /appointments/{appointmentId}:
+    patch:
+      tags: [Appointments]
+      operationId: updateAppointment
+      parameters:
+        - in: path
+          name: appointmentId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: Appointment updated under booking policy }
+  /workcards:
+    get:
+      tags: [Workcards]
+      operationId: listWorkcards
+      responses:
+        '200': { description: Workcards and current workflow status }
+    post:
+      tags: [Workcards]
+      operationId: createWorkcard
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '201': { description: Workcard created subject to quote and approval rules }
+  /workcards/{workcardId}:
+    get:
+      tags: [Workcards]
+      operationId: getWorkcard
+      parameters:
+        - in: path
+          name: workcardId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Workcard detail }
+    patch:
+      tags: [Workcards]
+      operationId: updateWorkcard
+      parameters:
+        - in: path
+          name: workcardId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: Workcard updated }
+  /parts:
+    get:
+      tags: [Parts]
+      operationId: listParts
+      responses:
+        '200': { description: Parts required and used on Workcards }
+  /invoices:
+    get:
+      tags: [Invoices]
+      operationId: listInvoices
+      responses:
+        '200': { description: Invoice records and balances }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: BrandonRVIntegrationKey
+  parameters:
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      schema: { type: string, maxLength: 128 }
+      description: Client-generated unique key to prevent duplicate writes on retries.
