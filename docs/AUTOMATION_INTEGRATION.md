@@ -4,7 +4,7 @@
 
 Provide one optional, secure business API that lets an external automation platform operate Brandon RV. The API is platform-neutral: UiPath, Activepieces, Flowise, Node-RED, a custom agent, or another compatible client can use the same contract. Do not put UiPath-specific dependencies or assumptions into the Brandon RV application.
 
-This document describes the integration contract and implementation plan. The API is not active until its authentication, endpoints, migration, tests and deployment are implemented.
+This document describes the integration contract, current implementation and remaining delivery plan. The control plane and scoped read API are implemented on this branch, but write operations are not yet exposed. The global API switch remains disabled by default; applying the migration and deploying the branch are separate required steps.
 
 ## Architecture
 
@@ -88,3 +88,19 @@ For actions needing owner/staff approval, create a pending action and return its
 ## Important operational note
 
 Open-source automation software can be free to run, but a hosted server, domain, model inference, email/SMS delivery and backups may still cost money. A zero-software-subscription setup is possible with self-hosted automation and a local model (for example Ollama), provided a suitable computer remains online. Do not promise zero total operating cost without checking hosting and communication requirements.
+
+
+## Implemented in the current development branch
+
+- Business-wide API kill switch, disabled by default. Pausing the API blocks every integration credential without affecting normal Brandon RV website workflows.
+- Per-integration bearer credentials. Only SHA-256 token hashes are stored; the full token is returned once when created.
+- Granular permission catalogue grouped by business configuration, customers/vehicles, enquiries/communications, quotes, bookings, Workcards, parts/suppliers, finance, workforce and administration.
+- Per-credential permission changes, immediate revocation, optional expiry, IP allowlist and request-rate settings.
+- Global sensitive-action approval policy setting and default request-rate setting.
+- Audit log view for external requests and administrator control changes.
+- Authenticated, tenant-isolated, paginated read endpoints for business, services, service areas, customers, vehicles, enquiries, quotes, appointments, Workcards, work entries, parts, suppliers, supplier orders, invoices, expenses, staff, time entries, leave, payroll, website pages, business settings, communications, tasks, employee assets and onboarding.
+- API capability discovery at `GET /api/integrations/v1`.
+
+## Not yet complete
+
+The current branch is an implementation milestone, not a finished production API. Resource write operations and business-action endpoints still need to be implemented against the existing quote, booking, Workcard, purchasing, invoice, payment, communications and workforce workflows. The idempotency table is present but retry handling is not yet wired into write requests. Sensitive-action approval is a control setting whose enforcement must be connected to those write workflows before write permissions are enabled. Rate limiting currently uses recent audit-log counts and needs an atomic distributed limiter before high-volume production use. The OpenAPI contract must stay aligned as write operations are delivered. Do not deploy or enable external access until these items and the migration have been verified.
