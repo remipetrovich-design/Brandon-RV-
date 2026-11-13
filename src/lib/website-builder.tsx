@@ -1,6 +1,6 @@
 import Link from "next/link";
 import EnquiryForm from "@/components/enquiry-form";
-import GeneralEnquiryForm from "@/components/general-enquiry-form";
+import WebsiteGeneralEnquiryBlock from "@/components/website-general-enquiry-block";
 
 type BuilderService={id:string;name:string;description:string|null;price_from:number|null;pricing_label:string|null};
 type BuilderArea={id:string;name:string;description:string|null;suburbs:string[]|null;postcodes:string[]|null;travel_fee:number|null;radius_km:number|null};
@@ -62,7 +62,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
    GeneralEnquiryForm:{
     fields:{},
     defaultProps:{},
-    render:()=> <section className="content-section"><div className="shell"><GeneralEnquiryForm/></div></section>
+    render:()=> <section className="content-section"><div className="shell"><WebsiteGeneralEnquiryBlock/></div></section>
    },
    ServicesFeed:{
     fields:{heading:{type:"text"},intro:{type:"textarea"}},
