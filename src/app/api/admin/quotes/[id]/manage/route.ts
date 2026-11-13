@@ -27,6 +27,12 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(raw.length<1||raw.length>30)return jsonError("A quote must contain between 1 and 30 line items.");
   const items=raw.map((item:any,index:number)=>({description:String(item.description??"").trim(),quantity:Number(item.quantity??1),unit_price:Number(item.unit_price??item.unitPrice??0),tax_rate:Number(item.tax_rate??item.taxRate??0),sort_order:index}));
   if(items.some((x:any)=>x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000||!Number.isFinite(x.tax_rate)||x.tax_rate<0||x.tax_rate>100))return jsonError("Check each quote line's description, quantity, unit price and tax rate.");
+  const {data:businessSettings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
+  const settings=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
+  const pricing=settings.pricing&&typeof settings.pricing==="object"?settings.pricing:{};
+  const gstStatus=String(pricing.gst_status??"not_configured"),gstRate=Number(pricing.gst_rate??10);
+  if(gstStatus!=="registered"&&items.some((x:any)=>x.tax_rate>0))return jsonError("GST cannot be added until the business GST position is confirmed and marked as registered in Business Settings.");
+  if(gstStatus==="registered"&&items.some((x:any)=>Math.abs(x.tax_rate-gstRate)>0.001))return jsonError("Use the configured GST rate from Business Settings for this quote.");
   const subtotal=Number(items.reduce((s:number,x:any)=>s+x.quantity*x.unit_price,0).toFixed(2));
   const taxAmount=Number(items.reduce((s:number,x:any)=>s+x.quantity*x.unit_price*x.tax_rate/100,0).toFixed(2));
   const total=Number((subtotal+taxAmount).toFixed(2));
