@@ -8,7 +8,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
  const areas=data.areas??[];
  return {
   categories:{
-   content:{title:"Page content",components:["Hero","Heading","TextBlock","ImageBlock","Spacer"]},
+   content:{title:"Page content",components:["Hero","Heading","TextBlock","ImageBlock","Spacer","FAQList","GalleryGrid"]},
    brandon:{title:"Brandon RV connected content",components:["RequestQuoteCTA","ServicesFeed","ServiceAreasFeed"]}
   },
   components:{
@@ -37,6 +37,16 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
     defaultProps:{height:32},
     render:({height}:any)=><div aria-hidden="true" style={{height:Math.min(160,Math.max(8,Number(height)||32))}}/>
    },
+   FAQList:{
+    fields:{heading:{type:"text"},items:{type:"array",arrayFields:{question:{type:"text"},answer:{type:"textarea"}},defaultItemProps:{question:"New question",answer:"Answer"}}},
+    defaultProps:{heading:"Frequently asked questions",items:[]},
+    render:({heading,items}:any)=><section className="content-section"><div className="shell"><h2>{heading}</h2><div className="detail-list">{(items??[]).map((item:any,index:number)=><article className="detail-item" key={index}><h3>{item.question}</h3><p>{item.answer}</p></article>)}</div></div></section>
+   },
+   GalleryGrid:{
+    fields:{heading:{type:"text"},items:{type:"array",arrayFields:{title:{type:"text"},description:{type:"textarea"},url:{type:"text"},alt:{type:"text"}},defaultItemProps:{title:"Work photo",description:"",url:"",alt:""}}},
+    defaultProps:{heading:"Previous work",items:[]},
+    render:({heading,items}:any)=><section className="content-section"><div className="shell"><h2>{heading}</h2>{items?.length?<div className="service-grid">{items.map((item:any,index:number)=><article className="service-card" key={index}>{item.url&&<img src={item.url} alt={item.alt||item.title||""} loading="lazy"/>}<h3>{item.title}</h3>{item.description&&<p>{item.description}</p>}</article>)}</div>:<p>Work photographs will appear here when they are ready to publish.</p>}</div></section>
+   },
    RequestQuoteCTA:{
     fields:{heading:{type:"text"},text:{type:"textarea"},label:{type:"text"}},
     defaultProps:{heading:"Need a hand with your RV?",text:"Send through the vehicle details and what needs attention. Brandon RV will review the request and come back to you.",label:"Request a quote"},
@@ -60,10 +70,19 @@ export function defaultWebsiteBuilderData(pageId:string,title:string,legacy:Reco
  const heroTitle=typeof legacy.hero_title==="string"?legacy.hero_title:title;
  const subtitle=typeof legacy.hero_subtitle==="string"?legacy.hero_subtitle:typeof legacy.intro==="string"?legacy.intro:"";
  const intro=typeof legacy.intro==="string"?legacy.intro:"";
+ const hero={type:"Hero",props:{id:pageId+"-hero",title:heroTitle,subtitle,imageUrl:"",imageAlt:""}};
+ if(pageId==="faq"){
+  const items=Array.isArray(legacy.items)?legacy.items.filter((item:any)=>item&&typeof item.question==="string"&&typeof item.answer==="string").map((item:any)=>({question:item.question,answer:item.answer})):[];
+  return {root:{props:{title}},content:[hero,{type:"FAQList",props:{id:pageId+"-faq",heading:"Frequently asked questions",items}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote",heading:"Have a question about a job?",text:"Send through the vehicle details and what needs attention.",label:"Request a quote"}}]};
+ }
+ if(pageId==="gallery"){
+  const items=Array.isArray(legacy.photos)?legacy.photos.filter((item:any)=>item&&typeof item.title==="string"&&typeof item.url==="string").map((item:any)=>({title:item.title,description:String(item.description??""),url:item.url,alt:item.title})):[];
+  return {root:{props:{title}},content:[hero,{type:"GalleryGrid",props:{id:pageId+"-gallery",heading:"Previous work",items}}]};
+ }
  return {
   root:{props:{title}},
   content:[
-   {type:"Hero",props:{id:pageId+"-hero",title:heroTitle,subtitle,imageUrl:"",imageAlt:""}},
+   hero,
    ...(intro?[{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro}}]:[]),
    {type:"ServicesFeed",props:{id:pageId+"-services",heading:"Our services",intro:"Services currently approved and published by Brandon RV."}},
    {type:"ServiceAreasFeed",props:{id:pageId+"-areas",heading:"Service areas",intro:"Share your location and Brandon RV will confirm whether travel is practical."}},
