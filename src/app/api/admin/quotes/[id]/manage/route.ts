@@ -7,7 +7,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {id}=await params;if(!idPattern.test(id))return jsonError("Invalid quote ID.");
  const db=database(),businessId=access.membership!.business_id;
  const [{data:quote,error},{data:items,error:itemsError}]=await Promise.all([
-  db.from("quotes").select("id,quote_number,revision_number,status,quote_kind,enquiry_id,total,subtotal,tax_amount,expiry_date,notes,terms,senior_approval_status,supersedes_quote_id,created_at").eq("id",id).eq("business_id",businessId).maybeSingle(),
+  db.from("quotes").select("id,quote_number,revision_number,status,quote_kind,enquiry_id,total,subtotal,tax_amount,expiry_date,notes,terms,prepared_by,senior_approval_status,senior_approved_at,senior_approval_note,issue_date,supersedes_quote_id,created_at").eq("id",id).eq("business_id",businessId).maybeSingle(),
   db.from("quote_items").select("id,description,quantity,unit_price,tax_rate,line_total,sort_order").eq("quote_id",id).order("sort_order")
  ]);
  if(error||itemsError||!quote)return jsonError("Quote not found.",404);
