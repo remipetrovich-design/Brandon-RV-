@@ -86,7 +86,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   if(section==="appointments"&&update.status==="cancelled"){
    const {data:workcard}=await db.from("jobs").select("id,status").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
    if(workcard){
-    await db.from("jobs").update({appointment_id:null,scheduled_start:null,scheduled_end:null,status:workcard.status==="scheduled"?"pending":workcard.status,updated_at:new Date().toISOString()}).eq("id",workcard.id).eq("business_id",membership.business_id);
+    await db.from("jobs").update({scheduled_start:null,scheduled_end:null,status:workcard.status==="scheduled"?"pending":workcard.status,updated_at:new Date().toISOString()}).eq("id",workcard.id).eq("business_id",membership.business_id);
    }
   }
   let emailSent=false;
