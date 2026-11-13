@@ -78,7 +78,7 @@ test("public page builder reads services and service areas from live application
  const homepage=await source("../src/app/page.tsx");
  const about=await source("../src/app/about-services/page.tsx");
  const process=await source("../src/app/how-it-works/page.tsx");
- has(renderer,"createWebsiteBuilderConfig({services,areas})");
+ has(renderer,"createWebsiteBuilderConfig({services,areas,acceptingEnquiries:settings.accepting_enquiries,business})");
  has(homepage,"getPublishedServices()");
  has(homepage,"getPublishedServiceAreas()");
  has(about,"getPublishedServices()");
@@ -328,11 +328,16 @@ test("public website builder always renders phone details from the business prof
  const config=await source("../src/lib/website-builder.tsx");
  const renderer=await source("../src/components/public-site-builder.tsx");
  const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const quote=await source("../src/app/request-quote/page.tsx");
+ const general=await source("../src/app/general-enquiry/page.tsx");
  has(config,"business?:BuilderBusiness");
  has(config,"const businessPhone=data.business?.phone?.trim()??\"\"");
  has(config,"{businessPhone&&");
  has(config,"phoneHref(businessPhone)");
  has(renderer,"getPublicBusiness()");
- has(renderer,"business={business}");
+ has(renderer,"business})");
  has(workspace,"business,");
+ has(quote,"getPublicBusiness()");
+ has(quote,"phoneHref(business.phone)");
+ has(general,"business.phone??\"\"");
 });
