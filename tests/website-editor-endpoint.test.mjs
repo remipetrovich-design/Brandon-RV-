@@ -299,3 +299,21 @@ test("view page links point to the real combined public routes and section ancho
  has(config,'id="brv-about"');
  has(config,'id="brv-services"');
 });
+
+test("homepage builder seeds contact details from the current business profile and respects enquiry availability",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const adminPage=await source("../src/app/admin/website-builder/page.tsx");
+ const publicBuilder=await source("../src/components/public-site-builder.tsx");
+ has(config,"acceptingEnquiries?:boolean");
+ has(config,"business?:BuilderBusiness");
+ has(config,"phone:businessPhone,location:businessLocation");
+ has(config,"brandLine:str(\"hero_subtitle\",businessBrandLine)");
+ has(config,"Enquiries temporarily unavailable");
+ has(workspace,"business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null}");
+ has(workspace,"defaultWebsiteBuilderData(selectedPage?.slug??\"home\",selectedPage?.draft_title??selectedPage?.title??\"Home\",legacy,business)");
+ has(workspace,"acceptingEnquiries})");
+ has(adminPage,"getPublicBusiness()");
+ has(adminPage,"getPublicBusinessSettings()");
+ has(publicBuilder,"getPublicBusinessSettings()");
+});
