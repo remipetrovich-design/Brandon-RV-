@@ -23,7 +23,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(typeof body.is_published!=="boolean")return jsonError("Invalid publication setting.");
    if(Object.keys(body).some(key=>key!=="is_published"))return jsonError("Save draft changes before publishing the page.");
    const {data:current,error:readError}=await db.from("site_pages")
-    .select("id,draft_title,draft_content,draft_meta_title,draft_meta_description")
+    .select("id,title,content,meta_title,meta_description,draft_title,draft_content,draft_meta_title,draft_meta_description")
     .eq("id",id).eq("business_id",membership.business_id).maybeSingle();
    if(readError)return jsonError("Could not load website page.",500);
    if(!current)return jsonError("Website page not found.",404);
@@ -31,10 +31,10 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    const publish=body.is_published===true;
    const update:Record<string,unknown>={is_published:publish,published_at:publish?new Date().toISOString():null,updated_at:new Date().toISOString()};
    if(publish&&current.draft_content!==null){
-    update.title=current.draft_title;
+    update.title=current.draft_title??current.title;
     update.content=current.draft_content;
-    update.meta_title=current.draft_meta_title;
-    update.meta_description=current.draft_meta_description;
+    update.meta_title=current.draft_meta_title??current.meta_title;
+    update.meta_description=current.draft_meta_description??current.meta_description;
    }
    const {data:page,error}=await db.from("site_pages").update(update).eq("id",id).eq("business_id",membership.business_id)
     .select("id,title,slug,content,meta_title,meta_description,is_published,updated_at").maybeSingle();
