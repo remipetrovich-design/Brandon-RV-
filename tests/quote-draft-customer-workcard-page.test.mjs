@@ -24,3 +24,26 @@ test("staff Workcards are available on a dedicated page, not embedded in overvie
  assert.doesNotMatch(dashboard,/StaffWorkOrders/);
  assert.match(layout,/\/admin\/my-workcards/);
 });
+
+
+test("admin quote register disambiguates both quote-to-Workcard foreign keys",async()=>{
+ const page=await source("../src/app/admin/[section]/page.tsx");
+ assert.match(page,/jobs!quotes_job_id_fkey/);
+ assert.match(page,/quotes!jobs_quote_id_fkey/);
+ assert.match(page,/row\.jobs\?\.id/);
+});
+
+test("Jobcard Quote tab exposes quote and linked Workcard management controls",async()=>{
+ const editor=await source("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/import AdminQuoteManagement/);
+ assert.match(editor,/import AdminWorkcardManagement/);
+ assert.match(editor,/AdminQuoteManagement quoteId=\{q\.id\}/);
+ assert.match(editor,/AdminWorkcardManagement jobId=\{workcard\.id\}/);
+});
+
+test("quote-specific PATCH route retains atomic issue and customer email behavior",async()=>{
+ const route=await source("../src/app/api/admin/quotes/[id]/route.ts");
+ assert.match(route,/issue_quote_for_jobcard/);
+ assert.match(route,/Your Brandon RV quote/);
+ assert.match(route,/sendEmail/);
+});
