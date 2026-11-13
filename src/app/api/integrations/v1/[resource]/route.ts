@@ -27,7 +27,7 @@ const RESOURCES: Record<string, { table: string; scope: string; columns: string;
   communications: { table: "customer_messages", scope: "communications.read", columns: "id,customer_id,user_id,job_id,enquiry_id,quote_id,sender_type,sender_user_id,message,is_internal,read_at,created_at" },
   tasks: { table: "job_tasks", scope: "tasks.read", columns: "id,job_id,title,description,assigned_staff_id,status,due_at,completed_at,sort_order,created_at,updated_at" },
   assets: { table: "employee_assets", scope: "assets.read", columns: "id,user_id,asset_name,asset_tag,serial_number,assigned_at,returned_at,condition_notes,created_at", sensitive: true },
-  onboarding: { table: "hr_onboarding_tasks", scope: "onboarding.view", columns: "id,user_id,title,description,due_date,completed_at,completed_by,sort_order,created_at", sensitive: true },
+  onboarding: { table: "hr_onboarding_tasks", scope: "onboarding.read", columns: "id,user_id,title,description,due_date,completed_at,completed_by,sort_order,created_at", sensitive: true },
 };
 
 export async function GET(request: Request, { params }: { params: Promise<{ resource: string }> }) {
