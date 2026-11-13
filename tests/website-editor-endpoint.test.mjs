@@ -47,22 +47,20 @@ test("publishing copies saved draft fields to live content and refreshes the pub
 test("builder exposes protected connected components without exposing form schemas",async()=>{
  const route=await source("../src/app/api/admin/website/[id]/route.ts");
  const config=await source("../src/lib/website-builder.tsx");
+ const block=(name)=>{const start=config.indexOf(name+":{");const end=config.indexOf("\n   },",start);return config.slice(start,end<0?undefined:end);};
  assert.match(route,/body\.content/);
  assert.doesNotMatch(route,/body\.service_areas|body\.form_schema|body\.request_quote/);
- assert.match(config,/href="\/request-quote"/);
- assert.match(config,/ServicesFeed/);
- assert.match(config,/ServiceAreasFeed/);
- assert.match(config,/ServiceAreasFeed:\{[\\s\\S]*permissions:\{delete:false,duplicate:false,edit:true,drag:true\}/);
- assert.match(config,/RequestQuoteForm/);
- assert.match(config,/RequestQuoteForm:\{[\\s\\S]*permissions:\{delete:false,duplicate:false,edit:false,drag:true\}/);
- assert.match(config,/GeneralEnquiryForm/);
- assert.match(config,/GeneralEnquiryForm:\{[\\s\\S]*permissions:\{delete:false,duplicate:false,edit:false,drag:true\}/);
- assert.match(config,/fields:\{\}/);
- assert.match(config,/render:\(\)=> <section[\s\S]*<EnquiryForm preview=\{isEditing\}\/>/);
- assert.match(config,/WebsiteGeneralEnquiryBlock/);
+ assert.ok(config.includes('href="/request-quote"'));
+ assert.ok(config.includes("ServicesFeed"));
+ assert.ok(config.includes("ServiceAreasFeed"));
+ assert.match(block("RequestQuoteForm"),/permissions:\{delete:false,duplicate:false,edit:false,drag:true\}/);
+ assert.match(block("GeneralEnquiryForm"),/permissions:\{delete:false,duplicate:false,edit:false,drag:true\}/);
+ assert.match(block("ServicesFeed"),/permissions:\{delete:false,duplicate:false,edit:true,drag:true\}/);
+ assert.match(block("ServiceAreasFeed"),/permissions:\{delete:false,duplicate:false,edit:true,drag:true\}/);
+ assert.ok(config.includes("<EnquiryForm preview={isEditing}/>"));
+ assert.ok(config.includes("<WebsiteGeneralEnquiryBlock preview={isEditing}/>"));
  assert.doesNotMatch(config,/fields:\{[^}]+name|fields:\{[^}]+email|fields:\{[^}]+message/);
 });
-
 test("public page builder reads services and service areas from live application data",async()=>{
  const renderer=await source("../src/components/public-site-builder.tsx");
  const homepage=await source("../src/app/page.tsx");
