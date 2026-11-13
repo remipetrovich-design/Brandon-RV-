@@ -22,7 +22,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const oldItems=(quote.quote_items??[]) as any[];
   const raw=Array.isArray(body.items)?body.items:oldItems;
   if(raw.length<1||raw.length>30)return jsonError("A quote must contain between 1 and 30 lines.");
-  const items=raw.map((x:any,i:number)=>({description:String(x.description??"").trim(),quantity:Number(x.quantity),unit_price:Number(x.unit_price??x.unitPrice),tax_rate:Number(x.tax_rate??oldItems[i]?.tax_rate??0),sort_order:i}));
+  const items=raw.map((x:any,i:number)=>({description:String(x.description??"").trim(),quantity:Number(x.quantity),unit_price:Number(x.unit_price??x.unitPrice),tax_rate:Number(x.tax_rate??oldItems[i]?.tax_rate??oldItems[0]?.tax_rate??0),sort_order:i}));
   if(items.some(x=>x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000||!Number.isFinite(x.tax_rate)||x.tax_rate<0||x.tax_rate>100))return jsonError("Check each quote line's description, quantity, unit price and tax rate.");
   const {data:settings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
   const pricing=(settings?.settings as any)?.pricing??{},gstStatus=String(pricing.gst_status??"not_configured"),configuredRate=Number(pricing.gst_rate??10);
