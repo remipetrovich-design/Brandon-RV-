@@ -7,8 +7,6 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  if(error||!job)return jsonError("Workcard not found.",404);
  return Response.json({job});
 }
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-export const runtime="nodejs";
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
