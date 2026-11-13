@@ -5,9 +5,12 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {id}=await params,db=database(),businessId=access.membership!.business_id;
  const {data:job,error}=await db.from("jobs").select("id,job_number,status,quote_id").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!job)return jsonError("Workcard not found.",404);
- const {data:quotes,error:quoteError}=await db.from("quotes").select("id,quote_number,status,total,revision_number,variation_reason,senior_approval_status,issue_date,response_at,response_note,quote_items(id,item_type,description,quantity,unit_price,tax_rate,line_total)").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").order("created_at",{ascending:false});
- if(quoteError)return jsonError("Could not load Workcard variations.",500);
- return Response.json({job,variations:quotes??[]});
+ const [{data:quotes,error:quoteError},{data:services,error:serviceError}]=await Promise.all([
+  db.from("quotes").select("id,quote_number,status,total,revision_number,variation_reason,senior_approval_status,issue_date,response_at,response_note,quote_items(id,item_type,description,quantity,unit_price,tax_rate,line_total,service_id)").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").order("created_at",{ascending:false}),
+  db.from("services").select("id,name,category,price_from").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
+ ]);
+ if(quoteError||serviceError)return jsonError("Could not load Workcard variations or service presets.",500);
+ return Response.json({job,variations:quotes??[],services:services??[]});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -15,7 +18,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  try{
   const {id}=await params,body=await request.json(),reason=String(body.reason??"").trim().slice(0,2000);
   const raw=Array.isArray(body.items)?body.items:[];
-  const items=raw.map((x:any)=>({item_type:String(x.itemType??"parts"),description:String(x.description??"").trim(),quantity:Number(x.quantity??1),unit_price:Number(x.unitPrice??0)}));
+  const items=raw.map((x:any)=>({item_type:String(x.itemType??"parts"),description:String(x.description??"").trim(),quantity:Number(x.quantity??1),unit_price:Number(x.unitPrice??0),service_id:x.serviceId?String(x.serviceId):null}));
   const taxRate=Number(body.taxRate??0);
   if(reason.length<5)return jsonError("Explain why the additional work or price change is required.");
   if(items.length<1||items.length>30||items.some((x:any)=>!["labour","parts"].includes(x.item_type)||x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000))return jsonError("Add between 1 and 30 valid labour or parts lines.");
@@ -33,6 +36,8 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const gstStatus=String(pricing.gst_status??"not_configured"),gstRate=Number(pricing.gst_rate??10);
   if(gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed.");
   if(gstStatus==="registered"&&Math.abs(taxRate-gstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings.");
+  const serviceIds=items.map((x:any)=>x.service_id).filter(Boolean) as string[];
+  if(serviceIds.length){const {data:services,error:serviceError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceError||new Set((services??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
   const lines=items.map((x:any,i:number)=>({...x,tax_rate:taxRate,line_total:Number((x.quantity*x.unit_price).toFixed(2)),sort_order:i}));
   const subtotal=Number(lines.reduce((s:number,x:any)=>s+x.line_total,0).toFixed(2));
   const taxAmount=Number(lines.reduce((s:number,x:any)=>s+x.line_total*x.tax_rate/100,0).toFixed(2));
