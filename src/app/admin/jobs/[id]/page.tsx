@@ -1,0 +1,20 @@
+import Link from "next/link";
+import {notFound,redirect} from "next/navigation";
+import {currentUser,currentMembership,userHasPermission} from "@/lib/auth";
+import AdminWorkcardManagement from "@/components/admin-workcard-management";
+
+export const dynamic="force-dynamic";
+
+export default async function AdminWorkcardPage({params}:{params:Promise<{id:string}>}){
+ const {id}=await params;
+ const user=await currentUser();
+ if(!user)redirect("/portal/sign-in");
+ const membership=await currentMembership(user.id);
+ if(!membership)redirect("/staff");
+ if(!(await userHasPermission(user.id,"jobs.manage")))notFound();
+ return <main className="portal-page"><div className="shell portal-shell" style={{display:"block",maxWidth:1180}}>
+  <p><Link className="button button-secondary" href="/admin/jobs">← Back to Workcards</Link></p>
+  <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS OPERATIONS</p><h1>Workcard <em>details.</em></h1><p>Customer and vehicle information, job details, parts, supplier orders, completed work and notes.</p></div>
+  <AdminWorkcardManagement jobId={id}/>
+ </div></main>;
+}
