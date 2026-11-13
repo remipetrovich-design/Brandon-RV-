@@ -28,3 +28,31 @@ comment on column public.job_work_entries.quantity_required is 'Quantity request
 comment on column public.job_work_entries.quantity_used is 'Actual quantity consumed or labour hours performed.';
 comment on column public.job_work_entries.cost_unit_price is 'Actual business cost per unit, excluding tax.';
 comment on column public.job_work_entries.invoiceable is 'Explicitly approved for inclusion in the final invoice.';
+
+-- Variation acceptance also creates planned Workcard entries. Carry the source
+-- quote line's service and required quantity into those entries automatically.
+create or replace function public.sync_workcard_entry_from_quote_line()
+returns trigger
+language plpgsql
+set search_path=public
+as $$
+declare
+  v_quantity numeric;
+  v_service_id uuid;
+begin
+  if new.source_quote_item_id is not null then
+    select quantity,service_id into v_quantity,v_service_id
+      from public.quote_items where id=new.source_quote_item_id;
+    if found then
+      if new.quantity_required=0 then new.quantity_required:=v_quantity; end if;
+      if new.service_id is null then new.service_id:=v_service_id; end if;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists job_work_entries_sync_quote_line on public.job_work_entries;
+create trigger job_work_entries_sync_quote_line
+before insert on public.job_work_entries
+for each row execute function public.sync_workcard_entry_from_quote_line();
