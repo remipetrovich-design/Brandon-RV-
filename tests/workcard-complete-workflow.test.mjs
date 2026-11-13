@@ -23,7 +23,7 @@ test("admin can create and manage a booking directly from a Workcard",async()=>{
  const component=await read("../src/components/admin-workcard-management.tsx");
  const route=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
  assert.match(component,/activeTab==="booking"&&<section/);
- assert.match(component,/Create booking/);
+ assert.match(component,/Accept booking request/);\n assert.match(component,/Booking settings/);
  assert.match(component,/\/booking/);
  assert.match(route,/authorizePermission\("jobs\.manage"\)/);
  assert.match(route,/sameOrigin\(request\)/);
@@ -32,7 +32,7 @@ test("admin can create and manage a booking directly from a Workcard",async()=>{
  assert.match(route,/ends_at/);
  assert.match(route,/location/);
  assert.match(route,/workcard\.booking_created/);
- assert.match(route,/status:"confirmed"/);
+ assert.match(route,/status:"confirmed"/);\n assert.match(route,/booking_request_accepted/);\n assert.match(route,/status==="requested"/);
  assert.match(route,/business_id/);
  assert.match(route,/\.lt\("starts_at"/);
  assert.match(route,/\.gt\("ends_at"/);
