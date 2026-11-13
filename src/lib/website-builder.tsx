@@ -99,9 +99,18 @@ export function defaultWebsiteBuilderData(pageId:string,title:string,legacy:Reco
  if(pageId==="contact"){
   return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"For general enquiries, contact Brandon RV with a question about the mobile service, service suitability or how the process works."}},{type:"GeneralEnquiryForm",props:{id:pageId+"-form"}}]};
  }
+ if(pageId==="about"){
+  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"Brandon RV provides mobile caravan and motorhome repair and accessory services around Tamworth, NSW."}},{type:"TextBlock",props:{id:pageId+"-story",heading:"A practical approach to mobile RV repairs.",text:"Brandon RV brings practical caravan and motorhome industry experience to mobile repair and accessory work.\\n\\nTell us what you need, provide the vehicle details and photographs where possible, and we will discuss the job and the next step."}}]};
+ }
+ if(pageId==="services"){
+  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"Explore the services Brandon RV offers. Contact us to discuss your requirements and arrange the next step."}},{type:"ServicesFeed",props:{id:pageId+"-services",heading:"Our services",intro:"Services currently approved and published by Brandon RV."}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote",heading:"Have a job in mind?",text:"Send through the vehicle details and what needs attention.",label:"Request a quote"}}]};
+ }
+ if(pageId==="service-areas"){
+  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"Brandon RV is based in the Tamworth region. Tell us where the vehicle is located and we will confirm whether travel is practical before discussing an appointment."}},{type:"ServiceAreasFeed",props:{id:pageId+"-areas",heading:"Where we work",intro:"Published service areas and travel information."}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote"}}]};
+ }
  if(pageId==="how-it-works"){
   const steps=Array.isArray(legacy.steps)?legacy.steps.filter((step:unknown):step is string=>typeof step==="string"):[ ];
-  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro}},{type:"ProcessSteps",props:{id:pageId+"-steps",heading:"From enquiry to handover",steps:steps.map(text=>({text}))}},{type:"ServiceAreasFeed",props:{id:pageId+"-areas",heading:"Where we work",intro:"Published service areas and travel information."}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote"}}]};
+  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro}},{type:"ProcessSteps",props:{id:pageId+"-steps",heading:"From enquiry to handover",steps:steps.map(text=>({text}))}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote"}}]};
  }
  if(pageId==="faq"){
   const items=Array.isArray(legacy.items)?legacy.items.filter((item:any)=>item&&typeof item.question==="string"&&typeof item.answer==="string").map((item:any)=>({question:item.question,answer:item.answer})):[];
