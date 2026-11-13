@@ -13,6 +13,7 @@ type Page={
 type Props={pages:Page[]};
 const asRecord=(value:unknown):Record<string,unknown>=>value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
 const pageLabel=(slug:string)=>slug==="home"?"Home":slug.split("-").map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
+const publicPageHref=(slug:string)=>({home:"/",about:"/about-services#brv-about",services:"/about-services#brv-services","how-it-works":"/how-it-works","service-areas":"/how-it-works#service-areas",faq:"/faq",gallery:"/gallery","request-quote":"/request-quote",contact:"/general-enquiry"} as Record<string,string>)[slug]??("/"+slug);
 
 export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
  const [pages,setPages]=useState(initialPages);
@@ -67,7 +68,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
   <section className="portal-panel brv-unified-builder" id="brv-unified-builder">
    <div className="brv-builder-toolbar">
     <div className="brv-builder-page-picker"><label htmlFor="brv-page-select">Editing page</label><select id="brv-page-select" value={selectedPage.slug} onChange={event=>switchPage(event.target.value)}>{pages.map(page=><option key={page.id} value={page.slug}>{pageLabel(page.slug)}</option>)}</select></div>
-    <div className="brv-builder-toolbar-actions"><span className="status-pill">Live on website</span><span className={"status-pill "+(selectedPage.is_published?"":"status-pill-draft")}>{selectedPage.is_published?(asRecord(selectedPage.content).builder?"Visual editor version published":"Database content published"):"Current public website layout"}</span>{(selectedPage.draft_content!==null&&selectedPage.draft_content!==undefined)&&<span className="status-pill status-pill-draft">Draft saved</span>}<Link className="button button-secondary brv-builder-view-link" href={"/"+(selectedPage.slug==="home"?"":selectedPage.slug)} target="_blank">View page ↗</Link><button className="button button-primary" type="button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?"Saving…":"Save draft"}</button></div>
+    <div className="brv-builder-toolbar-actions"><span className="status-pill">Live on website</span><span className={"status-pill "+(selectedPage.is_published?"":"status-pill-draft")}>{selectedPage.is_published?(asRecord(selectedPage.content).builder?"Visual editor version published":"Database content published"):"Current public website layout"}</span>{(selectedPage.draft_content!==null&&selectedPage.draft_content!==undefined)&&<span className="status-pill status-pill-draft">Draft saved</span>}<Link className="button button-secondary brv-builder-view-link" href={publicPageHref(selectedPage.slug)} target="_blank">View page ↗</Link><button className="button button-primary" type="button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?"Saving…":"Save draft"}</button></div>
    </div>
    <div className="brv-builder-page-meta">
     <label>Page title<input value={pageTitle} onChange={event=>{setPageTitle(event.target.value);setDirty(true);}} maxLength={160}/></label>
