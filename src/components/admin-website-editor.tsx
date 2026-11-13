@@ -15,7 +15,8 @@ export default function AdminWebsiteEditor({id,slug,title,content,metaTitle,meta
  const [notice,setNotice]=useState("Changes are saved as a draft. Publishing the page remains a separate admin action.");
  const [busy,setBusy]=useState(false);
  const [services,setServices]=useState<any[]>([]);
- const [areas,setAreas]=useState<any[]>([]);\n const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true}) as any,[services,areas]);
+ const [areas,setAreas]=useState<any[]>([]);
+ const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true}) as any,[services,areas]);
  useEffect(()=>{let active=true;void Promise.all([fetch("/api/public/services",{cache:"no-store"}).then(r=>r.ok?r.json():{services:[]}),fetch("/api/public/service-areas",{cache:"no-store"}).then(r=>r.ok?r.json():{areas:[]})]).then(([serviceData,areaData])=>{if(active){setServices(serviceData.services??[]);setAreas(areaData.areas??[]);}}).catch(()=>{});return()=>{active=false;};},[]);
 
  async function save(data:unknown){
