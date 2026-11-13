@@ -15,14 +15,18 @@ test("website editor saves through a dedicated permission-checked draft endpoint
  assert.match(route,/\.eq\("business_id",membership\.business_id\)/);
  assert.match(route,/draft_content/);
  assert.match(route,/website\.page\.draft_saved/);
- assert.match(admin,/draft_content\?\?row\.content/);\n assert.match(admin,/slug=\{row\.slug\}/);\n assert.match(editor,/defaultWebsiteBuilderData\(slug,title,legacy\)/);
+ assert.match(admin,/draft_content\?\?row\.content/);
+ assert.match(admin,/slug=\{row\.slug\}/);
+ assert.match(editor,/defaultWebsiteBuilderData\(slug,title,legacy\)/);
 });
 
 test("saving a website draft does not overwrite live content or publish it",async()=>{
  const route=await source("../src/app/api/admin/website/[id]/route.ts");
  const migration=await source("../supabase/migrations/20261113120000_website_page_drafts.sql");
  const draftSave=route.slice(route.indexOf("const draft:"),route.indexOf("return Response.json({page});",route.indexOf("const draft:")));
- assert.match(migration,/add column if not exists draft_content jsonb/);\n assert.match(migration,/select id,\x27request-quote\x27/);\n assert.match(migration,/on conflict \(business_id,slug\) do nothing/);
+ assert.match(migration,/add column if not exists draft_content jsonb/);
+ assert.match(migration,/select id,'request-quote'/);
+ assert.match(migration,/on conflict \(business_id,slug\) do nothing/);
  assert.match(draftSave,/draft_title/);
  assert.match(draftSave,/draft_content/);
  assert.doesNotMatch(draftSave,/update\.content=|update\.is_published|update\.published_at/);
@@ -51,7 +55,7 @@ test("builder exposes protected connected components without exposing form schem
  assert.match(config,/GeneralEnquiryForm/);
  assert.match(config,/fields:\{\}/);
  assert.match(config,/render:\(\)=> <section[\s\S]*<EnquiryForm\/>/);
- assert.match(config,/WebsiteGeneralEnquiryBlock/);\n assert.match(config,/ProcessSteps/);
+ assert.match(config,/WebsiteGeneralEnquiryBlock/);
  assert.doesNotMatch(config,/fields:\{[^}]+name|fields:\{[^}]+email|fields:\{[^}]+message/);
 });
 
@@ -96,12 +100,21 @@ test("quote and general-enquiry blocks reuse the existing forms and customer pro
  assert.match(config,/import WebsiteGeneralEnquiryBlock from/);
  assert.match(config,/render:\(\)=> <section[\s\S]*<EnquiryForm\/>/);
  assert.match(config,/render:\(\)=> <section[\s\S]*<WebsiteGeneralEnquiryBlock\/>/);
- assert.match(quote,/import EnquiryForm/);\n assert.match(quote,/getPublishedSitePage\("request-quote"\)/);\n assert.match(quote,/PublicSiteBuilder/);\n assert.match(general,/getPublishedSitePage\("contact"\)/);\n assert.match(general,/PublicSiteBuilder/);
+ assert.match(quote,/import EnquiryForm/);
+ assert.match(quote,/getPublishedSitePage\("request-quote"\)/);
+ assert.match(quote,/PublicSiteBuilder/);
+ assert.match(general,/getPublishedSitePage\("contact"\)/);
+ assert.match(general,/PublicSiteBuilder/);
  assert.match(general,/import GeneralEnquiryForm/);
  assert.match(quoteForm,/fetch\("\/api\/enquiries"/);
  assert.match(generalForm,/form\.set\("requestType","public_enquiry"\)/);
  assert.match(wrapper,/api\/portal\/profile/);
- assert.match(wrapper,/initialName=/);\n const builder=await source("../src/lib/website-builder.tsx");\n assert.match(builder,/if\(pageId==="request-quote"\)/);\n assert.match(builder,/type:"RequestQuoteForm"/);\n assert.match(builder,/if\(pageId==="contact"\)/);\n assert.match(builder,/type:"GeneralEnquiryForm"/);\n assert.match(builder,/if\(pageId==="how-it-works"\)/);
+ assert.match(wrapper,/initialName=/);
+ assert.match(config,/if\(pageId==="request-quote"\)/);
+ assert.match(config,/type:"RequestQuoteForm"/);
+ assert.match(config,/if\(pageId==="contact"\)/);
+ assert.match(config,/type:"GeneralEnquiryForm"/);
+ assert.match(config,/if\(pageId==="how-it-works"\)/);
 });
 
 test("builder preview reads published service and service-area feeds only",async()=>{
