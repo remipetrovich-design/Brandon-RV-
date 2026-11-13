@@ -317,3 +317,22 @@ test("homepage builder seeds contact details from the current business profile a
  has(adminPage,"getPublicBusinessSettings()");
  has(publicBuilder,"getPublicBusinessSettings()");
 });
+
+test("How it Works location CTA opens the Service Areas section, not Request a Quote",async()=>{
+ const page=await source("../src/app/how-it-works/page.tsx");
+ has(page,'href="/service-areas"');
+ assert.equal(page.includes('href="/request-quote">Check your location'),false);
+});
+
+test("public website builder always renders phone details from the business profile",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const renderer=await source("../src/components/public-site-builder.tsx");
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ has(config,"business?:BuilderBusiness");
+ has(config,"const businessPhone=data.business?.phone?.trim()??\"\"");
+ has(config,"phone={businessPhone}");
+ has(config,"phoneHref(businessPhone)");
+ has(renderer,"getPublicBusiness()");
+ has(renderer,"business={business}");
+ has(workspace,"business,");
+});
