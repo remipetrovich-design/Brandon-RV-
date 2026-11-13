@@ -35,6 +35,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
     if(current.draft_content!==null)update.content=current.draft_content;
     if(current.draft_meta_title!==null)update.meta_title=current.draft_meta_title;
     if(current.draft_meta_description!==null)update.meta_description=current.draft_meta_description;
+    update.draft_title=null;
+    update.draft_content=null;
+    update.draft_meta_title=null;
+    update.draft_meta_description=null;
+    update.draft_updated_at=null;
    }
    const {data:page,error}=await db.from("site_pages").update(update).eq("id",id).eq("business_id",membership.business_id)
     .select("id,title,slug,content,meta_title,meta_description,is_published,updated_at").maybeSingle();
