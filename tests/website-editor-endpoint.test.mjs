@@ -219,3 +219,39 @@ test("initial builder data retains the existing public hero headings for special
  has(config,'pageId==="faq"?"Frequently asked questions."');
  has(config,'pageId==="gallery"?"Practical work. Real results."');
 });
+
+test("website management opens one unified editor for every page",async()=>{
+ const route=await source("../src/app/admin/website-builder/page.tsx");
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const admin=await source("../src/app/admin/[section]/page.tsx");
+ has(route,'from "@/components/admin-website-workspace"');
+ has(route,'from "@/lib/auth"');
+ has(route,'eq("business_id",membership.business_id)');
+ has(route,'order("slug",{ascending:true})');
+ has(workspace,'id="brv-page-select"');
+ has(workspace,"pages.map(page");
+ has(workspace,'fetch("/api/admin/website/"+selectedPage.id');
+ has(workspace,"draft_content");
+ has(workspace,"onChange={(data:any)=>{setEditorData(data);setDirty(true);}}");
+ has(workspace,"onPublish={(data:any)=>void save(data)}");
+ has(workspace,"window.confirm");
+ has(workspace,'"header-publish":"Save draft"');
+ has(workspace,'page.slug==="home"');
+ has(admin,'if(section==="website")redirect("/admin/website-builder")');
+});
+
+test("unified website editor includes responsive controls for mobile desktop-mode browsers",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const css=await source("../src/app/globals.css");
+ has(workspace,"brv-builder-toolbar");
+ has(workspace,"brv-builder-page-picker");
+ has(workspace,"brv-builder-page-meta");
+ has(workspace,"brv-builder-canvas");
+ has(workspace,'label:"Phone"');
+ has(workspace,'label:"Tablet"');
+ has(workspace,'label:"Desktop"');
+ has(css,".brv-builder-toolbar");
+ has(css,".brv-builder-page-meta");
+ has(css,"@media (max-width: 1100px)");
+ has(css,".brv-builder-canvas");
+});
