@@ -3,23 +3,25 @@ export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id;
- const [{data:enquiries,error:enquiryError},{data:quotes,error:quoteError},{data:businessSettings},{data:services,error:serviceError}]=await Promise.all([
+ const [{data:enquiries,error:enquiryError},{data:quotes,error:quoteError},{data:businessSettings},{data:services,error:serviceError},{data:customers,error:customerError}]=await Promise.all([
   db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id,customer_id").eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
-  db.from("quotes").select("id,quote_number,enquiry_id,revision_number,status,quote_kind,job_id,total,created_at").eq("business_id",businessId).not("enquiry_id","is",null).order("created_at",{ascending:false}),
+  db.from("quotes").select("id,quote_number,enquiry_id,customer_id,revision_number,status,quote_kind,job_id,total,created_at").eq("business_id",businessId).order("created_at",{ascending:false}),
   db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle(),
-  db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
+  db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name"),
+  db.from("customers").select("id,full_name,email,status").eq("business_id",businessId).eq("status","active").order("full_name")
  ]);
- if(enquiryError||quoteError||serviceError)return jsonError("Could not load quote records or service presets.",500);
+ if(enquiryError||quoteError||serviceError||customerError)return jsonError("Could not load quote records, customers or service presets.",500);
  const settings=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
  const pricing=settings.pricing&&typeof settings.pricing==="object"?settings.pricing:{};
- return Response.json({enquiries:enquiries??[],quotes:quotes??[],pricing:{gst_status:pricing.gst_status??"not_configured",gst_rate:Number(pricing.gst_rate??10),labour_rate:pricing.labour_rate??null,parts_markup_percent:pricing.parts_markup_percent??null},services:services??[]});
+ return Response.json({enquiries:enquiries??[],quotes:quotes??[],customers:customers??[],pricing:{gst_status:pricing.gst_status??"not_configured",gst_rate:Number(pricing.gst_rate??10),labour_rate:pricing.labour_rate??null,parts_markup_percent:pricing.parts_markup_percent??null},services:services??[]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
  try{
   const body=await request.json();
-  const enquiryId=String(body.enquiryId??"");
+  const enquiryId=String(body.enquiryId??"").trim();
+  const requestedCustomerId=String(body.customerId??"").trim();
   const rawItems=Array.isArray(body.items)?body.items:[];
   const items:{description:string;quantity:number;unitPrice:number;serviceId:string|null;itemType:string}[]=rawItems.map((item:any)=>({description:String(item.description??"").trim(),quantity:Number(item.quantity??1),unitPrice:Number(item.unitPrice??0),serviceId:item.serviceId?String(item.serviceId):null,itemType:String(item.itemType??"parts")}));
   const taxRate=Number(body.taxRate??0);
@@ -27,7 +29,7 @@ export async function POST(request:Request){
   const terms=String(body.terms??"").trim().slice(0,3000);
   const expiryDate=body.expiryDate?String(body.expiryDate):null;
   const supersedesQuoteId=body.supersedesQuoteId?String(body.supersedesQuoteId):null;
-  if(!/^[0-9a-f-]{36}$/i.test(enquiryId)||items.length<1||items.length>30)return jsonError("Select a Quote Request Jobcard and add between 1 and 30 quote lines.");
+  if((enquiryId&&!/^[0-9a-f-]{36}$/i.test(enquiryId))||(!enquiryId&&!/^[0-9a-f-]{36}$/i.test(requestedCustomerId))||items.length<1||items.length>30)return jsonError("Select a customer when creating a standalone quote, and add between 1 and 30 quote lines.");
   if(items.some((item:{description:string;quantity:number;unitPrice:number;itemType:string})=>item.description.length<3||item.description.length>500||!Number.isFinite(item.quantity)||item.quantity<=0||item.quantity>10000||!Number.isFinite(item.unitPrice)||item.unitPrice<0||item.unitPrice>10000000||!["labour","parts"].includes(item.itemType)))return jsonError("Each quote line needs a description, type, positive quantity and valid unit price.");
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid tax rate.");
   if(expiryDate&&(!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)||expiryDate<=new Date().toISOString().slice(0,10)))return jsonError("Quote expiry must be a valid future date.");
@@ -39,43 +41,49 @@ export async function POST(request:Request){
   const configuredGstRate=Number(pricing.gst_rate??10);
   if(gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed and marked as registered in Business Settings.");
   if(gstStatus==="registered"&&Math.abs(taxRate-configuredGstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings for this quote.");
-  const {data:enquiry}=await db.from("enquiries").select("id,request_number,request_type,user_id,customer_id,contact_name,email,phone,status,stage,archived_at").eq("id",enquiryId).eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).maybeSingle();
-  if(!enquiry)return jsonError("Quote Request Jobcard not found.",404);
-  if(!["new","reviewing","quoted"].includes(String(enquiry.status)))return jsonError("This Jobcard is no longer open for quoting.",409);
-  // Quotes require a customer row. Public quote requests may arrive as guests
-  // with no customer_id, so resolve or create the customer before inserting.
-  let customerId=enquiry.customer_id??null;
-  if(!customerId&&enquiry.user_id){
-   const {data:linkedCustomer,error:linkedCustomerError}=await db.from("customers").select("id").eq("business_id",businessId).eq("user_id",enquiry.user_id).maybeSingle();
-   if(linkedCustomerError){console.error("Quote customer lookup by user failed",linkedCustomerError);return jsonError("Could not prepare the customer record for this quote.",500);}
-   customerId=linkedCustomer?.id??null;
-  }
-  if(!customerId&&enquiry.email){
-   const {data:emailCustomer,error:emailCustomerError}=await db.from("customers").select("id").eq("business_id",businessId).ilike("email",enquiry.email).limit(1).maybeSingle();
-   if(emailCustomerError){console.error("Quote customer lookup by email failed",emailCustomerError);return jsonError("Could not prepare the customer record for this quote.",500);}
-   customerId=emailCustomer?.id??null;
-  }
-  if(!customerId){
-   const fullName=String(enquiry.contact_name??"").trim();
-   if(fullName.length<2)return jsonError("Add the customer's name to the Quote Request before creating a quote.",409);
-   const {data:newCustomer,error:newCustomerError}=await db.from("customers").insert({
-    business_id:businessId,user_id:enquiry.user_id??null,full_name:fullName,
-    email:enquiry.email??null,phone:enquiry.phone??null,status:"active"
-   }).select("id").single();
-   if(newCustomerError||!newCustomer){
-    console.error("Quote customer creation failed",newCustomerError);
-    return jsonError("Could not create the customer record required for this quote.",500);
+  const {data:enquiry,error:enquiryLookupError}=enquiryId
+   ?await db.from("enquiries").select("id,request_number,request_type,user_id,customer_id,contact_name,email,phone,status,stage,archived_at").eq("id",enquiryId).eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).maybeSingle()
+   :{data:null,error:null};
+  if(enquiryLookupError)return jsonError("Could not load the linked Quote Request.",500);
+  if(enquiryId&&!enquiry)return jsonError("Quote Request Jobcard not found.",404);
+  if(enquiry&&!["new","reviewing","quoted"].includes(String(enquiry.status)))return jsonError("This Jobcard is no longer open for quoting.",409);
+  let customerId:string|null=enquiry?.customer_id??null;
+  let quoteUserId:string|null=enquiry?.user_id??null;
+  if(enquiry){
+   // Resolve a guest Quote Request to an existing customer or create its customer record.
+   if(!customerId&&enquiry.user_id){
+    const {data:linkedCustomer,error:linkedCustomerError}=await db.from("customers").select("id,user_id").eq("business_id",businessId).eq("user_id",enquiry.user_id).maybeSingle();
+    if(linkedCustomerError){console.error("Quote customer lookup by user failed",linkedCustomerError);return jsonError("Could not prepare the customer record for this quote.",500);}
+    customerId=linkedCustomer?.id??null;
    }
-   customerId=newCustomer.id;
-  }
-  if(!enquiry.customer_id){
-   const {error:linkCustomerError}=await db.from("enquiries").update({customer_id:customerId,updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
-   if(linkCustomerError){console.error("Quote customer link failed",linkCustomerError);return jsonError("Could not link the customer record to this Quote Request.",500);}
+   if(!customerId&&enquiry.email){
+    const {data:emailCustomer,error:emailCustomerError}=await db.from("customers").select("id,user_id").eq("business_id",businessId).ilike("email",enquiry.email).limit(1).maybeSingle();
+    if(emailCustomerError){console.error("Quote customer lookup by email failed",emailCustomerError);return jsonError("Could not prepare the customer record for this quote.",500);}
+    customerId=emailCustomer?.id??null;
+    quoteUserId=emailCustomer?.user_id??quoteUserId;
+   }
+   if(!customerId){
+    const fullName=String(enquiry.contact_name??"").trim();
+    if(fullName.length<2)return jsonError("Add the customer's name to the Quote Request before creating a quote.",409);
+    const {data:newCustomer,error:newCustomerError}=await db.from("customers").insert({business_id:businessId,user_id:enquiry.user_id??null,full_name:fullName,email:enquiry.email??null,phone:enquiry.phone??null,status:"active"}).select("id").single();
+    if(newCustomerError||!newCustomer){console.error("Quote customer creation failed",newCustomerError);return jsonError("Could not create the customer record required for this quote.",500);}
+    customerId=newCustomer.id;
+   }
+   if(!enquiry.customer_id){
+    const {error:linkCustomerError}=await db.from("enquiries").update({customer_id:customerId,updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
+    if(linkCustomerError){console.error("Quote customer link failed",linkCustomerError);return jsonError("Could not link the customer record to this Quote Request.",500);}
+   }
+  }else{
+   const {data:selectedCustomer,error:customerLookupError}=await db.from("customers").select("id,user_id").eq("id",requestedCustomerId).eq("business_id",businessId).eq("status","active").maybeSingle();
+   if(customerLookupError)return jsonError("Could not load the selected customer.",500);
+   if(!selectedCustomer)return jsonError("Select an active customer belonging to this business.",404);
+   customerId=selectedCustomer.id;
+   quoteUserId=selectedCustomer.user_id??null;
   }
   let revisionNumber=1;
   if(supersedesQuoteId){
-   const {data:prior}=await db.from("quotes").select("id,enquiry_id,revision_number,status").eq("id",supersedesQuoteId).eq("business_id",businessId).maybeSingle();
-   if(!prior||prior.enquiry_id!==enquiryId)return jsonError("The quote revision must belong to the same Jobcard.",409);
+   const {data:prior}=await db.from("quotes").select("id,enquiry_id,customer_id,revision_number,status").eq("id",supersedesQuoteId).eq("business_id",businessId).maybeSingle();
+   if(!prior||prior.enquiry_id!==(enquiry?.id??null)||prior.customer_id!==customerId)return jsonError("A quote revision must belong to the same customer and Jobcard relationship.",409);
    if(["accepted","converted"].includes(prior.status))return jsonError("An accepted quote cannot be revised. Use the variation approval workflow for additional work.",409);
    revisionNumber=Number(prior.revision_number??1)+1;
   }
@@ -86,15 +94,17 @@ export async function POST(request:Request){
   const taxAmount=Number((lines.reduce((sum:number,item:{line_total:number;tax_rate:number})=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
   const total=Number((subtotal+taxAmount).toFixed(2));
   const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
-  const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:enquiry.user_id??null,enquiry_id:enquiry.id,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id").single();
+  const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:quoteUserId,enquiry_id:enquiry?.id??null,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id,customer_id").single();
   if(error||!quote){console.error("Quote insert failed",{error,enquiryId,customerId});return jsonError("Could not create quote.",500);}
   const {error:itemError}=await db.from("quote_items").insert(lines.map(item=>({...item,quote_id:quote.id})));
   if(itemError){console.error("Quote line insert failed",itemError);await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not save quote lines. The draft was rolled back.",500);}
   if(supersedesQuoteId){const {error:supersedeError}=await db.from("quotes").update({status:"superseded",updated_at:new Date().toISOString()}).eq("id",supersedesQuoteId).eq("business_id",businessId);if(supersedeError){await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not supersede the previous quote revision. The new draft was rolled back.",500);}}
   const now=new Date().toISOString();
-  await db.from("enquiries").update({status:"reviewing",stage:"quote_in_progress",updated_at:now}).eq("id",enquiry.id).eq("business_id",businessId);
-  if(enquiry.stage!=="quote_in_progress")await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage,to_stage:"quote_in_progress",changed_by:access.user!.id,note:"Draft quote "+quote.quote_number+" prepared for senior review."});
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:supersedesQuoteId?"quote.revised":"quote.created",entity_type:"quote",entity_id:quote.id,details:{quote_number:quoteNumber,customer_id:customerId,enquiry_id:enquiry.id,revision_number:revisionNumber,line_count:lines.length,subtotal,tax_amount:taxAmount,total}});
+  if(enquiry){
+   await db.from("enquiries").update({status:"reviewing",stage:"quote_in_progress",updated_at:now}).eq("id",enquiry.id).eq("business_id",businessId);
+   if(enquiry.stage!=="quote_in_progress")await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage,to_stage:"quote_in_progress",changed_by:access.user!.id,note:"Draft quote "+quote.quote_number+" prepared for senior review."});
+  }
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:supersedesQuoteId?"quote.revised":"quote.created",entity_type:"quote",entity_id:quote.id,details:{quote_number:quoteNumber,customer_id:customerId,enquiry_id:enquiry?.id??null,revision_number:revisionNumber,line_count:lines.length,subtotal,tax_amount:taxAmount,total}});
   return Response.json({quote},{status:201});
  }catch(error){console.error("Quote creation failed",error);return jsonError("Could not create quote.",500);}
 }
