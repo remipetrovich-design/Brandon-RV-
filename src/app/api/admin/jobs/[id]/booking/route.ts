@@ -34,7 +34,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(existingError)return jsonError("Could not load the customer's booking request.",500);
   if(existing&&!["requested","confirmed","rescheduled"].includes(existing.status))existing=null;
   if(!existing&&job.quote_id){
-   const result=await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("quote_id",job.quote_id).eq("business_id",businessId).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
+   const result=await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location,confirmed_by,confirmed_at,updated_at").eq("quote_id",job.quote_id).eq("business_id",businessId).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
    existing=result.data;existingError=result.error;
   }
   if(existingError)return jsonError("Could not load the customer's booking request.",500);
