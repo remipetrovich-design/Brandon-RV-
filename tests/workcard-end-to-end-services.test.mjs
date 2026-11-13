@@ -15,9 +15,17 @@ test("Workcard management endpoint returns complete job context and service-link
  for(const field of ["quantity_required","quantity_used","unit_price","cost_unit_price","services:services!job_work_entries_service_id_fkey(name)","customers:users!jobs_customer_id_users_fkey(full_name,email,phone)","from(\"quotes\")","from(\"appointments\")","from(\"services\")","from(\"job_work_entries\")"])assert.ok(route.includes(field),"Missing Workcard API field/query: "+field);
 });
 
-test("accepted quote creates planned Workcard lines without treating the estimate as actual invoice charges",async()=>{
+test("accepted quote creates a Workcard without copying quote lines into Parts needed or actual work",async()=>{
  const route=await read("../src/app/api/admin/jobs/route.ts");
- for(const field of ["quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)","quantity_required:Number(item.quantity","quantity_used:0","invoiceable:false","source_quote_item_id:item.id"])assert.ok(route.includes(field),"Missing quote-to-Workcard link: "+field);
+ assert.ok(route.includes("quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)"),"Original quote details remain available for the approved scope.");
+ assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"Workcard scope can still be seeded from the accepted estimate.");
+ assert.ok(!route.includes("const plannedEntries="),"Quote lines must not be inserted as Workcard parts or actual work.");
+ assert.ok(!route.includes("source_quote_item_id:item.id"),"Parts needed must be researched and entered independently.");
+});
+
+test("Parts needed exposes independent add, edit, update and delete controls with research fields",async()=>{
+ const ui=await read("../src/components/admin-workcard-management.tsx");
+ for(const token of ["Add part","Edit part","Remove part","addEntry()","editEntry(entry)","removeEntry(x.id)","quantity_required","quantity_used","part_number","supplier_name","cost_unit_price"])assert.ok(ui.includes(token),"Missing Parts needed control or field: "+token);
 });
 
 test("Workcard UI supports service presets, custom entries, required versus used quantities, and actual costs",async()=>{
