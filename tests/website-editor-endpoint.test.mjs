@@ -150,3 +150,28 @@ test("builder preview reads published service and service-area feeds only",async
  has(areas,'eq("is_published",true)');
  has(areas,"suburbs,postcodes");
 });
+
+test("FAQ and gallery first-save layouts are selected by page slug, not database row id",async()=>{
+ const editor=await source("../src/components/admin-website-editor.tsx");
+ has(editor,"defaultWebsiteBuilderData(slug,title,legacy)");
+ assert.equal(editor.includes("defaultWebsiteBuilderData(id,title,legacy)"),false);
+});
+
+test("combined About and Services route preserves each legacy section until its builder exists",async()=>{
+ const page=await source("../src/app/about-services/page.tsx");
+ assert.equal(page.includes("if(hasAboutBuilder||hasServicesBuilder)return"),false);
+ has(page,"hasAboutBuilder?<PublicSiteBuilder");
+ has(page,"hasServicesBuilder?<PublicSiteBuilder");
+ has(page,"aboutTitle");
+ has(page,"serviceTitle");
+ has(page,"items.map(item");
+});
+
+test("combined How it Works and Service Areas route preserves each legacy section until its builder exists",async()=>{
+ const page=await source("../src/app/how-it-works/page.tsx");
+ assert.equal(page.includes("if(hasPageBuilder||hasAreasBuilder)return"),false);
+ has(page,"hasPageBuilder?<PublicSiteBuilder");
+ has(page,"hasAreasBuilder?<PublicSiteBuilder");
+ has(page,"steps.map((step,i)");
+ has(page,"service-area-card");
+});
