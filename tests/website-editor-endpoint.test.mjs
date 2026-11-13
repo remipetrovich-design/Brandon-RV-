@@ -255,3 +255,23 @@ test("unified website editor includes responsive controls for mobile desktop-mod
  has(css,"@media (max-width: 1100px)");
  has(css,".brv-builder-canvas");
 });
+
+test("website builder starts from the existing public page layouts and fallback content",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ has(config,"publicWebsiteFallbackContent");
+ for(const block of ["HomePage","AboutPage","ServicesPage","ProcessPage","ServiceAreasPage","FAQPage","GalleryPage","RequestQuotePage","ContactPage"])has(config,block);
+ for(const slug of ["home","about","services","how-it-works","service-areas","faq","gallery","request-quote","contact"])has(config,'slug==="'+slug+'"');
+ has(config,"Caravan repairs, without the workshop trip.");
+ has(config,"Mobile caravan and motorhome repair and accessory services around Tamworth, NSW.");
+ has(config,"From enquiry to handover.");
+ has(config,"No work photographs have been published yet.");
+ has(config,"Every request is reviewed before a booking is confirmed.");
+});
+
+test("unpublished database flags do not incorrectly label a route as offline when its public fallback is live",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ has(workspace,"publicWebsiteFallbackContent");
+ has(workspace,"Live on website");
+ has(workspace,"Database content published");
+ has(workspace,"Current public website layout");
+});
