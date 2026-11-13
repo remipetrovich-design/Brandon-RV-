@@ -32,6 +32,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   }
   if(body.meta_title!==undefined)update.meta_title=clean(body.meta_title,160)||null;
   if(body.meta_description!==undefined)update.meta_description=clean(body.meta_description,320)||null;
+  if(body.is_published!==undefined){
+   if(typeof body.is_published!=="boolean")return jsonError("Invalid publication setting.");
+   update.is_published=body.is_published;
+   update.published_at=body.is_published?new Date().toISOString():null;
+  }
   if(!Object.keys(update).length)return jsonError("No page changes supplied.");
 
   const db=database();
