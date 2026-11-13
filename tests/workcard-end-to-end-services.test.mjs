@@ -36,6 +36,18 @@ test("quote creation and revision editing both preserve service links and custom
  assert.ok(detail.includes("service_id"));
 });
 
+test("Workcard variations also retain service links through customer acceptance",async()=>{
+ const ui=await read("../src/components/admin-job-variations.tsx");
+ const route=await read("../src/app/api/admin/jobs/[id]/variations/route.ts");
+ const migration=await read("../supabase/migrations/20261113010000_connect_services_and_workcard_actual_costs.sql");
+ assert.ok(ui.includes("Service preset"));
+ assert.ok(ui.includes("serviceId:x.serviceId"));
+ assert.ok(route.includes("service_id:x.serviceId"));
+ assert.ok(route.includes("service_id)"));
+ assert.ok(migration.includes("sync_workcard_entry_from_quote_line"));
+ assert.ok(migration.includes("new.service_id:=v_service_id"));
+});
+
 test("final invoice uses actual Workcard entries, never the original quote total",async()=>{
  const invoice=await read("../src/app/api/admin/invoices/route.ts");
  for(const field of ['from("job_work_entries")','eq("invoiceable",true)',"quantity_used","invoice.created_from_actual_work"])assert.ok(invoice.includes(field));
