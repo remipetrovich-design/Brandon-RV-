@@ -62,3 +62,15 @@ test("public page builder reads services and service areas from live application
  assert.match(about,/getPublishedServiceAreas\(\)/);
  assert.match(process,/getPublishedServiceAreas\(\)/);
 });
+
+test("FAQ and gallery pages can be rearranged without changing their underlying data rules",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const faq=await source("../src/app/faq/page.tsx");
+ const gallery=await source("../src/app/gallery/page.tsx");
+ assert.match(config,/FAQList/);
+ assert.match(config,/GalleryGrid/);
+ assert.match(config,/legacy\.items/);
+ assert.match(config,/legacy\.photos/);
+ assert.match(faq,/PublicSiteBuilder/);
+ assert.match(gallery,/PublicSiteBuilder/);
+});
