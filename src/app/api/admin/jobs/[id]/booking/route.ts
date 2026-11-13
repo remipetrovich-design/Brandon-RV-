@@ -26,10 +26,18 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    enquiryId=quote.enquiry_id??null;
    if(enquiryId){const e=await db.from("enquiries").select("vehicle_id").eq("id",enquiryId).eq("business_id",businessId).maybeSingle();vehicleId=e.data?.vehicle_id??null;}
   }
-  const {data:existing,error:existingError}=job.appointment_id
-   ?await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle()
-   :job.quote_id?await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("quote_id",job.quote_id).eq("business_id",businessId).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle()
-   :{data:null,error:null};
+  let existing:any=null;
+  let existingError:any=null;
+  if(job.appointment_id){
+   const result=await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle();
+   existing=result.data;existingError=result.error;
+  }
+  if(existingError)return jsonError("Could not load the customer's booking request.",500);
+  if(existing&&!["requested","confirmed","rescheduled"].includes(existing.status))existing=null;
+  if(!existing&&job.quote_id){
+   const result=await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("quote_id",job.quote_id).eq("business_id",businessId).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
+   existing=result.data;existingError=result.error;
+  }
   if(existingError)return jsonError("Could not load the customer's booking request.",500);
   if(existing&&existing.status==="confirmed"&&existing.id!==job.appointment_id)return jsonError("Another confirmed booking already exists for this quote.",409);
   const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
