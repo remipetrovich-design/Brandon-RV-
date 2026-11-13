@@ -314,7 +314,7 @@ test("homepage builder seeds contact details from the current business profile a
  has(config,"Enquiries temporarily unavailable");
  has(workspace,"business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null}");
  has(workspace,"defaultWebsiteBuilderData(selectedPage?.slug??\"home\",selectedPage?.draft_title??selectedPage?.title??\"Home\",legacy,business)");
- has(workspace,"acceptingEnquiries})");
+ has(workspace,"acceptingEnquiries,business})");
  has(adminPage,"getPublicBusiness()");
  has(adminPage,"getPublicBusinessSettings()");
  has(publicBuilder,"getPublicBusinessSettings()");
@@ -332,6 +332,8 @@ test("public website builder always renders phone details from the business prof
  const workspace=await source("../src/components/admin-website-workspace.tsx");
  const quote=await source("../src/app/request-quote/page.tsx");
  const general=await source("../src/app/general-enquiry/page.tsx");
+ const layout=await source("../src/app/layout.tsx");
+ const footer=await source("../src/components/site-footer.tsx");
  has(config,"business?:BuilderBusiness");
  has(config,"const businessPhone=data.business?.phone?.trim()??\"\"");
  has(config,"{businessPhone&&");
