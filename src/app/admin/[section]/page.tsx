@@ -61,7 +61,7 @@ export default async function AdminSectionPage({params,searchParams}:{params:Pro
    const {data:workcards}=await db.from("jobs").select("id,job_number,title,status,appointment_id,quote_id,customers:users!jobs_customer_id_users_fkey(full_name),guest_name").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(200);
    const list=workcards??[];
    rows=rows.map((appointment:any)=>({...appointment,linkedWorkcard:list.find((job:any)=>job.appointment_id===appointment.id||(appointment.quote_id&&job.quote_id===appointment.quote_id))??null}));
-   calendarWorkcards=list.map((job:any)=>({id:job.id,job_number:job.job_number,title:job.title,status:job.status,appointment_id:job.appointment_id,customer_name:job.customers?.full_name??job.guest_name??null}));
+   calendarWorkcards=list.map((job:any)=>({id:job.id,job_number:job.job_number,title:job.title,status:job.status,appointment_id:job.appointment_id??rows.find((appointment:any)=>appointment.quote_id===job.quote_id&&["requested","confirmed","rescheduled"].includes(appointment.status))?.id??null,customer_name:job.customers?.full_name??job.guest_name??null}));
   }
  }
  return <main className="portal-page"><div className="shell portal-shell" style={{display:"block",maxWidth:1180}}><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS OPERATIONS</p><h1>{config.title}.</h1><p>Live records from the Brandon RV business database.</p></div>
