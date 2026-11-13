@@ -24,7 +24,7 @@ export default async function HomePage() {
   const [page,business,publishedServices,publishedAreas,businessSettings]=await Promise.all([getPublishedSitePage("home"),getPublicBusiness(),getPublishedServices(),getPublishedServiceAreas(),getPublicBusinessSettings()]);
   const builder=page?.content?.builder;
   if(builder&&typeof builder==="object")return <main className="public-home"><PublicSiteBuilder data={builder} services={publishedServices} areas={publishedAreas}/></main>;
-  const phone=business.phone??"0407 189 087";
+  const phone=business.phone??"";
   const callLink=phoneHref(phone);
   const location=[business.city,business.region].filter(Boolean).join(", ")||"Tamworth, NSW";
   const services=publishedServices.slice(0,3).map(service=>({title:service.name,description:service.description??service.scope_notes??"Contact Brandon RV to discuss this service."}));
@@ -42,7 +42,7 @@ export default async function HomePage() {
           <p className="home-hero-intro">{intro}</p>
           <div className="home-hero-actions">
             {businessSettings.accepting_enquiries?<Link className="button button-primary" href="/request-quote">{primaryAction}<span aria-hidden="true">→</span></Link>:<span className="button button-secondary" aria-disabled="true">Enquiries temporarily unavailable</span>}
-            <a className="button button-secondary" href={callLink}>Call {phone}</a>
+            {phone&&<a className="button button-secondary" href={callLink}>Call {phone}</a>}
           </div>
           <div className="home-hero-meta">
             <span><i aria-hidden="true"/> Based in {location}</span>

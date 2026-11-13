@@ -78,7 +78,7 @@ test("public page builder reads services and service areas from live application
  const homepage=await source("../src/app/page.tsx");
  const about=await source("../src/app/about-services/page.tsx");
  const process=await source("../src/app/how-it-works/page.tsx");
- has(renderer,"createWebsiteBuilderConfig({services,areas})");
+ has(renderer,"createWebsiteBuilderConfig({services,areas,acceptingEnquiries:settings.accepting_enquiries,business})");
  has(homepage,"getPublishedServices()");
  has(homepage,"getPublishedServiceAreas()");
  has(about,"getPublishedServices()");
@@ -106,6 +106,8 @@ test("quote and general-enquiry blocks reuse the existing forms and customer pro
  const config=await source("../src/lib/website-builder.tsx");
  const quote=await source("../src/app/request-quote/page.tsx");
  const general=await source("../src/app/general-enquiry/page.tsx");
+ const layout=await source("../src/app/layout.tsx");
+ const footer=await source("../src/components/site-footer.tsx");
  const quoteForm=await source("../src/components/enquiry-form.tsx");
  const generalForm=await source("../src/components/general-enquiry-form.tsx");
  const wrapper=await source("../src/components/website-general-enquiry-block.tsx");
@@ -307,13 +309,41 @@ test("homepage builder seeds contact details from the current business profile a
  const publicBuilder=await source("../src/components/public-site-builder.tsx");
  has(config,"acceptingEnquiries?:boolean");
  has(config,"business?:BuilderBusiness");
- has(config,"phone:businessPhone,location:businessLocation");
+ has(config,"location:businessLocation");
  has(config,"brandLine:str(\"hero_subtitle\",businessBrandLine)");
  has(config,"Enquiries temporarily unavailable");
  has(workspace,"business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null}");
  has(workspace,"defaultWebsiteBuilderData(selectedPage?.slug??\"home\",selectedPage?.draft_title??selectedPage?.title??\"Home\",legacy,business)");
- has(workspace,"acceptingEnquiries})");
+ has(workspace,"acceptingEnquiries,business})");
  has(adminPage,"getPublicBusiness()");
  has(adminPage,"getPublicBusinessSettings()");
  has(publicBuilder,"getPublicBusinessSettings()");
+});
+
+test("How it Works location CTA opens the Service Areas section, not Request a Quote",async()=>{
+ const page=await source("../src/app/how-it-works/page.tsx");
+ has(page,'href="/how-it-works#service-areas"');
+ assert.equal(page.includes('href="/request-quote">Check your location'),false);
+});
+
+test("public website builder always renders phone details from the business profile",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const renderer=await source("../src/components/public-site-builder.tsx");
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const quote=await source("../src/app/request-quote/page.tsx");
+ const general=await source("../src/app/general-enquiry/page.tsx");
+ const layout=await source("../src/app/layout.tsx");
+ const footer=await source("../src/components/site-footer.tsx");
+ has(config,"business?:BuilderBusiness");
+ has(config,"const businessPhone=data.business?.phone?.trim()??\"\"");
+ has(config,"{businessPhone&&");
+ has(config,"phoneHref(businessPhone)");
+ has(renderer,"getPublicBusiness()");
+ has(renderer,"business})");
+ has(workspace,"business,");
+ has(quote,"getPublicBusiness()");
+ has(quote,"phoneHref(business.phone)");
+ has(general,"const phone=business.phone??\"\"");
+ has(layout,"phoneLink={phoneHref(phone)}");
+ has(footer,"{phone&&<a href={phoneLink}>{phone}</a>}");
 });
