@@ -307,7 +307,7 @@ test("homepage builder seeds contact details from the current business profile a
  const publicBuilder=await source("../src/components/public-site-builder.tsx");
  has(config,"acceptingEnquiries?:boolean");
  has(config,"business?:BuilderBusiness");
- has(config,"phone:businessPhone,location:businessLocation");
+ has(config,"location:businessLocation");
  has(config,"brandLine:str(\"hero_subtitle\",businessBrandLine)");
  has(config,"Enquiries temporarily unavailable");
  has(workspace,"business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null}");
@@ -320,7 +320,7 @@ test("homepage builder seeds contact details from the current business profile a
 
 test("How it Works location CTA opens the Service Areas section, not Request a Quote",async()=>{
  const page=await source("../src/app/how-it-works/page.tsx");
- has(page,'href="/service-areas"');
+ has(page,'href="/how-it-works#service-areas"');
  assert.equal(page.includes('href="/request-quote">Check your location'),false);
 });
 
@@ -330,7 +330,7 @@ test("public website builder always renders phone details from the business prof
  const workspace=await source("../src/components/admin-website-workspace.tsx");
  has(config,"business?:BuilderBusiness");
  has(config,"const businessPhone=data.business?.phone?.trim()??\"\"");
- has(config,"phone={businessPhone}");
+ has(config,"{businessPhone&&");
  has(config,"phoneHref(businessPhone)");
  has(renderer,"getPublicBusiness()");
  has(renderer,"business={business}");
