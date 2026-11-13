@@ -85,7 +85,9 @@ export async function DELETE(request:Request,{params}:{params:Promise<{id:string
  const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(!job)return jsonError("Workcard not found.",404);
  if(job.worker_signed_off_at||["completed","cancelled"].includes(job.status))return jsonError("This Workcard is signed off or closed.",409);
- const {error}=await db.from("job_work_entries").delete().eq("id",entryId).eq("job_id",id).eq("business_id",businessId);
+ const {data:deletedEntry,error}=await db.from("job_work_entries").delete().eq("id",entryId).eq("job_id",id).eq("business_id",businessId).select("id,entry_type,description").maybeSingle();
  if(error){console.error("Workcard entry delete failed",error);return jsonError("Could not delete Workcard entry.",500);}
+ if(!deletedEntry)return jsonError("Workcard entry not found.",404);
+ await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.entry_deleted",entity_type:"job_work_entry",entity_id:entryId,details:{job_id:id,entry_type:deletedEntry.entry_type,description:deletedEntry.description}});
  return Response.json({success:true});
 }
