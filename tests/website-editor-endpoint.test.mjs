@@ -245,6 +245,9 @@ test("unified website editor includes responsive controls for mobile desktop-mod
  has(workspace,"brv-builder-page-picker");
  has(workspace,"brv-builder-page-meta");
  has(workspace,"brv-builder-canvas");
+ has(workspace,'label:"Phone"');
+ has(workspace,'label:"Tablet"');
+ has(workspace,'label:"Desktop"');
  has(css,".brv-builder-toolbar");
  has(css,".brv-builder-page-meta");
  has(css,"@media (max-width: 1100px)");
