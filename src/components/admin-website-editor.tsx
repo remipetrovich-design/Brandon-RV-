@@ -41,7 +41,7 @@ export default function AdminWebsiteEditor({id,slug,title,content,metaTitle,meta
    <p className="panel-footnote">Drag and drop page content and protected Brandon RV components. You can move the quote form, general enquiry form, published services and service areas, but cannot change their fields, submission logic, records or admin workflows.</p>
   </div>
   <div style={{minHeight:720,borderTop:"1px solid var(--line, #d8e0e5)"}}>
-   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={createWebsiteBuilderConfig({services,areas}) as any} data={initialBuilder as any} onPublish={save}/>
+   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={createWebsiteBuilderConfig({services,areas,isEditing:true}) as any} data={initialBuilder as any} onPublish={save}/>
   </div>
   <p className="inline-notice" role="status" style={{margin:16}}>{busy?"Saving draft…":notice}</p>
  </div>;
