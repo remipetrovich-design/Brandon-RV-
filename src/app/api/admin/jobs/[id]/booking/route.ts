@@ -10,41 +10,50 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(!idPattern.test(id))return jsonError("Invalid Workcard ID.");
   const startsAt=new Date(String(body.starts_at??"")),endsAt=new Date(String(body.ends_at??""));
   const location=String(body.location??"").trim().slice(0,200);
-  if(!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)return jsonError("Enter a valid booking start and finish time.");
-  if(startsAt.getTime()<=Date.now())return jsonError("The booking must start in the future.");
+  if(!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)return jsonError("Enter a valid agreed booking start and finish time.");
+  if(startsAt.getTime()<=Date.now())return jsonError("The agreed booking must start in the future.");
   if(location.length<3)return jsonError("Enter the agreed customer service location.");
   const db=database(),businessId=access.membership!.business_id;
   const {data:job,error:jobError}=await db.from("jobs").select("id,job_number,status,appointment_id,quote_id,customer_id,user_id,guest_name,guest_email").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(jobError||!job)return jsonError("Workcard not found.",404);
-  if(["completed","cancelled"].includes(job.status))return jsonError("A booking cannot be created for a closed Workcard.",409);
-  if(job.appointment_id)return jsonError("This Workcard already has a linked booking. Open the Booking tab to view it.",409);
-  let enquiryId:string|null=null,vehicleId:string|null=null;
+  if(["completed","cancelled"].includes(job.status))return jsonError("A booking cannot be confirmed for a closed Workcard.",409);
+  if(!job.customer_id)return jsonError("This Workcard needs a linked customer record before a booking can be confirmed.",409);
+  let quote:any=null,enquiryId:string|null=null,vehicleId:string|null=null;
   if(job.quote_id){
-   const {data:quote}=await db.from("quotes").select("id,status,enquiry_id").eq("id",job.quote_id).eq("business_id",businessId).maybeSingle();
-   if(!quote||quote.status!=="accepted")return jsonError("The linked quote must remain accepted before a booking can be created.",409);
+   const result=await db.from("quotes").select("id,status,enquiry_id").eq("id",job.quote_id).eq("business_id",businessId).maybeSingle();quote=result.data;
+   if(!quote||quote.status!=="accepted")return jsonError("The linked quote must be accepted before a booking can be confirmed.",409);
    enquiryId=quote.enquiry_id??null;
-   if(enquiryId){const {data:enquiry}=await db.from("enquiries").select("vehicle_id").eq("id",enquiryId).eq("business_id",businessId).maybeSingle();vehicleId=enquiry?.vehicle_id??null;}
+   if(enquiryId){const e=await db.from("enquiries").select("vehicle_id").eq("id",enquiryId).eq("business_id",businessId).maybeSingle();vehicleId=e.data?.vehicle_id??null;}
   }
-  const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",endsAt.toISOString()).gt("ends_at",startsAt.toISOString()).limit(1);
+  const {data:existing,error:existingError}=job.appointment_id
+   ?await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle()
+   :job.quote_id?await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("quote_id",job.quote_id).eq("business_id",businessId).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle()
+   :{data:null,error:null};
+  if(existingError)return jsonError("Could not load the customer's booking request.",500);
+  if(existing&&existing.status==="confirmed"&&existing.id!==job.appointment_id)return jsonError("Another confirmed booking already exists for this quote.",409);
+  const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).neq("id",existing?.id??"00000000-0000-0000-0000-000000000000").in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",endsAt.toISOString()).gt("ends_at",startsAt.toISOString()).limit(1);
   if(conflictError)return jsonError("Could not verify booking availability.",500);
   if(conflicts?.length)return jsonError("That time conflicts with another confirmed booking. Choose another time.",409);
   const now=new Date().toISOString();
-  const {data:appointment,error}=await db.from("appointments").insert({
-   business_id:businessId,customer_id:job.customer_id,user_id:job.user_id??null,
-   guest_name:job.guest_name??null,guest_email:job.guest_email??null,
-   enquiry_id:enquiryId,quote_id:job.quote_id,vehicle_id:vehicleId,
-   starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),
-   preferred_start:startsAt.toISOString(),preferred_end:endsAt.toISOString(),
-   location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:now
-  }).select("id,status,starts_at,ends_at,location").single();
-  if(error||!appointment){console.error("Workcard booking insert failed",error);return jsonError("Could not create booking.",500);}
-  const {error:linkError}=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at,status:"scheduled",updated_at:now}).eq("id",id).eq("business_id",businessId).is("appointment_id",null);
-  if(linkError){
-   console.error("Workcard booking link failed",linkError);
-   await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);
-   return jsonError("The booking was not saved because it could not be linked to the Workcard.",500);
+  let appointment:any;
+  if(existing){
+   if(!["requested","rescheduled","confirmed"].includes(existing.status))return jsonError("This booking request is no longer active.",409);
+   const updated=await db.from("appointments").update({starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:now,updated_at:now}).eq("id",existing.id).eq("business_id",businessId).in("status",["requested","rescheduled","confirmed"]).select("id,status,starts_at,ends_at,location").single();
+   if(updated.error||!updated.data)return jsonError("Could not confirm the customer's booking request.",500);
+   appointment=updated.data;
+  }else{
+   const inserted=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id,user_id:job.user_id??null,enquiry_id:enquiryId,quote_id:job.quote_id,vehicle_id:vehicleId,starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),preferred_start:startsAt.toISOString(),preferred_end:endsAt.toISOString(),location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:now}).select("id,status,starts_at,ends_at,location").single();
+   if(inserted.error||!inserted.data){console.error("Workcard booking insert failed",inserted.error);return jsonError("Could not create booking.",500);}
+   appointment=inserted.data;
   }
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.booking_created",entity_type:"job",entity_id:id,details:{job_number:job.job_number,appointment_id:appointment.id,starts_at:appointment.starts_at,ends_at:appointment.ends_at,location}});
-  return Response.json({appointment},{status:201});
- }catch(error){console.error("Workcard booking creation failed",error);return jsonError("Could not create booking.",500);}
+  const linked=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at,status:"scheduled",updated_at:now}).eq("id",id).eq("business_id",businessId);
+  if(linked.error){
+   console.error("Workcard booking link failed",linked.error);
+   if(existing)await db.from("appointments").update({status:existing.status,starts_at:existing.starts_at,ends_at:existing.ends_at,location:existing.location,confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",appointment.id).eq("business_id",businessId);
+   else await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);
+   return jsonError("Booking was not saved because it could not be linked to the Workcard.",500);
+  }
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:existing?"workcard.booking_confirmed":"workcard.booking_created",entity_type:"job",entity_id:id,details:{job_number:job.job_number,appointment_id:appointment.id,booking_request_accepted:existing?.status==="requested",starts_at:appointment.starts_at,ends_at:appointment.ends_at,location}});
+  return Response.json({appointment,acceptedRequest:existing?.status==="requested"??false},{status:existing?200:201});
+ }catch(error){console.error("Workcard booking confirmation failed",error);return jsonError("Could not confirm or create booking.",500);}
 }
