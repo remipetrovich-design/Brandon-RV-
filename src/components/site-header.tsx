@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 
 const navigation=[
  {href:"/",label:"Home",matches:["/"]},
@@ -12,7 +12,17 @@ const navigation=[
 ];
 
 export default function SiteHeader({brandLine}:{brandLine:string}) {
- const pathname=usePathname()??"/";const [menuOpen,setMenuOpen]=useState(false);
+ const pathname=usePathname()??"/";
+ const [menuOpen,setMenuOpen]=useState(false);
+ const [authStatus,setAuthStatus]=useState<"checking"|"signed-in"|"signed-out">("checking");
+ useEffect(()=>{
+  let active=true;
+  fetch("/api/auth/me",{method:"GET",credentials:"same-origin",cache:"no-store"})
+   .then(response=>{if(!response.ok)throw new Error("Not signed in");return response.json();})
+   .then(result=>{if(active)setAuthStatus(result.user?"signed-in":"signed-out");})
+   .catch(()=>{if(active)setAuthStatus("signed-out");});
+  return ()=>{active=false;};
+ },[]);
  const appArea=["/portal","/staff","/admin","/dev","/initial-owner-setup"].some(base=>pathname===base||pathname.startsWith(base+"/"));
  if(appArea)return null;
  return <header className="site-header">
@@ -25,12 +35,19 @@ export default function SiteHeader({brandLine}:{brandLine:string}) {
    <div id="brv-public-menu" className={"header-menu"+(menuOpen?" is-open":"")}>
     <nav className="main-nav" aria-label="Main navigation">
      {navigation.map(item=>{
-      const active=item.href==="/"?pathname==="/":item.matches.some(path=>pathname===path||pathname.startsWith(path+"/"));
+      const active=item.href==="/" ? pathname==="/" : item.matches.some(path=>pathname===path||pathname.startsWith(path+"/"));
       return <Link href={item.href} key={item.href} className={active?"active":""} aria-current={active?"page":undefined} onClick={()=>setMenuOpen(false)}>{item.label}</Link>;
      })}
     </nav>
     <div className="header-actions">
-     <details className="header-auth-menu"><summary>Account</summary><div className="header-auth-popout"><Link href="/portal" onClick={()=>setMenuOpen(false)}>Customer portal</Link><Link href="/portal/sign-in" onClick={()=>setMenuOpen(false)}>Sign in</Link><Link href="/portal/register" onClick={()=>setMenuOpen(false)}>Create an account</Link></div></details>
+     {authStatus==="signed-in" ? (
+      <Link className="header-portal-link" href="/portal" onClick={()=>setMenuOpen(false)}>Customer portal</Link>
+     ) : authStatus==="signed-out" ? (
+      <>
+       <Link className="header-portal-link" href="/portal/sign-in" onClick={()=>setMenuOpen(false)}>Sign in</Link>
+       <Link className="header-portal-link" href="/portal/register" onClick={()=>setMenuOpen(false)}>Register</Link>
+      </>
+     ) : <span className="header-portal-link" aria-hidden="true">Account</span>}
      <Link className="header-quote-link" href="/request-quote" onClick={()=>setMenuOpen(false)}>Request a quote <span aria-hidden="true">→</span></Link>
     </div>
    </div>
