@@ -30,11 +30,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
 
    const publish=body.is_published===true;
    const update:Record<string,unknown>={is_published:publish,published_at:publish?new Date().toISOString():null,updated_at:new Date().toISOString()};
-   if(publish&&current.draft_content!==null){
-    update.title=current.draft_title??current.title;
-    update.content=current.draft_content;
-    update.meta_title=current.draft_meta_title??current.meta_title;
-    update.meta_description=current.draft_meta_description??current.meta_description;
+   if(publish&&(current.draft_content!==null||current.draft_title!==null||current.draft_meta_title!==null||current.draft_meta_description!==null)){
+    if(current.draft_title!==null)update.title=current.draft_title;
+    if(current.draft_content!==null)update.content=current.draft_content;
+    if(current.draft_meta_title!==null)update.meta_title=current.draft_meta_title;
+    if(current.draft_meta_description!==null)update.meta_description=current.draft_meta_description;
    }
    const {data:page,error}=await db.from("site_pages").update(update).eq("id",id).eq("business_id",membership.business_id)
     .select("id,title,slug,content,meta_title,meta_description,is_published,updated_at").maybeSingle();
