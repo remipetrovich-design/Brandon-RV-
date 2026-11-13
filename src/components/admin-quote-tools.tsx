@@ -7,7 +7,7 @@ export default function AdminQuoteTools({quoteId}:{quoteId:string}){
  const [review,setReview]=useState<Review|null>(null),[editable,setEditable]=useState<Editable|null>(null);
  const [note,setNote]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[editing,setEditing]=useState(false);
  async function load(){
-  try{const [r,m]=await Promise.all([fetch("/api/admin/quotes/"+quoteId+"/approval",{cache:"no-store"}),fetch("/api/admin/quotes/"+quoteId+"/manage",{cache:"no-store"})]);const d=await r.json(),md=await m.json();if(!r.ok){setNotice(d.error??"Could not load quote review.");return;}if(!m.ok){setNotice(md.error??"Could not load quote details.");return;}setReview(d.quote);setEditable(md);setLoaded(true);}
+  try{const m=await fetch("/api/admin/quotes/"+quoteId+"/manage",{cache:"no-store"});const md=await m.json();if(!m.ok){setNotice(md.error??"Could not load quote details.");return;}const r=await fetch("/api/admin/quotes/"+quoteId+"/approval",{cache:"no-store"});const d=await r.json();setReview(r.ok?d.quote:md.quote);setEditable(md);setLoaded(true);}
   catch{setNotice("Could not load quote details.");}
  }
  async function decide(decision:"approved"|"changes_requested"){
