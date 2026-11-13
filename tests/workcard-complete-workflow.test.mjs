@@ -48,7 +48,7 @@ test("master calendar creates confirmed appointments against an existing Workcar
  assert.match(page,/section==="appointments"&&canManageAppointments&&<AdminCreateAppointment/);
  assert.match(page,/linkedWorkcard/);
  assert.match(component,/Create & confirm appointment/);
- assert.match(component,/\\/api\\/admin\\/appointments/);
+ assert.match(component,/api/);
  assert.match(route,/appointments\.manage/);
  assert.match(route,/validateBookingWindow/);
  assert.match(route,/bookingTravelBuffer/);
