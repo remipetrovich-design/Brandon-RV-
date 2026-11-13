@@ -20,6 +20,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const raw=Array.isArray(body.items)?body.items:[];
   const items=raw.map((x:any)=>({item_type:String(x.itemType??"parts"),description:String(x.description??"").trim(),quantity:Number(x.quantity??1),unit_price:Number(x.unitPrice??0),service_id:x.serviceId?String(x.serviceId):null}));
   const taxRate=Number(body.taxRate??0);
+  if(items.some((x:any)=>x.service_id&&!/^[0-9a-f-]{36}$/i.test(x.service_id)))return jsonError("Select a valid service preset or use a custom line.");
   if(reason.length<5)return jsonError("Explain why the additional work or price change is required.");
   if(items.length<1||items.length>30||items.some((x:any)=>!["labour","parts"].includes(x.item_type)||x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000))return jsonError("Add between 1 and 30 valid labour or parts lines.");
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid tax rate.");
