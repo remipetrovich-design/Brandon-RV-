@@ -2,7 +2,7 @@ import Link from "next/link";
 import EnquiryForm from "@/components/enquiry-form";
 import WebsiteGeneralEnquiryBlock from "@/components/website-general-enquiry-block";
 
-type BuilderService={id:string;name:string;description:string|null;price_from:number|null;pricing_label:string|null};
+type BuilderService={id:string;name:string;description:string|null;scope_notes?:string|null;price_from:number|null;pricing_label:string|null};
 type BuilderArea={id:string;name:string;description:string|null;suburbs:string[]|null;postcodes:string[]|null;travel_fee:number|null;radius_km:number|null};
 
 export function createWebsiteBuilderConfig(data:{services?:BuilderService[];areas?:BuilderArea[];isEditing?:boolean}={}){
