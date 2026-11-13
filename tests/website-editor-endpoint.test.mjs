@@ -160,8 +160,8 @@ test("FAQ and gallery first-save layouts are selected by page slug, not database
 test("combined About and Services route preserves each legacy section until its builder exists",async()=>{
  const page=await source("../src/app/about-services/page.tsx");
  assert.equal(page.includes("if(hasAboutBuilder||hasServicesBuilder)return"),false);
- has(page,"hasAboutBuilder?<PublicSiteBuilder");
- has(page,"hasServicesBuilder?<PublicSiteBuilder");
+ assert.match(page,/hasAboutBuilder\s*\?\s*<PublicSiteBuilder/);
+ assert.match(page,/hasServicesBuilder\s*\?\s*<PublicSiteBuilder/);
  has(page,"aboutTitle");
  has(page,"serviceTitle");
  has(page,"items.map(item");
@@ -170,8 +170,8 @@ test("combined About and Services route preserves each legacy section until its 
 test("combined How it Works and Service Areas route preserves each legacy section until its builder exists",async()=>{
  const page=await source("../src/app/how-it-works/page.tsx");
  assert.equal(page.includes("if(hasPageBuilder||hasAreasBuilder)return"),false);
- has(page,"hasPageBuilder?<PublicSiteBuilder");
- has(page,"hasAreasBuilder?<PublicSiteBuilder");
+ assert.match(page,/hasPageBuilder\s*\?\s*<PublicSiteBuilder/);
+ assert.match(page,/hasAreasBuilder\s*\?\s*<PublicSiteBuilder/);
  has(page,"steps.map((step,i)");
  has(page,"service-area-card");
 });
