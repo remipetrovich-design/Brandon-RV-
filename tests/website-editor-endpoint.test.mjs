@@ -37,6 +37,7 @@ test("publishing copies saved draft fields to live content and refreshes the pub
  const publish=route.slice(route.indexOf("if(body.is_published"),route.indexOf("const draft:"));
  assert.match(publish,/update\.content=current\.draft_content/);
  assert.match(publish,/update\.title=current\.draft_title/);
+ assert.match(publish,/update\.draft_content=null/);
  assert.match(publish,/is_published:publish/);
  assert.match(publish,/revalidateTag\("brv-public-site","max"\)/);
  assert.match(publish,/website\.page\.published/);
