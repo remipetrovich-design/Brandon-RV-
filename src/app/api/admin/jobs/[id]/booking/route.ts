@@ -1,4 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
@@ -31,7 +32,11 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    :{data:null,error:null};
   if(existingError)return jsonError("Could not load the customer's booking request.",500);
   if(existing&&existing.status==="confirmed"&&existing.id!==job.appointment_id)return jsonError("Another confirmed booking already exists for this quote.",409);
-  const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).neq("id",existing?.id??"00000000-0000-0000-0000-000000000000").in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",endsAt.toISOString()).gt("ends_at",startsAt.toISOString()).limit(1);
+  const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
+  const settings=settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{};
+  const policyError=validateBookingWindow(startsAt,endsAt,settings);if(policyError)return jsonError(policyError,409);
+  const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
+  const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).neq("id",existing?.id??"00000000-0000-0000-0000-000000000000").in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
   if(conflictError)return jsonError("Could not verify booking availability.",500);
   if(conflicts?.length)return jsonError("That time conflicts with another confirmed booking. Choose another time.",409);
   const now=new Date().toISOString();
