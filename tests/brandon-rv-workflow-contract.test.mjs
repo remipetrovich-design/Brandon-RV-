@@ -262,5 +262,5 @@ test("Workcards retain and display customer, vehicle, accepted quote and booking
  assert.match(staffUi,/Accepted quote/);
  assert.match(staffUi,/Customer/);
  assert.match(staffUi,/Vehicle/);
- assert.match(adminPage,/quotes\(quote_number,status,total/);
+ assert.match(adminPage,/quotes!jobs_quote_id_fkey\(quote_number,status,total/);
 });
