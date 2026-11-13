@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {Puck} from "@puckeditor/core";
 import {createWebsiteBuilderConfig,defaultWebsiteBuilderData} from "@/lib/website-builder";
 
@@ -14,6 +14,9 @@ export default function AdminWebsiteEditor({id,title,content,metaTitle,metaDescr
  const [seoDescription,setSeoDescription]=useState(metaDescription??"");
  const [notice,setNotice]=useState("Changes are saved as a draft. Publishing the page remains a separate admin action.");
  const [busy,setBusy]=useState(false);
+ const [services,setServices]=useState<any[]>([]);
+ const [areas,setAreas]=useState<any[]>([]);
+ useEffect(()=>{let active=true;void Promise.all([fetch("/api/public/services",{cache:"no-store"}).then(r=>r.ok?r.json():{services:[]}),fetch("/api/public/service-areas",{cache:"no-store"}).then(r=>r.ok?r.json():{areas:[]})]).then(([serviceData,areaData])=>{if(active){setServices(serviceData.services??[]);setAreas(areaData.areas??[]);}}).catch(()=>{});return()=>{active=false;};},[]);
 
  async function save(data:unknown){
   setBusy(true);setNotice("");
@@ -35,10 +38,10 @@ export default function AdminWebsiteEditor({id,title,content,metaTitle,metaDescr
     <label>SEO title<input value={seoTitle} onChange={event=>setSeoTitle(event.target.value)} maxLength={160}/></label>
    </div>
    <label>SEO description<textarea value={seoDescription} onChange={event=>setSeoDescription(event.target.value)} rows={2} maxLength={320}/></label>
-   <p className="panel-footnote">Drag and drop approved content blocks. Request-a-quote, enquiry forms, service records, service areas and booking workflows are connected components; their underlying forms, data and admin behaviour cannot be edited here.</p>
+   <p className="panel-footnote">Drag and drop page content and protected Brandon RV components. You can move the quote form, general enquiry form, published services and service areas, but cannot change their fields, submission logic, records or admin workflows.</p>
   </div>
   <div style={{minHeight:720,borderTop:"1px solid var(--line, #d8e0e5)"}}>
-   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={createWebsiteBuilderConfig() as any} data={initialBuilder as any} onPublish={save}/>
+   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={createWebsiteBuilderConfig({services,areas}) as any} data={initialBuilder as any} onPublish={save}/>
   </div>
   <p className="inline-notice" role="status" style={{margin:16}}>{busy?"Saving draft…":notice}</p>
  </div>;
