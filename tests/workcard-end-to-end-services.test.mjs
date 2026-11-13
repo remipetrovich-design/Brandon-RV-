@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("database migration supplies every field used by service-linked Workcard entries",async()=>{
- const migration=await read("../supabase/migrations/20261113010000_connect_services_and_workcard_actual_costs.sql");
+ const migration=await read("../supabase/migrations/20261113120519_connect_services_and_workcard_actual_costs.sql");
  for(const field of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","service_id"])assert.ok(migration.includes("add column if not exists "+field),"Missing migration column: "+field);
  assert.ok(migration.includes("alter table public.quote_items"));
  assert.ok(migration.includes("job_work_entries_service_id_idx"));
@@ -39,7 +39,7 @@ test("quote creation and revision editing both preserve service links and custom
 test("Workcard variations also retain service links through customer acceptance",async()=>{
  const ui=await read("../src/components/admin-job-variations.tsx");
  const route=await read("../src/app/api/admin/jobs/[id]/variations/route.ts");
- const migration=await read("../supabase/migrations/20261113010000_connect_services_and_workcard_actual_costs.sql");
+ const migration=await read("../supabase/migrations/20261113120519_connect_services_and_workcard_actual_costs.sql");
  assert.ok(ui.includes("Service preset"));
  assert.ok(ui.includes("serviceId:x.serviceId"));
  assert.ok(route.includes("service_id:x.serviceId"));

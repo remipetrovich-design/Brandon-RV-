@@ -19,3 +19,21 @@ COMMENT ON COLUMN public.job_work_entries.cost_unit_price IS 'Actual business co
 COMMENT ON COLUMN public.job_work_entries.quantity_required IS 'Quantity identified as required during diagnosis or planning.';
 COMMENT ON COLUMN public.job_work_entries.quantity_used IS 'Actual quantity used or actual labour hours recorded.';
 COMMENT ON COLUMN public.job_work_entries.invoiceable IS 'Only approved, completed actual-work entries marked invoiceable are included in the final invoice.';
+
+
+-- These columns are introduced by the preceding production migration. Add
+-- their validation constraints explicitly because ADD COLUMN IF NOT EXISTS
+-- does not add constraints when the columns already exist.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.job_work_entries'::regclass AND conname='job_work_entries_quantity_required_nonnegative') THEN
+    ALTER TABLE public.job_work_entries ADD CONSTRAINT job_work_entries_quantity_required_nonnegative CHECK (quantity_required >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.job_work_entries'::regclass AND conname='job_work_entries_quantity_used_nonnegative') THEN
+    ALTER TABLE public.job_work_entries ADD CONSTRAINT job_work_entries_quantity_used_nonnegative CHECK (quantity_used >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.job_work_entries'::regclass AND conname='job_work_entries_cost_unit_price_nonnegative') THEN
+    ALTER TABLE public.job_work_entries ADD CONSTRAINT job_work_entries_cost_unit_price_nonnegative CHECK (cost_unit_price >= 0);
+  END IF;
+END;
+$$;

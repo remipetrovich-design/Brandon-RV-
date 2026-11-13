@@ -25,7 +25,7 @@ test("guest booking and Workcard endpoints are denied server-side",async()=>{
 });
 
 test("guest quote acceptance retains enquiry access but only accepts standard quotes",async()=>{
- const migration=await source("../supabase/migrations/20261112113000_limit_guest_access_to_quotes_and_enquiries.sql");
+ const migration=await source("../supabase/migrations/20261112113129_limit_guest_access_to_quotes_and_enquiries.sql");
  assert.match(migration,/quote_kind='standard'/);
  assert.match(migration,/guest_access_token_hash=CASE WHEN p_response='declined' THEN NULL ELSE guest_access_token_hash END/);
  assert.match(migration,/guest_scope','quote_and_general_enquiry_only'/);
