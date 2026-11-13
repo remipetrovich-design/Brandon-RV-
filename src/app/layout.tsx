@@ -2,7 +2,7 @@ import type {Metadata} from "next";
 import type {ReactNode} from "react";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-import {getPublicBusiness} from "@/lib/public-site";
+import {getPublicBusiness,phoneHref} from "@/lib/public-site";
 import "./globals.css";
 import "./brv-refresh.css";
 
@@ -19,6 +19,6 @@ export default async function RootLayout({children}:Readonly<{children:ReactNode
  return <html lang="en-AU"><body>
   <SiteHeader brandLine={brandLine}/>
   {children}
-  <SiteFooter phone={phone} phoneLink={`tel:${phone.replace(/[^+\d]/g,"")}`} brandLine={brandLine} location={location}/>
+  <SiteFooter phone={phone} phoneLink={phoneHref(phone)} brandLine={brandLine} location={location}/>
  </body></html>;
 }
