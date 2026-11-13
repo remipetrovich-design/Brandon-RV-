@@ -61,21 +61,25 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
     render:({heading,text,label}:any)=><section className="home-final-cta"><div className="shell home-final-cta-inner"><div><h2>{heading}</h2><p>{text}</p></div><div className="home-final-cta-actions"><Link className="button button-primary" href="/request-quote">{label} <span aria-hidden="true">→</span></Link></div></div></section>
    },
    RequestQuoteForm:{
+    permissions:{delete:false,duplicate:false,edit:false,drag:true},
     fields:{},
     defaultProps:{},
     render:()=> <section className="content-section"><div className="shell"><EnquiryForm preview={isEditing}/></div></section>
    },
    GeneralEnquiryForm:{
+    permissions:{delete:false,duplicate:false,edit:false,drag:true},
     fields:{},
     defaultProps:{},
     render:()=> <section className="content-section"><div className="shell"><WebsiteGeneralEnquiryBlock preview={isEditing}/></div></section>
    },
    ServicesFeed:{
+    permissions:{delete:false,duplicate:false,edit:true,drag:true},
     fields:{heading:{type:"text"},intro:{type:"textarea"}},
     defaultProps:{heading:"Our services",intro:"Services currently approved and published by Brandon RV."},
     render:({heading,intro}:any)=><section className="content-section brv-combined-services"><div className="shell"><h2>{heading}</h2><p>{intro}</p>{services.length?<div className="detail-list">{services.map(service=><article className="detail-item" key={service.id}><h3>{service.name}</h3><p>{service.description??"Contact Brandon RV to discuss this service."}</p>{service.pricing_label&&<strong>{service.pricing_label}</strong>}{service.price_from!==null&&<strong>From ${Number(service.price_from).toFixed(2)} AUD</strong>}</article>)}</div>:<p>Service details are being updated. Contact Brandon RV to discuss your requirements.</p>}</div></section>
    },
    ServiceAreasFeed:{
+    permissions:{delete:false,duplicate:false,edit:true,drag:true},
     fields:{heading:{type:"text"},intro:{type:"textarea"}},
     defaultProps:{heading:"Where we work",intro:"Brandon RV is based in the Tamworth region. Share your location and we will confirm whether travel is practical."},
     render:({heading,intro}:any)=><section className="content-section"><div className="shell"><h2>{heading}</h2><p>{intro}</p>{areas.length?<div className="detail-list">{areas.map(area=><article className="detail-item" key={area.id}><h3>{area.name}</h3>{area.description&&<p>{area.description}</p>}<p>{[...(area.suburbs??[]),...(area.postcodes??[])].join(" · ")}</p>{area.radius_km!==null&&<small>Radius: {area.radius_km} km</small>}{area.travel_fee!==null&&<small>Travel fee: ${Number(area.travel_fee).toFixed(2)}</small>}</article>)}</div>:<p>Contact Brandon RV to check your location.</p>}</div></section>
