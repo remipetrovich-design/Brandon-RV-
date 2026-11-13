@@ -25,7 +25,7 @@ test("saving a website draft does not overwrite live content or publish it",asyn
  assert.match(migration,/add column if not exists draft_content jsonb/);
  assert.match(draftSave,/draft_title/);
  assert.match(draftSave,/draft_content/);
- assert.doesNotMatch(draftSave,/update\\.content=|update\\.is_published|update\\.published_at/);
+ assert.doesNotMatch(draftSave,/update\.content=|update\.is_published|update\.published_at/);
 });
 
 test("publishing copies saved draft content to live content and refreshes the public cache",async()=>{
