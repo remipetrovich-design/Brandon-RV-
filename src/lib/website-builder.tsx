@@ -10,7 +10,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
  const areas=data.areas??[];
  return {
   categories:{
-   content:{title:"Page content",components:["Hero","Heading","TextBlock","ImageBlock","Spacer","FAQList","GalleryGrid"]},
+   content:{title:"Page content",components:["Hero","Heading","TextBlock","ImageBlock","Spacer","FAQList","GalleryGrid","ProcessSteps"]},
    brandon:{title:"Protected Brandon RV components",components:["RequestQuoteCTA","RequestQuoteForm","GeneralEnquiryForm","ServicesFeed","ServiceAreasFeed"]}
   },
   components:{
@@ -49,7 +49,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
     defaultProps:{heading:"Previous work",items:[]},
     render:({heading,items}:any)=><section className="content-section"><div className="shell"><h2>{heading}</h2>{items?.length?<div className="service-grid">{items.map((item:any,index:number)=><article className="service-card" key={index}>{item.url&&<img src={item.url} alt={item.alt||item.title||""} loading="lazy"/>}<h3>{item.title}</h3>{item.description&&<p>{item.description}</p>}</article>)}</div>:<p>Work photographs will appear here when they are ready to publish.</p>}</div></section>
    },
-   RequestQuoteCTA:{
+   ProcessSteps:{\n    fields:{heading:{type:"text"},steps:{type:"array",arrayFields:{text:{type:"textarea"}},defaultItemProps:{text:"Describe this step."}}},\n    defaultProps:{heading:"How it works",steps:[]},\n    render:({heading,steps}:any)=><section className="content-section"><div className="shell"><h2>{heading}</h2><div className="detail-list">{(steps??[]).map((step:any,index:number)=><article className="detail-item" key={index}><span>{String(index+1).padStart(2,"0")}</span><p>{step.text}</p></article>)}</div></div></section>\n   },\n   RequestQuoteCTA:{
     fields:{heading:{type:"text"},text:{type:"textarea"},label:{type:"text"}},
     defaultProps:{heading:"Need a hand with your RV?",text:"Send through the vehicle details and what needs attention. Brandon RV will review the request and come back to you.",label:"Request a quote"},
     render:({heading,text,label}:any)=><section className="home-final-cta"><div className="shell home-final-cta-inner"><div><h2>{heading}</h2><p>{text}</p></div><div className="home-final-cta-actions"><Link className="button button-primary" href="/request-quote">{label} <span aria-hidden="true">→</span></Link></div></div></section>
@@ -83,7 +83,7 @@ export function defaultWebsiteBuilderData(pageId:string,title:string,legacy:Reco
  const subtitle=typeof legacy.hero_subtitle==="string"?legacy.hero_subtitle:typeof legacy.intro==="string"?legacy.intro:"";
  const intro=typeof legacy.intro==="string"?legacy.intro:"";
  const hero={type:"Hero",props:{id:pageId+"-hero",title:heroTitle,subtitle,imageUrl:"",imageAlt:""}};
- if(pageId==="faq"){
+ if(pageId==="request-quote"){\n  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"Share your vehicle details and what needs attention. We will review the request before discussing a quote or visit."}},{type:"RequestQuoteForm",props:{id:pageId+"-form"}}]};\n }\n if(pageId==="contact"){\n  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"For general enquiries, contact Brandon RV with a question about the mobile service, service suitability or how the process works."}},{type:"GeneralEnquiryForm",props:{id:pageId+"-form"}}]};\n }\n if(pageId==="how-it-works"){\n  const steps=Array.isArray(legacy.steps)?legacy.steps.filter((step):step is string=>typeof step==="string"):[ ];\n  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro}},{type:"ProcessSteps",props:{id:pageId+"-steps",heading:"From enquiry to handover",steps:steps.map(text=>({text}))}},{type:"ServiceAreasFeed",props:{id:pageId+"-areas",heading:"Where we work",intro:"Published service areas and travel information."}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote"}}]};\n }\n if(pageId==="faq"){
   const items=Array.isArray(legacy.items)?legacy.items.filter((item:any)=>item&&typeof item.question==="string"&&typeof item.answer==="string").map((item:any)=>({question:item.question,answer:item.answer})):[];
   return {root:{props:{title}},content:[hero,{type:"FAQList",props:{id:pageId+"-faq",heading:"Frequently asked questions",items}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote",heading:"Have a question about a job?",text:"Send through the vehicle details and what needs attention.",label:"Request a quote"}}]};
  }
