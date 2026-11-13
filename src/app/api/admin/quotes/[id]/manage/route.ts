@@ -51,12 +51,13 @@ export async function DELETE(request:Request,{params}:{params:Promise<{id:string
  const db=database(),businessId=access.membership!.business_id;
  const {data:quote}=await db.from("quotes").select("id,quote_number,status").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(!quote)return jsonError("Quote not found.",404);
- if(quote.status!=="draft")return jsonError("Only draft quotes can be deleted. Issued, accepted or converted quotes must be retained for the customer and audit history; create a revision or close the quote instead.",409);
- const [{data:jobs},{data:revisions}]=await Promise.all([
+ const [{data:jobs},{data:appointments},{data:invoices},{data:revisions}]=await Promise.all([
   db.from("jobs").select("id").eq("business_id",businessId).eq("quote_id",id).limit(1),
+  db.from("appointments").select("id").eq("business_id",businessId).eq("quote_id",id).limit(1),
+  db.from("invoices").select("id").eq("business_id",businessId).eq("quote_id",id).limit(1),
   db.from("quotes").select("id").eq("business_id",businessId).eq("supersedes_quote_id",id).limit(1)
  ]);
- if(jobs?.length||revisions?.length)return jsonError("This quote is linked to a Workcard or later revision and cannot be deleted.",409);
+ if(jobs?.length||appointments?.length||invoices?.length||revisions?.length)return jsonError("This quote is linked to a Workcard, booking, invoice or later revision and cannot be deleted. The linked business records must be retained.",409);
  const {error:itemsError}=await db.from("quote_items").delete().eq("quote_id",id);
  if(itemsError)return jsonError("Could not remove quote line items.",500);
  const {error}=await db.from("quotes").delete().eq("id",id).eq("business_id",businessId);
