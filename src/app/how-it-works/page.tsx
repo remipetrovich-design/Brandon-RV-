@@ -1,11 +1,13 @@
 import type {Metadata} from "next";
 import Link from "next/link";
-import {getPublishedSitePage, getPublishedServiceAreas, contentText} from "@/lib/public-site";
+import PublicSiteBuilder from "@/components/public-site-builder";
+import {getPublishedSitePage, getPublishedServiceAreas, getPublishedServices, contentText} from "@/lib/public-site";
 export const dynamic="force-dynamic";
 export const metadata:Metadata={title:"How it works & Service areas",description:"How Brandon RV reviews enquiries, quotes suitable work and confirms mobile service appointments around Tamworth, NSW."};
 const fallback=["Submit an enquiry with your vehicle details, location and a description of the issue.","Brandon RV reviews the request and may ask for photographs or more information.","Receive a quote or inspection proposal with the proposed scope and costs.","Approve the work and any agreed parts or freight costs.","Brandon RV checks availability, access and parts before confirming an appointment.","The work is completed and checked, then the invoice and payment details are provided."];
 export default async function HowItWorksPage(){
- const [page,areasPage,areas]=await Promise.all([getPublishedSitePage("how-it-works"),getPublishedSitePage("service-areas"),getPublishedServiceAreas()]);
+ const [page,areasPage,areas,services]=await Promise.all([getPublishedSitePage("how-it-works"),getPublishedSitePage("service-areas"),getPublishedServiceAreas(),getPublishedServices()]);
+ if(page?.content?.builder||areasPage?.content?.builder)return <main>{page?.content?.builder&&<PublicSiteBuilder data={page.content.builder} services={services} areas={areas}/ >}{areasPage?.content?.builder&&<PublicSiteBuilder data={areasPage.content.builder} services={services} areas={areas}/>}</main>;
  const steps=Array.isArray(page?.content.steps)?page.content.steps.filter((x):x is string=>typeof x==="string"):fallback;
  const base=contentText(areasPage?.content,"base","Tamworth NSW");const radius=areas.find(a=>a.radius_km!==null)?.radius_km??null;
  const areaIntro=contentText(areasPage?.content,"intro","Brandon RV is based in the Tamworth region. Tell us where the vehicle is located and we will confirm whether travel is practical before discussing an appointment.");
