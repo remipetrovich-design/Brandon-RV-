@@ -8,7 +8,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   try {
     const body = await request.json(), patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (typeof body.enabled === "boolean") patch.is_enabled = body.enabled;\n    if (body.scopes !== undefined) {
+    if (typeof body.enabled === "boolean") patch.is_enabled = body.enabled;
+    if (body.scopes !== undefined) {
       const checked = validateIntegrationScopes(body.scopes);
       if (!checked.valid) return jsonError("One or more selected permissions are invalid.");
       patch.scopes = body.scopes;
