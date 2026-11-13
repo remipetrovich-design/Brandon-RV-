@@ -2,7 +2,7 @@ import { authenticateIntegration, auditIntegrationRequest } from "@/lib/integrat
 import { database } from "@/lib/auth";
 export const runtime = "nodejs";
 
-const RESOURCES: Record<string, { table: string; scope: string; columns: string; filters?: Record<string,string>; sensitive?: boolean; tenantColumn?: string }> = {
+const RESOURCES: Record<string, { table: string; scope: string; columns: string; filters?: Record<string,string>; sensitive?: boolean; tenantColumn?: string; orderColumn?: string }> = {
   business: { table: "businesses", scope: "business.read", tenantColumn: "id", columns: "id,name,slug,brand_line,phone,public_email,city,region,country,status,created_at,updated_at" },
   services: { table: "services", scope: "services.read", columns: "id,name,slug,category,description,scope_notes,is_active,is_published,sort_order,created_at,updated_at" },
   "service-areas": { table: "service_areas", scope: "service_areas.read", columns: "id,name,description,radius_km,travel_fee,is_published,sort_order,created_at" },
@@ -23,7 +23,7 @@ const RESOURCES: Record<string, { table: string; scope: string; columns: string;
   leave: { table: "leave_requests", scope: "leave.read", columns: "id,user_id,leave_type_id,start_date,end_date,days,status,reason,reviewed_by,reviewed_at,reviewer_note,created_at", sensitive: true },
   payroll: { table: "payroll_items", scope: "payroll.read", columns: "id,payroll_period_id,user_id,ordinary_hours,overtime_hours,allowances,deductions,gross_amount,tax_withheld,superannuation_amount,net_amount,notes,created_at", sensitive: true },
   website: { table: "site_pages", scope: "website.read", columns: "id,slug,title,meta_title,meta_description,is_published,published_at,sort_order,updated_at" },
-  "business-settings": { table: "business_settings", scope: "business.settings.read", columns: "business_id,settings,updated_at", sensitive: true },
+  "business-settings": { table: "business_settings", scope: "business.settings.read", columns: "business_id,settings,updated_at", sensitive: true, orderColumn: "updated_at" },
   communications: { table: "customer_messages", scope: "communications.read", columns: "id,customer_id,user_id,job_id,enquiry_id,quote_id,sender_type,sender_user_id,message,is_internal,read_at,created_at" },
   tasks: { table: "job_tasks", scope: "tasks.read", columns: "id,job_id,title,description,assigned_staff_id,status,due_at,completed_at,sort_order,created_at,updated_at" },
   assets: { table: "employee_assets", scope: "assets.read", columns: "id,user_id,asset_name,asset_tag,serial_number,assigned_at,returned_at,condition_notes,created_at", sensitive: true },
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ reso
   const pageSize = Math.max(1, Math.min(100, Number(url.searchParams.get("pageSize") || 25)));
   const id = url.searchParams.get("id");
   const db = database();
-  let query = db.from(config.table).select(config.columns, { count: "exact" }).eq(config.tenantColumn ?? "business_id", context.businessId).order("created_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
+  let query = db.from(config.table).select(config.columns, { count: "exact" }).eq(config.tenantColumn ?? "business_id", context.businessId).order(config.orderColumn ?? "created_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
   if (id) query = query.eq("id", id);
   if (resource === "staff") query = query.not("user_role", "is", null).neq("user_role", "customer");
   if (config.filters) for (const [field, value] of Object.entries(config.filters)) query = query.eq(field, value);
