@@ -33,7 +33,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages,business,accep
  const [notice,setNotice]=useState("Select a page, make changes, then save its draft. Publishing remains a separate action.");
  const [services,setServices]=useState<any[]>([]);
  const [areas,setAreas]=useState<any[]>([]);
- const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true,acceptingEnquiries}) as any,[services,areas]);
+ const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true,acceptingEnquiries,business}) as any,[services,areas,business,acceptingEnquiries]);
 
  useEffect(()=>{let active=true;void Promise.all([fetch("/api/public/services",{cache:"no-store"}).then(r=>r.ok?r.json():{services:[]}),fetch("/api/public/service-areas",{cache:"no-store"}).then(r=>r.ok?r.json():{areas:[]})]).then(([serviceData,areaData])=>{if(active){setServices(serviceData.services??[]);setAreas(areaData.areas??[]);}}).catch(()=>{});return()=>{active=false;};},[]);
 
