@@ -205,7 +205,7 @@ test("FAQ and gallery defaults retain their existing page introductions",async()
  const faqStart=config.indexOf('if(pageId==="faq")');
  const galleryStart=config.indexOf('if(pageId==="gallery")');
  const faq=config.slice(faqStart,galleryStart);
- const gallery=config.slice(galleryStart,config.indexOf("return {",galleryStart));
+ const gallery=config.slice(galleryStart,config.lastIndexOf("\n return {"));
  has(faq,'type:"TextBlock"');
  has(faq,'text:intro');
  has(gallery,'type:"TextBlock"');
