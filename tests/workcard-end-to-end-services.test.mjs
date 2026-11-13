@@ -25,7 +25,9 @@ test("accepted quote creates a Workcard without copying quote lines into Parts n
 
 test("Parts needed exposes independent add, edit, update and delete controls with research fields",async()=>{
  const ui=await read("../src/components/admin-workcard-management.tsx");
- for(const token of ["Add part","Edit part","Remove part","addEntry()","editEntry(entry)","removeEntry(x.id)","quantity_required","quantity_used","part_number","supplier_name","cost_unit_price"])assert.ok(ui.includes(token),"Missing Parts needed control or field: "+token);
+ for(const token of ["Add part","Edit part","Remove part","addEntry()","editEntry(entry)","removeEntry(x.id)","quantity_required","quantity_used","part_number","supplier_name","cost_unit_price","!x.source_quote_item_id"])assert.ok(ui.includes(token),"Missing Parts needed control, independent-source filter or field: "+token);
+ const entriesApi=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
+ assert.ok(entriesApi.includes("id,source_quote_item_id,entry_type"),"The Parts needed view must be able to distinguish quote-linked lines.");
 });
 
 test("Workcard part deletion is scoped to its Workcard and recorded in the audit history",async()=>{
