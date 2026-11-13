@@ -75,26 +75,6 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
   }
   let workcardLinked=false;
-  if(section==="appointments"&&update.status==="confirmed"&&appointment&&quote){
-   const {data:workcardByQuote}=await db.from("jobs").select("id,job_number,appointment_id").eq("business_id",membership.business_id).eq("quote_id",quote.id).maybeSingle();
-   const {data:legacyWorkcard}=workcardByQuote?{data:null}:await db.from("jobs").select("id,job_number,appointment_id").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
-   const workcard=workcardByQuote??legacyWorkcard;
-   if(!workcard){
-    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
-    return jsonError("Create the Workcard from the accepted quote before confirming its booking.",409);
-   }
-   if(workcard.appointment_id&&workcard.appointment_id!==id){
-    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
-    return jsonError("This Workcard is already linked to another booking. Update the existing booking instead.",409);
-   }
-   const {error:linkError}=await db.from("jobs").update({appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,status:"scheduled",updated_at:new Date().toISOString()}).eq("id",workcard.id).eq("business_id",membership.business_id);
-   if(linkError){
-    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
-    return jsonError("Booking could not be confirmed because the existing Workcard could not be updated.",500);
-   }
-   workcardLinked=true;
-   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"workcard.booking_confirmed",entity_type:"job",entity_id:workcard.id,details:{job_number:workcard.job_number,appointment_id:id,quote_id:quote.id}});
-  }
   if(section==="appointments"&&linkedWorkcard){
    const scheduleUpdate:any={appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,updated_at:new Date().toISOString()};
    if(linkedWorkcard.status==="pending")scheduleUpdate.status="scheduled";
