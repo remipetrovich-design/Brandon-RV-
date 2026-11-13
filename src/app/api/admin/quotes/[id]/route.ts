@@ -5,7 +5,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
  const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Invalid quote ID.");
  const db=database(),businessId=access.membership!.business_id;
- const {data:quote,error}=await db.from("quotes").select("id,quote_number,revision_number,status,expiry_date,notes,terms,enquiry_id,subtotal,tax_amount,total,quote_items(description,quantity,unit_price,tax_rate,line_total,sort_order)").eq("id",id).eq("business_id",businessId).maybeSingle();
+ const {data:quote,error}=await db.from("quotes").select("id,quote_number,revision_number,status,expiry_date,notes,terms,enquiry_id,subtotal,tax_amount,total,quote_items(description,quantity,unit_price,tax_rate,line_total,sort_order,item_type,service_id)").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!quote)return jsonError("Quote not found.",404);
  const items=(quote.quote_items??[]) as any[];
  const taxRate=items.length?Number(items[0].tax_rate??0):0;
@@ -42,8 +42,10 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const oldItems=(quote.quote_items??[]) as any[];
   const raw=Array.isArray(body.items)?body.items:oldItems;
   if(raw.length<1||raw.length>30)return jsonError("A quote must contain between 1 and 30 lines.");
-  const items:{description:string;quantity:number;unit_price:number;tax_rate:number;sort_order:number}[]=raw.map((x:any,i:number)=>({description:String(x.description??"").trim(),quantity:Number(x.quantity),unit_price:Number(x.unit_price??x.unitPrice),tax_rate:Number(x.tax_rate??oldItems[i]?.tax_rate??oldItems[0]?.tax_rate??0),sort_order:i}));
-  if(items.some(x=>x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000||!Number.isFinite(x.tax_rate)||x.tax_rate<0||x.tax_rate>100))return jsonError("Check each quote line's description, quantity, unit price and tax rate.");
+  const items:{description:string;quantity:number;unit_price:number;tax_rate:number;sort_order:number;item_type:string;service_id:string|null}[]=raw.map((x:any,i:number)=>({description:String(x.description??"").trim(),quantity:Number(x.quantity),unit_price:Number(x.unit_price??x.unitPrice),tax_rate:Number(x.tax_rate??oldItems[i]?.tax_rate??oldItems[0]?.tax_rate??0),sort_order:i,item_type:String(x.item_type??oldItems[i]?.item_type??"parts"),service_id:x.service_id??oldItems[i]?.service_id??null}));
+  if(items.some(x=>x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000||!Number.isFinite(x.tax_rate)||x.tax_rate<0||x.tax_rate>100||!["labour","parts"].includes(x.item_type)))return jsonError("Check each quote line's description, quantity, unit price and tax rate.");
+  const serviceIds=items.map(x=>x.service_id).filter(Boolean) as string[];
+  if(serviceIds.length){const {data:linkedServices,error:serviceError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
   const {data:settings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
   const pricing=(settings?.settings as any)?.pricing??{},gstStatus=String(pricing.gst_status??"not_configured"),configuredRate=Number(pricing.gst_rate??10);
   if(items.some(x=>x.tax_rate>0)&&gstStatus!=="registered")return jsonError("GST cannot be added until the business is confirmed as GST registered.");
@@ -62,7 +64,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const rows=items.map(x=>({...x,line_total:Number((x.quantity*x.unit_price).toFixed(2)),quote_id:id}));
   const {error:insertError}=await db.from("quote_items").insert(rows);
   if(insertError){
-   await db.from("quote_items").insert(oldItems.map((x:any)=>({description:x.description,quantity:x.quantity,unit_price:x.unit_price,tax_rate:x.tax_rate,line_total:x.line_total,sort_order:x.sort_order,quote_id:id})));
+   await db.from("quote_items").insert(oldItems.map((x:any)=>({description:x.description,quantity:x.quantity,unit_price:x.unit_price,tax_rate:x.tax_rate,line_total:x.line_total,sort_order:x.sort_order,item_type:x.item_type??"parts",service_id:x.service_id??null,quote_id:id})));
    await db.from("quotes").update({subtotal:quote.subtotal,tax_amount:quote.tax_amount,total:quote.total}).eq("id",id).eq("business_id",businessId);
    return jsonError("Could not save quote lines. Previous lines and totals were restored.",500);
   }
