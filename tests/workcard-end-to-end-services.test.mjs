@@ -10,6 +10,18 @@ test("database migration supplies every field used by service-linked Workcard en
  assert.ok(migration.includes("job_work_entries_service_id_idx"));
 });
 
+test("Workcard section menu renders as compact horizontal folder tabs, not stacked buttons",async()=>{
+ const ui=await read("../src/components/admin-workcard-management.tsx");
+ const css=await read("../src/app/globals.css");
+ assert.ok(ui.includes('className="brv-workcard-tabs"'),"Workcard sections need a dedicated tab strip.");
+ assert.ok(ui.includes('className={activeTab===id?"brv-workcard-tab active":"brv-workcard-tab"}'),"Tabs must use their dedicated compact style rather than full-size generic buttons.");
+ assert.ok(ui.includes("aria-pressed={activeTab===id}"),"The active section must be exposed accessibly.");
+ assert.ok(css.includes(".brv-workcard-tabs")&&css.includes("flex-wrap:nowrap!important"),"Tabs must stay in one horizontal row.");
+ assert.ok(css.includes("overflow-x:auto"),"The tab row must scroll horizontally on narrow screens.");
+ assert.ok(css.includes("border-radius:8px 8px 0 0!important"),"Tabs must have folder-like top corners.");
+ assert.ok(css.includes("width:auto!important"),"Tabs must not expand to full-width stacked buttons.");
+});
+
 test("Workcard management endpoint returns complete job context and service-linked actual entries",async()=>{
  const route=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
  for(const field of ["quantity_required","quantity_used","unit_price","cost_unit_price","services:services!job_work_entries_service_id_fkey(name)","customers:users!jobs_customer_id_users_fkey(full_name,email,phone)","from(\"quotes\")","from(\"appointments\")","from(\"services\")","from(\"job_work_entries\")"])assert.ok(route.includes(field),"Missing Workcard API field/query: "+field);
