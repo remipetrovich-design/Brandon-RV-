@@ -20,7 +20,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
  const {id}=await params;if(!idPattern.test(id))return jsonError("Invalid Workcard ID.");
  const db=database(),businessId=access.membership!.business_id;
- const {data:job,error}=await db.from("jobs").select("id,job_number,title,status,priority,scope_of_work,customer_visible_notes,scheduled_start,scheduled_end,worker_signed_off_at,senior_approval_status,customer_approval_status").eq("id",id).eq("business_id",businessId).maybeSingle();
+ const {data:job,error}=await db.from("jobs").select("id,job_number,title,status,priority,scope_of_work,customer_visible_notes,scheduled_start,scheduled_end,worker_signed_off_at,senior_approval_status,customer_approval_status,customers(full_name,email,phone),quotes!jobs_quote_id_fkey(quote_number,status,total),appointments(status,starts_at,ends_at,location,vehicles(make,model,year,registration,vin))").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error){console.error("Workcard lookup failed",error);return jsonError("Could not load Workcard details.",500);}
  if(!job)return jsonError("Workcard not found.",404);
  const [{data:entries,error:entryError},{data:services,error:serviceError}]=await Promise.all([
