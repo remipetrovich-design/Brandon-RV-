@@ -32,7 +32,11 @@ export async function GET(request: Request) {
       { name: "leave", operations: ["read"], scope: "leave.read" },
       { name: "payroll", operations: ["read"], scope: "payroll.read" },
       { name: "website", operations: ["read"], scope: "website.read" },
-      { name: "business-settings", operations: ["read"], scope: "business.settings.read" },\n      { name: "communications", operations: ["read"], scope: "communications.read" },\n      { name: "tasks", operations: ["read"], scope: "tasks.read" },\n      { name: "assets", operations: ["read"], scope: "assets.read" },\n      { name: "onboarding", operations: ["read"], scope: "onboarding.read" },
+      { name: "business-settings", operations: ["read"], scope: "business.settings.read" },
+      { name: "communications", operations: ["read"], scope: "communications.read" },
+      { name: "tasks", operations: ["read"], scope: "tasks.read" },
+      { name: "assets", operations: ["read"], scope: "assets.read" },
+      { name: "onboarding", operations: ["read"], scope: "onboarding.read" },
     ],
     permissionGroups: INTEGRATION_SCOPES,
   }, { headers: { "X-Request-Id": auth.context!.requestId } });
