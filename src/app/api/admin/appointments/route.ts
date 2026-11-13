@@ -31,7 +31,7 @@ export async function POST(request:Request){
    if(enquiryId){const {data:enquiry}=await db.from("enquiries").select("vehicle_id").eq("id",enquiryId).eq("business_id",businessId).maybeSingle();vehicleId=enquiry?.vehicle_id??null;}
   }
   const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
-  const settings=settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{};
+  const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
   const policyError=validateBookingWindow(startsAt,endsAt,settings,now);if(policyError)return jsonError(policyError,409);
   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
