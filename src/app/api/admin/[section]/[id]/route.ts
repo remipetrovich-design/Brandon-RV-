@@ -78,7 +78,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   if(section==="appointments"&&linkedWorkcard){
    const scheduleUpdate:any={appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,updated_at:new Date().toISOString()};
    if(linkedWorkcard.status==="pending")scheduleUpdate.status="scheduled";
-   const {error:workcardError}=await db.from("jobs").update(scheduleUpdate).eq("id",linkedWorkcard.id).eq("business_id",membership.business_id);
+   const {error:workcardError}=await db.from("jobs").update({appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,...(linkedWorkcard.status==="pending"?{status:"scheduled"}:{}),updated_at:new Date().toISOString()}).eq("id",linkedWorkcard.id).eq("business_id",membership.business_id);
    if(workcardError){
     await db.from("appointments").update({status:appointment.status,starts_at:appointment.starts_at,ends_at:appointment.ends_at,location:appointment.location,confirmed_by:appointment.confirmed_by??null,confirmed_at:appointment.confirmed_at??null,updated_at:appointment.updated_at??new Date().toISOString()}).eq("id",id).eq("business_id",membership.business_id);
     return jsonError("Appointment was not changed because its Workcard schedule could not be updated.",500);
