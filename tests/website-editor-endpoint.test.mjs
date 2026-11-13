@@ -125,9 +125,9 @@ test("quote and general-enquiry blocks reuse the existing forms and customer pro
  has(wrapper,'fetch("/api/portal/profile"');
  has(wrapper,"initialName=");
  has(config,'if(pageId==="request-quote")');
- has(config,'type:"RequestQuoteForm"');
+ has(config,'type:"RequestQuotePage"');
  has(config,'if(pageId==="contact")');
- has(config,'type:"GeneralEnquiryForm"');
+ has(config,'type:"ContactPage"');
  has(config,'if(pageId==="how-it-works")');
 });
 
@@ -180,44 +180,43 @@ test("combined page defaults do not duplicate the other page's protected feeds",
  const config=await source("../src/lib/website-builder.tsx");
  const aboutStart=config.indexOf('if(pageId==="about")');
  const servicesStart=config.indexOf('if(pageId==="services")');
- const areasStart=config.indexOf('if(pageId==="service-areas")');
  const howStart=config.indexOf('if(pageId==="how-it-works")');
+ const areasStart=config.indexOf('if(pageId==="service-areas")');
+ const faqStart=config.indexOf('if(pageId==="faq")');
  assert.ok(aboutStart>=0);
  assert.ok(servicesStart>aboutStart);
- assert.ok(areasStart>servicesStart);
- assert.ok(howStart>areasStart);
+ assert.ok(howStart>servicesStart);
+ assert.ok(areasStart>howStart);
  const about=config.slice(aboutStart,servicesStart);
- const services=config.slice(servicesStart,areasStart);
- const serviceAreas=config.slice(areasStart,howStart);
- const how=config.slice(howStart,config.indexOf('if(pageId==="faq")',howStart));
- has(about,'type:"TextBlock"');
+ const services=config.slice(servicesStart,howStart);
+ const how=config.slice(howStart,areasStart);
+ const serviceAreas=config.slice(areasStart,faqStart);
+ has(about,'type:"AboutPage"');
  assert.equal(about.includes('type:"ServicesFeed"'),false);
  assert.equal(about.includes('type:"ServiceAreasFeed"'),false);
- has(services,'type:"ServicesFeed"');
+ has(services,'type:"ServicesPage"');
  assert.equal(services.includes('type:"ServiceAreasFeed"'),false);
- has(serviceAreas,'type:"ServiceAreasFeed"');
+ has(serviceAreas,'type:"ServiceAreasPage"');
  assert.equal(how.includes('type:"ServiceAreasFeed"'),false);
- has(how,'type:"ProcessSteps"');
+ has(how,'type:"ProcessPage"');
 });
-
 test("FAQ and gallery defaults retain their existing page introductions",async()=>{
  const config=await source("../src/lib/website-builder.tsx");
  const faqStart=config.indexOf('if(pageId==="faq")');
  const galleryStart=config.indexOf('if(pageId==="gallery")');
  const faq=config.slice(faqStart,galleryStart);
- const gallery=config.slice(galleryStart,config.lastIndexOf("\n return {"));
- has(faq,'type:"TextBlock"');
- has(faq,'text:intro');
- has(gallery,'type:"TextBlock"');
- has(gallery,'text:intro');
+ const gallery=config.slice(galleryStart,config.indexOf('if(pageId==="request-quote")',galleryStart));
+ has(faq,'type:"FAQPage"');
+ has(faq,'intro:str("intro"');
+ has(gallery,'type:"GalleryPage"');
+ has(gallery,'intro:str("intro"');
 });
-
 test("initial builder data retains the existing public hero headings for special pages",async()=>{
  const config=await source("../src/lib/website-builder.tsx");
- has(config,'pageId==="how-it-works"?"From enquiry to handover."');
- has(config,'pageId==="service-areas"?"Mobile service around Tamworth."');
- has(config,'pageId==="faq"?"Frequently asked questions."');
- has(config,'pageId==="gallery"?"Practical work. Real results."');
+ has(config,'heading:"From enquiry to handover."');
+ has(config,'heading:"Mobile service around Tamworth."');
+ has(config,'heading:"Frequently asked questions."');
+ has(config,'heading:"Practical work. Real results."');
 });
 
 test("website management opens one unified editor for every page",async()=>{
