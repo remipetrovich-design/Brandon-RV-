@@ -15,7 +15,14 @@ export async function POST(request:Request){
   const {data:job,error:jobError}=await db.from("jobs").select("id,job_number,status,appointment_id,quote_id,customer_id,user_id,guest_name,guest_email").eq("id",jobId).eq("business_id",businessId).maybeSingle();
   if(jobError||!job)return jsonError("Workcard not found.",404);
   if(["completed","cancelled"].includes(job.status))return jsonError("A closed Workcard cannot be booked.",409);
-  if(job.appointment_id)return jsonError("This Workcard already has an appointment. Update it from the master calendar.",409);
+  if(job.appointment_id){
+   const {data:linkedAppointment}=await db.from("appointments").select("id,status").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle();
+   if(linkedAppointment&&!["cancelled","completed"].includes(linkedAppointment.status))return jsonError("This Workcard already has an active appointment. Update it from the master calendar.",409);
+  }
+  if(job.quote_id){
+   const {data:existingRequest}=await db.from("appointments").select("id,status").eq("business_id",businessId).eq("quote_id",job.quote_id).in("status",["requested","confirmed","rescheduled"]).limit(1).maybeSingle();
+   if(existingRequest)return jsonError("An appointment request already exists. Accept or update it in the master calendar.",409);
+  }
   let enquiryId:string|null=null,vehicleId:string|null=null;
   if(job.quote_id){
    const {data:quote}=await db.from("quotes").select("id,status,enquiry_id").eq("id",job.quote_id).eq("business_id",businessId).maybeSingle();
