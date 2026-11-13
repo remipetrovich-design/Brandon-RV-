@@ -19,12 +19,13 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(body.title!==undefined){const v=String(body.title).trim();if(v.length<3||v.length>180)return jsonError("Workcard title must be between 3 and 180 characters.");patch.title=v;}
   if(body.scope_of_work!==undefined){const v=String(body.scope_of_work).trim();if(v.length<3||v.length>5000)return jsonError("Work scope must be between 3 and 5000 characters.");if(current.worker_signed_off_at)return jsonError("A signed-off Workcard cannot have its approved scope overwritten. Record a variation instead.",409);patch.scope_of_work=v;}
   if(body.customer_visible_notes!==undefined)patch.customer_visible_notes=String(body.customer_visible_notes).trim().slice(0,3000)||null;
+  if(body.internal_notes!==undefined)patch.internal_notes=String(body.internal_notes).trim().slice(0,5000)||null;
   if(body.priority!==undefined){if(!["low","normal","high","urgent"].includes(String(body.priority)))return jsonError("Invalid Workcard priority.");patch.priority=body.priority;}
   if(body.status!==undefined){const next=String(body.status);if(!["pending","scheduled","in_progress","waiting_parts","completed","cancelled"].includes(next))return jsonError("Invalid Workcard status.");if(next==="completed"&&current.senior_approval_status!=="approved"&&current.senior_approval_status!=="legacy_approved")return jsonError("Senior approval is required before completing a Workcard.",409);if(next==="completed"&&current.customer_approval_status!=="approved")return jsonError("Customer approval is required before completing a Workcard.",409);patch.status=next;}
   for(const field of ["scheduled_start","scheduled_end"] as const){if(body[field]!==undefined){const value=body[field]?new Date(String(body[field])):null;if(value&&!Number.isFinite(value.getTime()))return jsonError("Enter a valid Workcard schedule.");patch[field]=value?.toISOString()??null;}}
   if(patch.scheduled_start&&patch.scheduled_end&&new Date(String(patch.scheduled_end))<=new Date(String(patch.scheduled_start)))return jsonError("Workcard end must be after its start.");
   if(Object.keys(patch).length===1)return jsonError("No Workcard changes supplied.");
-  const {data:job,error}=await db.from("jobs").update(patch).eq("id",id).eq("business_id",businessId).select("id,job_number,title,status,priority,scheduled_start,scheduled_end,scope_of_work,customer_visible_notes").single();
+  const {data:job,error}=await db.from("jobs").update(patch).eq("id",id).eq("business_id",businessId).select("id,job_number,title,status,priority,scheduled_start,scheduled_end,scope_of_work,customer_visible_notes,internal_notes").single();
   if(error||!job)return jsonError("Could not update Workcard.",500);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.updated",entity_type:"job",entity_id:id,details:{fields:Object.keys(patch)}});
   return Response.json({job});
