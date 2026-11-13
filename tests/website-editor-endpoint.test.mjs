@@ -122,7 +122,14 @@ test("builder preview reads published service and service-area feeds only",async
  const services=await source("../src/app/api/public/services/route.ts");
  const areas=await source("../src/app/api/public/service-areas/route.ts");
  assert.match(editor,/fetch\("\/api\/public\/services"/);
- assert.match(editor,/fetch\("\/api\/public\/service-areas"/);\n assert.match(editor,/isEditing:true/);\n const quoteForm=await source("../src/components/enquiry-form.tsx");\n const generalForm=await source("../src/components/general-enquiry-form.tsx");\n assert.match(quoteForm,/onSubmit=\{preview\?/);\n assert.match(quoteForm,/disabled=\{busy\|\|savingVehicle\|\|preview\}/);\n assert.match(generalForm,/onSubmit=\{preview\?/);\n assert.match(generalForm,/disabled=\{busy\|\|preview\}/);
+ assert.match(editor,/fetch\("\/api\/public\/service-areas"/);
+ assert.match(editor,/isEditing:true/);
+ const quoteForm=await source("../src/components/enquiry-form.tsx");
+ const generalForm=await source("../src/components/general-enquiry-form.tsx");
+ assert.match(quoteForm,/onSubmit=\{preview\?/);
+ assert.match(quoteForm,/disabled=\{busy\|\|savingVehicle\|\|preview\}/);
+ assert.match(generalForm,/onSubmit=\{preview\?/);
+ assert.match(generalForm,/disabled=\{busy\|\|preview\}/);
  assert.match(services,/eq\("approval_status","approved_for_launch"\)/);
  assert.match(services,/description,price_from,pricing_label/);
  assert.match(services,/eq\("is_published",true\)/);
