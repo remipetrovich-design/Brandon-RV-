@@ -20,7 +20,7 @@ export async function authenticateIntegration(request: Request, requiredScope?: 
   if (!token || !token.startsWith("brv_live_")) return { context: null, response: Response.json({ error: { code: "UNAUTHENTICATED", message: "A valid Brandon RV integration bearer token is required." } }, { status: 401 }) };
 
   const db = database();
-  const { data: credential, error } = await db.from("integration_credentials").select("id,business_id,name,token_prefix,scopes,allowed_ip_addresses,rate_limit_per_minute,expires_at,revoked_at").eq("token_hash", sha256(token)).maybeSingle();
+  const { data: credential, error } = await db.from("integration_credentials").select("id,business_id,name,token_prefix,is_enabled,scopes,allowed_ip_addresses,rate_limit_per_minute,expires_at,revoked_at").eq("token_hash", sha256(token)).maybeSingle();
   if (error || !credential || !isIntegrationCredentialActive(credential)) return { context: null, response: Response.json({ error: { code: "INVALID_CREDENTIAL", message: "The integration credential is invalid, expired or revoked." } }, { status: 401 }) };
 
   const ip = requestIp(request);
