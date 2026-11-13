@@ -38,7 +38,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   }
   let appointment:any=null;let quote:any=null;let linkedWorkcard:any=null;
   if(section==="appointments"&&["confirmed","rescheduled"].includes(String(update.status??""))){
-   const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+   const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email,confirmed_by,confirmed_at,updated_at").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
    appointment=result.data;
    if(result.error||!appointment)return jsonError("Could not load the appointment.",404);
    const startsAt=new Date(String(update.starts_at??appointment.starts_at??appointment.preferred_start??""));
@@ -79,7 +79,10 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    const scheduleUpdate:any={appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,updated_at:new Date().toISOString()};
    if(linkedWorkcard.status==="pending")scheduleUpdate.status="scheduled";
    const {error:workcardError}=await db.from("jobs").update(scheduleUpdate).eq("id",linkedWorkcard.id).eq("business_id",membership.business_id);
-   if(workcardError)return jsonError("Appointment was saved but its Workcard schedule could not be updated. Refresh and retry.",500);
+   if(workcardError){
+    await db.from("appointments").update({status:appointment.status,starts_at:appointment.starts_at,ends_at:appointment.ends_at,location:appointment.location,confirmed_by:appointment.confirmed_by??null,confirmed_at:appointment.confirmed_at??null,updated_at:appointment.updated_at??new Date().toISOString()}).eq("id",id).eq("business_id",membership.business_id);
+    return jsonError("Appointment was not changed because its Workcard schedule could not be updated.",500);
+   }
    workcardLinked=true;
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"workcard.booking_synced_from_calendar",entity_type:"job",entity_id:linkedWorkcard.id,details:{appointment_id:id,starts_at:update.starts_at,ends_at:update.ends_at,location:update.location}});
   }
