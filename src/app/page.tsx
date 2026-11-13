@@ -1,5 +1,6 @@
 import Link from "next/link";
-import {getPublishedServices,getPublishedSitePage,getPublicBusiness,getPublicBusinessSettings,contentText,phoneHref} from "@/lib/public-site";
+import PublicSiteBuilder from "@/components/public-site-builder";
+import {getPublishedServices,getPublishedSitePage,getPublicBusiness,getPublicBusinessSettings,getPublishedServiceAreas,contentText,phoneHref} from "@/lib/public-site";
 export const dynamic="force-dynamic";
 
 function CaravanIllustration(){
@@ -20,7 +21,9 @@ function CaravanIllustration(){
 }
 
 export default async function HomePage() {
-  const [page,business,publishedServices,businessSettings]=await Promise.all([getPublishedSitePage("home"),getPublicBusiness(),getPublishedServices(),getPublicBusinessSettings()]);
+  const [page,business,publishedServices,publishedAreas,businessSettings]=await Promise.all([getPublishedSitePage("home"),getPublicBusiness(),getPublishedServices(),getPublishedServiceAreas(),getPublicBusinessSettings()]);
+  const builder=page?.content?.builder;
+  if(builder&&typeof builder==="object")return <main className="public-home"><PublicSiteBuilder data={builder} services={publishedServices} areas={publishedAreas}/></main>;
   const phone=business.phone??"0407 189 087";
   const callLink=phoneHref(phone);
   const location=[business.city,business.region].filter(Boolean).join(", ")||"Tamworth, NSW";
