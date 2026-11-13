@@ -47,7 +47,10 @@ test("website builder cannot edit operational form definitions or service-area r
  assert.match(config,/href="\/request-quote"/);
  assert.match(config,/ServicesFeed/);
  assert.match(config,/ServiceAreasFeed/);
- assert.match(config,/RequestQuoteForm/);\n assert.match(config,/GeneralEnquiryForm/);\n assert.match(config,/fields:\{\},[\\s\\S]*render:\(\)=> <section[\\s\\S]*<EnquiryForm\\/>/);\n assert.match(config,/fields:\{\},[\\s\\S]*render:\(\)=> <section[\\s\\S]*<GeneralEnquiryForm\\/>/);
+ assert.match(config,/RequestQuoteForm/);
+ assert.match(config,/GeneralEnquiryForm/);
+ assert.match(config,/RequestQuoteForm:\{\\s*fields:\{\},\\s*defaultProps:\{\},\\s*render:\(\)=>\\s*<section[\\s\\S]*?<EnquiryForm\\/>/);
+ assert.match(config,/GeneralEnquiryForm:\{\\s*fields:\{\},\\s*defaultProps:\{\},\\s*render:\(\)=>\\s*<section[\\s\\S]*?<GeneralEnquiryForm\\/>/);
 });
 
 test("public page builder reads services and service areas from live application data",async()=>{
