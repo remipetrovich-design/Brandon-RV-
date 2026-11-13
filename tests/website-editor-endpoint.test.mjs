@@ -175,3 +175,27 @@ test("combined How it Works and Service Areas route preserves each legacy sectio
  has(page,"steps.map((step,i)");
  has(page,"service-area-card");
 });
+
+test("combined page defaults do not duplicate the other page's protected feeds",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const aboutStart=config.indexOf('if(pageId==="about")');
+ const servicesStart=config.indexOf('if(pageId==="services")');
+ const areasStart=config.indexOf('if(pageId==="service-areas")');
+ const howStart=config.indexOf('if(pageId==="how-it-works")');
+ assert.ok(aboutStart>=0);
+ assert.ok(servicesStart>aboutStart);
+ assert.ok(areasStart>servicesStart);
+ assert.ok(howStart>areasStart);
+ const about=config.slice(aboutStart,servicesStart);
+ const services=config.slice(servicesStart,areasStart);
+ const serviceAreas=config.slice(areasStart,howStart);
+ const how=config.slice(howStart,config.indexOf('if(pageId==="faq")',howStart));
+ has(about,'type:"TextBlock"');
+ assert.equal(about.includes('type:"ServicesFeed"'),false);
+ assert.equal(about.includes('type:"ServiceAreasFeed"'),false);
+ has(services,'type:"ServicesFeed"');
+ assert.equal(services.includes('type:"ServiceAreasFeed"'),false);
+ has(serviceAreas,'type:"ServiceAreasFeed"');
+ assert.equal(how.includes('type:"ServiceAreasFeed"'),false);
+ has(how,'type:"ProcessSteps"');
+});
