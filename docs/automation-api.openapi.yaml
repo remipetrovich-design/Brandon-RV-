@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Brandon RV Automation API
+  title: Brandon RV Integration API
   version: 1.0.0
-  description: Vendor-neutral API contract for authorised external automation platforms. Implementation status is tracked in docs/AUTOMATION_INTEGRATION.md.
+  description: Vendor-neutral API. Current implementation exposes scoped, tenant-isolated reads. Write operations are under development and must not be assumed available.
 servers:
   - url: https://{brandonRvHost}/api/integrations/v1
     variables:
@@ -14,225 +14,185 @@ tags:
   - name: System
   - name: Business
   - name: Customers
-  - name: Enquiries
-  - name: Quotes
-  - name: Availability
-  - name: Appointments
-  - name: Workcards
-  - name: Parts
-  - name: Invoices
+  - name: Operations
+  - name: Finance
+  - name: Workforce
 paths:
   /:
     get:
       tags: [System]
       operationId: getIntegrationCapabilities
-      summary: Discover API version and available capabilities
+      summary: Discover API version, resources and permissions
       responses:
         '200':
-          description: API capabilities and version
+          description: API capabilities
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  apiVersion: { type: string }
-                  capabilities: { type: array, items: { type: string } }
-                  documentation: { type: string }
+                  name: { type: string }
+                  version: { type: string }
+                  enabled: { type: boolean }
+                  authentication: { type: string }
+                  resources: { type: array, items: { type: object } }
+                  permissionGroups: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { description: API globally paused by administrator }
   /business:
     get:
       tags: [Business]
-      operationId: getBusinessProfile
-      security: [{ bearerAuth: [] }]
+      operationId: getBusiness
+      x-required-scope: business.read
       responses:
-        '200': { description: Business profile and operating configuration }
+        '200': { description: Business profile }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /services:
     get:
       tags: [Business]
       operationId: listServices
-      responses:
-        '200': { description: Active Brandon RV service catalogue }
+      x-required-scope: services.read
+      parameters: [ { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /service-areas:
+    get:
+      tags: [Business]
+      operationId: listServiceAreas
+      x-required-scope: service_areas.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /customers:
     get:
       tags: [Customers]
-      operationId: searchCustomers
-      parameters:
-        - in: query
-          name: search
-          schema: { type: string }
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
-      responses:
-        '200': { description: Matching customer records }
-    post:
+      operationId: listCustomers
+      x-required-scope: customers.read
+      parameters: [ { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /vehicles:
+    get:
       tags: [Customers]
-      operationId: createCustomer
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [firstName, lastName, email]
-              properties:
-                firstName: { type: string }
-                lastName: { type: string }
-                email: { type: string, format: email }
-                phone: { type: string }
-      responses:
-        '201': { description: Customer created }
-        '409': { description: Duplicate or conflicting customer }
+      operationId: listVehicles
+      x-required-scope: vehicles.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /enquiries:
     get:
-      tags: [Enquiries]
+      tags: [Operations]
       operationId: listEnquiries
-      responses:
-        '200': { description: Enquiries visible to the integration }
-    post:
-      tags: [Enquiries]
-      operationId: createEnquiry
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '201': { description: Enquiry created }
+      x-required-scope: enquiries.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /quotes:
     get:
-      tags: [Quotes]
+      tags: [Operations]
       operationId: listQuotes
-      responses:
-        '200': { description: Quotes and quote request status }
-    post:
-      tags: [Quotes]
-      operationId: createQuoteDraft
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '201': { description: Quote draft created; not automatically sent }
-  /availability:
-    get:
-      tags: [Availability]
-      operationId: checkAvailability
-      parameters:
-        - in: query
-          name: from
-          required: true
-          schema: { type: string, format: date-time }
-        - in: query
-          name: to
-          required: true
-          schema: { type: string, format: date-time }
-      responses:
-        '200': { description: Available appointment windows after applying business rules }
+      x-required-scope: quotes.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /appointments:
     get:
-      tags: [Appointments]
+      tags: [Operations]
       operationId: listAppointments
-      responses:
-        '200': { description: Appointment records and statuses }
-    post:
-      tags: [Appointments]
-      operationId: createAppointment
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [workcardId, startsAt, endsAt, location]
-              properties:
-                workcardId: { type: string, format: uuid }
-                startsAt: { type: string, format: date-time }
-                endsAt: { type: string, format: date-time }
-                location: { type: string }
-      responses:
-        '201': { description: Appointment created or queued for approval }
-        '409': { description: Booking conflict or policy violation }
-  /appointments/{appointmentId}:
-    patch:
-      tags: [Appointments]
-      operationId: updateAppointment
-      parameters:
-        - in: path
-          name: appointmentId
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '200': { description: Appointment updated under booking policy }
+      x-required-scope: appointments.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /workcards:
     get:
-      tags: [Workcards]
+      tags: [Operations]
       operationId: listWorkcards
-      responses:
-        '200': { description: Workcards and current workflow status }
-    post:
-      tags: [Workcards]
-      operationId: createWorkcard
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '201': { description: Workcard created subject to quote and approval rules }
-  /workcards/{workcardId}:
+      x-required-scope: workcards.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /work-entries:
     get:
-      tags: [Workcards]
-      operationId: getWorkcard
-      parameters:
-        - in: path
-          name: workcardId
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200': { description: Workcard detail }
-    patch:
-      tags: [Workcards]
-      operationId: updateWorkcard
-      parameters:
-        - in: path
-          name: workcardId
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '200': { description: Workcard updated }
+      tags: [Operations]
+      operationId: listWorkEntries
+      x-required-scope: work_entries.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /parts:
     get:
-      tags: [Parts]
+      tags: [Operations]
       operationId: listParts
-      responses:
-        '200': { description: Parts required and used on Workcards }
+      x-required-scope: parts.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /suppliers:
+    get:
+      tags: [Operations]
+      operationId: listSuppliers
+      x-required-scope: suppliers.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /supplier-orders:
+    get:
+      tags: [Operations]
+      operationId: listSupplierOrders
+      x-required-scope: supplier_orders.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
   /invoices:
     get:
-      tags: [Invoices]
+      tags: [Finance]
       operationId: listInvoices
-      responses:
-        '200': { description: Invoice records and balances }
+      x-required-scope: invoices.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /expenses:
+    get:
+      tags: [Finance]
+      operationId: listExpenses
+      x-required-scope: expenses.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /staff:
+    get:
+      tags: [Workforce]
+      operationId: listStaff
+      x-required-scope: staff.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /time-entries:
+    get:
+      tags: [Workforce]
+      operationId: listTimeEntries
+      x-required-scope: time_entries.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /leave:
+    get:
+      tags: [Workforce]
+      operationId: listLeave
+      x-required-scope: leave.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /payroll:
+    get:
+      tags: [Workforce]
+      operationId: listPayroll
+      x-required-scope: payroll.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /website:
+    get:
+      tags: [Business]
+      operationId: listWebsitePages
+      x-required-scope: website.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /business-settings:
+    get:
+      tags: [Business]
+      operationId: getBusinessSettings
+      x-required-scope: business.settings.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /communications:
+    get:
+      tags: [Operations]
+      operationId: listCustomerCommunications
+      x-required-scope: communications.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /tasks:
+    get:
+      tags: [Operations]
+      operationId: listWorkTasks
+      x-required-scope: tasks.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /assets:
+    get:
+      tags: [Workforce]
+      operationId: listEmployeeAssets
+      x-required-scope: assets.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
+  /onboarding:
+    get:
+      tags: [Workforce]
+      operationId: listOnboardingTasks
+      x-required-scope: onboarding.read
+      responses: { '200': { $ref: '#/components/responses/PaginatedRecords' } }
 components:
   securitySchemes:
     bearerAuth:
@@ -240,9 +200,32 @@ components:
       scheme: bearer
       bearerFormat: BrandonRVIntegrationKey
   parameters:
-    IdempotencyKey:
-      in: header
-      name: Idempotency-Key
-      required: false
-      schema: { type: string, maxLength: 128 }
-      description: Client-generated unique key to prevent duplicate writes on retries.
+    Page:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      in: query
+      name: pageSize
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+  responses:
+    Unauthorized:
+      description: Missing, invalid, expired or revoked credential
+    Forbidden:
+      description: Permission not granted to this credential
+    PaginatedRecords:
+      description: Paginated records belonging to the credential's business
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { type: object, additionalProperties: true } }
+              pagination:
+                type: object
+                properties:
+                  page: { type: integer }
+                  pageSize: { type: integer }
+                  totalItems: { type: integer }
+                  totalPages: { type: integer }
+              requestId: { type: string }
