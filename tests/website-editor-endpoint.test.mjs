@@ -106,6 +106,8 @@ test("quote and general-enquiry blocks reuse the existing forms and customer pro
  const config=await source("../src/lib/website-builder.tsx");
  const quote=await source("../src/app/request-quote/page.tsx");
  const general=await source("../src/app/general-enquiry/page.tsx");
+ const layout=await source("../src/app/layout.tsx");
+ const footer=await source("../src/components/site-footer.tsx");
  const quoteForm=await source("../src/components/enquiry-form.tsx");
  const generalForm=await source("../src/components/general-enquiry-form.tsx");
  const wrapper=await source("../src/components/website-general-enquiry-block.tsx");
@@ -339,5 +341,7 @@ test("public website builder always renders phone details from the business prof
  has(workspace,"business,");
  has(quote,"getPublicBusiness()");
  has(quote,"phoneHref(business.phone)");
- has(general,"business.phone??\"\"");
+ has(general,"const phone=business.phone??\"\"");
+ has(layout,"phoneLink={phoneHref(phone)}");
+ has(footer,"{phone&&<a href={phoneLink}>{phone}</a>}");
 });
