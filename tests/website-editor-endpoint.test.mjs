@@ -75,7 +75,7 @@ test("FAQ and gallery pages can be rearranged without changing their underlying 
  assert.match(config,/legacy\.items/);
  assert.match(config,/legacy\.photos/);
  assert.match(faq,/PublicSiteBuilder/);
- assert.match(gallery,/PublicSiteBuilder/);
+ assert.match(gallery,/PublicSiteBuilder/);\n assert.match(faq,/getPublishedServices/);\n assert.match(faq,/getPublishedServiceAreas/);\n assert.match(gallery,/getPublishedServices/);\n assert.match(gallery,/getPublishedServiceAreas/);
 });
 
 test("quote and general-enquiry forms are protected movable components using the existing production forms",async()=>{
@@ -88,11 +88,11 @@ test("quote and general-enquiry forms are protected movable components using the
  assert.match(config,/GeneralEnquiryForm/);
  assert.match(config,/components:\["RequestQuoteCTA","RequestQuoteForm","GeneralEnquiryForm","ServicesFeed","ServiceAreasFeed"\]/);
  assert.match(config,/import EnquiryForm from/);
- assert.match(config,/import GeneralEnquiryForm from/);
+ assert.match(config,/import WebsiteGeneralEnquiryBlock from/);
  assert.match(config,/render:\(\)=> <section[\\s\\S]*<EnquiryForm\/>/);
  assert.match(config,/render:\(\)=> <section[\\s\\S]*<GeneralEnquiryForm\/>/);
  assert.match(quote,/import EnquiryForm/);
- assert.match(general,/import GeneralEnquiryForm/);
+ assert.match(general,/import GeneralEnquiryForm/);\n const wrapper=await source("../src/components/website-general-enquiry-block.tsx");\n assert.match(wrapper,/api\/portal\/profile/);\n assert.match(wrapper,/initialName=/);
  assert.match(quoteForm,/fetch\("\/api\/enquiries"/);
  assert.match(generalForm,/form\.set\("requestType","public_enquiry"\)/);
 });
@@ -103,7 +103,7 @@ test("builder preview reads published service and service-area feeds only",async
  const areas=await source("../src/app/api/public/service-areas/route.ts");
  assert.match(editor,/fetch\("\/api\/public\/services"/);
  assert.match(editor,/fetch\("\/api\/public\/service-areas"/);
- assert.match(services,/eq\("approval_status","approved_for_launch"\)/);
+ assert.match(services,/eq\("approval_status","approved_for_launch"\)/);\n assert.match(services,/description,price_from,pricing_label/);
  assert.match(services,/eq\("is_published",true\)/);
- assert.match(areas,/eq\("is_published",true\)/);
+ assert.match(areas,/eq\("is_published",true\)/);\n assert.match(areas,/suburbs,postcodes/);
 });
