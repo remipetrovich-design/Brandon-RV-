@@ -1,10 +1,13 @@
 import type {Metadata} from "next";
 import Link from "next/link";
-import {getPublishedServices,getPublishedSitePage,contentText} from "@/lib/public-site";
+import PublicSiteBuilder from "@/components/public-site-builder";
+import {getPublishedServices,getPublishedServiceAreas,getPublishedSitePage,contentText} from "@/lib/public-site";
 export const dynamic="force-dynamic";
 export const metadata:Metadata={title:"About & Services",description:"Learn about Brandon RV and the caravan and motorhome repair services available around Tamworth, NSW."};
 export default async function AboutServicesPage(){
- const [about,servicesPage,published]=await Promise.all([getPublishedSitePage("about"),getPublishedSitePage("services"),getPublishedServices()]);
+ const [about,servicesPage,published,areas]=await Promise.all([getPublishedSitePage("about"),getPublishedSitePage("services"),getPublishedServices(),getPublishedServiceAreas()]);
+ const hasAboutBuilder=Boolean(about?.content?.builder);const hasServicesBuilder=Boolean(servicesPage?.content?.builder);
+ if(hasAboutBuilder||hasServicesBuilder)return <main>{hasAboutBuilder?<PublicSiteBuilder data={about!.content.builder} services={published} areas={areas}/>:null}{hasServicesBuilder?<PublicSiteBuilder data={servicesPage!.content.builder} services={published} areas={areas}/>:null}</main>;
  const intro=contentText(about?.content,"intro","Brandon RV provides mobile caravan and motorhome repair and accessory services around Tamworth, NSW.");
  const aboutTitle=about?.title??"Experience that understands your setup.";
  const serviceIntro=contentText(servicesPage?.content,"intro","Explore the services Brandon RV offers. Contact us to discuss your requirements and arrange the next step.");

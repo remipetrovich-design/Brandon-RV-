@@ -1,8 +1,10 @@
 import type {Metadata} from "next";
-import {getPublishedSitePage,contentText} from "@/lib/public-site";
+import PublicSiteBuilder from "@/components/public-site-builder";
+import {getPublishedSitePage,getPublishedServices,getPublishedServiceAreas,contentText} from "@/lib/public-site";
 export const dynamic="force-dynamic";
 export const metadata:Metadata={title:"Previous work",description:"Examples of completed Brandon RV caravan and motorhome interior repairs, added with customer permission."};
 export default async function GalleryPage(){
- const page=await getPublishedSitePage("gallery");const photos=Array.isArray(page?.content.photos)?page.content.photos.filter((x):x is {title:string;description?:string;url:string}=>!!x&&typeof x==="object"&&typeof (x as any).title==="string"&&typeof (x as any).url==="string"&&/^https:\/\//i.test(String((x as any).url))):[]; 
+ const [page,services,areas]=await Promise.all([getPublishedSitePage("gallery"),getPublishedServices(),getPublishedServiceAreas()]);
+ if(page?.content?.builder)return <main><PublicSiteBuilder data={page.content.builder} services={services} areas={areas}/></main>;const photos=Array.isArray(page?.content.photos)?page.content.photos.filter((x):x is {title:string;description?:string;url:string}=>!!x&&typeof x==="object"&&typeof (x as any).title==="string"&&typeof (x as any).url==="string"&&/^https:\/\//i.test(String((x as any).url))):[]; 
  return <main><section className="page-hero"><div className="shell"><p className="eyebrow"><span className="eyebrow-line"/> BRANDON RV · PREVIOUS WORK</p><h1>Practical work. <em>Real results.</em></h1><p>{contentText(page?.content,"intro","A selection of genuine repairs and installations will appear here as completed work is documented and customer permission is confirmed.")}</p></div></section><section className="content-section"><div className="shell">{photos.length?<div className="service-grid">{photos.map((photo,i)=><article className="service-card" key={i}><img src={photo.url} alt={photo.title} loading="lazy"/><h3>{photo.title}</h3>{photo.description&&<p>{photo.description}</p>}</article>)}</div>:<div className="note-panel"><p>No work photographs have been published yet. Only genuine Brandon RV work with the customer's permission will be shown here.</p></div>}</div></section></main>;
 }
