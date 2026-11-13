@@ -1,11 +1,11 @@
 import Link from "next/link";
 import EnquiryForm from "@/components/enquiry-form";
 import WebsiteGeneralEnquiryBlock from "@/components/website-general-enquiry-block";
-import {phoneHref} from "@/lib/public-site";
 
 type BuilderService={id:string;name:string;description:string|null;scope_notes?:string|null;price_from:number|null;pricing_label:string|null};
 type BuilderArea={id:string;name:string;description:string|null;suburbs:string[]|null;postcodes:string[]|null;travel_fee:number|null;radius_km:number|null};
 type BuilderBusiness={phone?:string|null;city?:string|null;region?:string|null;brand_line?:string|null};
+const phoneHref=(value:string)=>{const digits=String(value??"").replace(/[^0-9+]/g,"");return digits.startsWith("0")?"tel:+61"+digits.slice(1):digits?"tel:"+digits:"";};
 
 export function createWebsiteBuilderConfig(data:{services?:BuilderService[];areas?:BuilderArea[];isEditing?:boolean;acceptingEnquiries?:boolean;business?:BuilderBusiness}={}){
  const services=data.services??[];
@@ -215,7 +215,7 @@ export function publicWebsiteFallbackContent(slug:string):Record<string,unknown>
   case "faq":return {intro:"A few details about mobile service, enquiries and what to expect.",items:fallbackFaq};
   case "gallery":return {intro:"A selection of genuine repairs and installations will appear here as completed work is documented and customer permission is confirmed.",photos:[]};
   case "request-quote":return {intro:"Share a few details about your vehicle and the work you need. We will assess the request before discussing a quote or visit."};
-  case "contact":return {intro:"For general enquiries, contact Brandon RV with a question about the mobile service, service suitability or how the process works.",phone:"0407 189 087"};
+  case "contact":return {intro:"For general enquiries, contact Brandon RV with a question about the mobile service, service suitability or how the process works.",};
   default:return {};
  }
 }
@@ -223,10 +223,10 @@ export function publicWebsiteFallbackContent(slug:string):Record<string,unknown>
 export function defaultWebsiteBuilderData(pageId:string,title:string,legacy:Record<string,unknown>,business?:BuilderBusiness){
  const intro=typeof legacy.intro==="string"?legacy.intro:"";
  const str=(key:string,fallback:string)=>typeof legacy[key]==="string"&&String(legacy[key]).trim()?String(legacy[key]):fallback;
- const businessPhone=business?.phone?.trim()||"0407 189 087";
+ const businessPhone=business?.phone?.trim()??"";
  const businessLocation=[business?.city,business?.region].filter(Boolean).join(", ")||"Tamworth, NSW";
  const businessBrandLine=business?.brand_line?.trim()||"From Factory Experience to Repairs On The Go";
- if(pageId==="home")return {root:{props:{title}},content:[{type:"HomeHero",props:{id:"home-hero",heroTitle:str("hero_title","Caravan repairs, without the workshop trip."),intro:str("intro","Mobile caravan and motorhome repair and accessory services around Tamworth, NSW. Tell us what you need and we will discuss the best way forward."),primaryAction:str("primary_action","Request a quote"),brandLine:str("hero_subtitle",businessBrandLine),phone:businessPhone,location:businessLocation,prelaunchNote:"Brandon RV is preparing to launch. You can still contact Chris to discuss your requirements."}},{type:"HomeQuickFacts",props:{id:"home-facts"}},{type:"HomeServices",props:{id:"home-services"}},{type:"HomeProcess",props:{id:"home-process"}},{type:"HomeValues",props:{id:"home-values"}},{type:"HomeCTA",props:{id:"home-cta"}}]};
+ if(pageId==="home")return {root:{props:{title}},content:[{type:"HomeHero",props:{id:"home-hero",heroTitle:str("hero_title","Caravan repairs, without the workshop trip."),intro:str("intro","Mobile caravan and motorhome repair and accessory services around Tamworth, NSW. Tell us what you need and we will discuss the best way forward."),primaryAction:str("primary_action","Request a quote"),brandLine:str("hero_subtitle",businessBrandLine),location:businessLocation,prelaunchNote:"Brandon RV is preparing to launch. You can still contact Chris to discuss your requirements."}},{type:"HomeQuickFacts",props:{id:"home-facts"}},{type:"HomeServices",props:{id:"home-services"}},{type:"HomeProcess",props:{id:"home-process"}},{type:"HomeValues",props:{id:"home-values"}},{type:"HomeCTA",props:{id:"home-cta"}}]};
  if(pageId==="about")return {root:{props:{title}},content:[{type:"AboutPage",props:{id:"about-current-layout",heading:title||"Experience that understands your setup.",intro:str("intro","Brandon RV provides mobile caravan and motorhome repair and accessory services around Tamworth, NSW."),brandLine:"From Factory Experience to Repairs On The Go.",storyHeading:"A practical approach to mobile RV repairs.",storyOne:"Brandon RV brings practical caravan and motorhome industry experience to mobile repair and accessory work.",storyTwo:"Tell us what you need, provide the vehicle details and photographs where possible, and we will discuss the job and the next step."}}]};
  if(pageId==="services")return {root:{props:{title}},content:[{type:"ServicesPage",props:{id:"services-current-layout",heading:str("hero_title","Practical help for life on the road."),intro:str("intro","Explore the services Brandon RV offers. Contact us to discuss your requirements and arrange the next step."),ctaLabel:"Ask about a job"}}]};
  if(pageId==="how-it-works"){
