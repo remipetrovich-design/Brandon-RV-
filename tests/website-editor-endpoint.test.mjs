@@ -260,12 +260,12 @@ test("website builder starts from the existing public page layouts and fallback 
  const config=await source("../src/lib/website-builder.tsx");
  has(config,"publicWebsiteFallbackContent");
  for(const block of ["HomePage","AboutPage","ServicesPage","ProcessPage","ServiceAreasPage","FAQPage","GalleryPage","RequestQuotePage","ContactPage"])has(config,block);
- for(const slug of ["home","about","services","how-it-works","service-areas","faq","gallery","request-quote","contact"])has(config,'slug==="'+slug+'"');
+ for(const slug of ["home","about","services","how-it-works","service-areas","faq","gallery","request-quote","contact"])has(config,`case "${slug}"`);
  has(config,"Caravan repairs, without the workshop trip.");
  has(config,"Mobile caravan and motorhome repair and accessory services around Tamworth, NSW.");
  has(config,"From enquiry to handover.");
  has(config,"No work photographs have been published yet.");
- has(config,"Every request is reviewed before a booking is confirmed.");
+ has(config,"A clear process helps confirm the right work");
 });
 
 test("unpublished database flags do not incorrectly label a route as offline when its public fallback is live",async()=>{
