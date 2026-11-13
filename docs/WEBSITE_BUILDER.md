@@ -16,7 +16,7 @@ Use these blocks to change layout and presentation. Image blocks currently accep
 
 ## Protected, movable business components
 
-Chris can drag these components into a page and move them up or down without changing how they work:
+These protected components are included in their relevant page layouts. Chris can move existing instances up or down without changing how they work. He cannot insert extra copies, delete them or duplicate them:
 
 - **Request a Quote form** — the real existing quote-request form, including vehicle details, saved customer vehicles, attachments, guest access, and the current enquiry-to-quote workflow.
 - **General Enquiry form** — the real existing general-enquiry form, including customer profile prefill when signed in.
