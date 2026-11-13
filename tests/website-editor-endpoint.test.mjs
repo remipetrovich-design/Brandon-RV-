@@ -199,3 +199,15 @@ test("combined page defaults do not duplicate the other page's protected feeds",
  assert.equal(how.includes('type:"ServiceAreasFeed"'),false);
  has(how,'type:"ProcessSteps"');
 });
+
+test("FAQ and gallery defaults retain their existing page introductions",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const faqStart=config.indexOf('if(pageId==="faq")');
+ const galleryStart=config.indexOf('if(pageId==="gallery")');
+ const faq=config.slice(faqStart,galleryStart);
+ const gallery=config.slice(galleryStart,config.indexOf("return {",galleryStart));
+ has(faq,'type:"TextBlock"');
+ has(faq,'text:intro');
+ has(gallery,'type:"TextBlock"');
+ has(gallery,'text:intro');
+});
