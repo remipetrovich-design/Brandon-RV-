@@ -38,7 +38,7 @@ export default function AdminWebsiteEditor({id,title,content,metaTitle,metaDescr
    <p className="panel-footnote">Drag and drop approved content blocks. Request-a-quote, enquiry forms, service records, service areas and booking workflows are connected components; their underlying forms, data and admin behaviour cannot be edited here.</p>
   </div>
   <div style={{minHeight:720,borderTop:"1px solid var(--line, #d8e0e5)"}}>
-   <Puck key={id} config={createWebsiteBuilderConfig() as any} data={initialBuilder as any} onPublish={save}/>
+   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={createWebsiteBuilderConfig() as any} data={initialBuilder as any} onPublish={save}/>
   </div>
   <p className="inline-notice" role="status" style={{margin:16}}>{busy?"Saving draft…":notice}</p>
  </div>;
