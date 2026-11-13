@@ -4,11 +4,11 @@ import {useEffect,useMemo,useState} from "react";
 import {Puck} from "@puckeditor/core";
 import {createWebsiteBuilderConfig,defaultWebsiteBuilderData} from "@/lib/website-builder";
 
-type Props={id:string;title:string;content:unknown;metaTitle:string|null;metaDescription:string|null};
+type Props={id:string;slug:string;title:string;content:unknown;metaTitle:string|null;metaDescription:string|null};
 
-export default function AdminWebsiteEditor({id,title,content,metaTitle,metaDescription}:Props){
+export default function AdminWebsiteEditor({id,slug,title,content,metaTitle,metaDescription}:Props){
  const legacy=content&&typeof content==="object"&&!Array.isArray(content)?content as Record<string,unknown>:{};
- const initialBuilder=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(id,title,legacy),[id,title]);
+ const initialBuilder=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(slug,title,legacy),[id,slug,title]);
  const [pageTitle,setPageTitle]=useState(title);
  const [seoTitle,setSeoTitle]=useState(metaTitle??"");
  const [seoDescription,setSeoDescription]=useState(metaDescription??"");
