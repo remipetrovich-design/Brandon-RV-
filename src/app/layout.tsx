@@ -14,7 +14,7 @@ export const metadata:Metadata={
 
 export default async function RootLayout({children}:Readonly<{children:ReactNode}>) {
  const business=await getPublicBusiness();
- const phone=business.phone??"0407 189 087";const brandLine=business.brand_line??"From Factory Experience to Repairs On The Go";
+ const phone=business.phone??"";const brandLine=business.brand_line??"From Factory Experience to Repairs On The Go";
  const location=[business.city,business.region].filter(Boolean).join(", ")||"Tamworth, NSW";
  return <html lang="en-AU"><body>
   <SiteHeader brandLine={brandLine}/>
