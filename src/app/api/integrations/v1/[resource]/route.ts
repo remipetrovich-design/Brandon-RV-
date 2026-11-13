@@ -2,8 +2,8 @@ import { authenticateIntegration, auditIntegrationRequest } from "@/lib/integrat
 import { database } from "@/lib/auth";
 export const runtime = "nodejs";
 
-const RESOURCES: Record<string, { table: string; scope: string; columns: string; filters?: Record<string,string>; sensitive?: boolean }> = {
-  business: { table: "businesses", scope: "business.read", columns: "id,name,slug,brand_line,phone,public_email,city,region,country,status,created_at,updated_at" },
+const RESOURCES: Record<string, { table: string; scope: string; columns: string; filters?: Record<string,string>; sensitive?: boolean; tenantColumn?: string }> = {
+  business: { table: "businesses", scope: "business.read", tenantColumn: "id", columns: "id,name,slug,brand_line,phone,public_email,city,region,country,status,created_at,updated_at" },
   services: { table: "services", scope: "services.read", columns: "id,name,slug,category,description,scope_notes,is_active,is_published,sort_order,created_at,updated_at" },
   "service-areas": { table: "service_areas", scope: "service_areas.read", columns: "id,name,description,radius_km,travel_fee,is_published,sort_order,created_at" },
   customers: { table: "customers", scope: "customers.read", columns: "id,full_name,email,phone,address,suburb,state,postcode,status,created_at,updated_at" },
@@ -36,7 +36,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ reso
   const pageSize = Math.max(1, Math.min(100, Number(url.searchParams.get("pageSize") || 25)));
   const id = url.searchParams.get("id");
   const db = database();
-  let query = db.from(config.table).select(config.columns, { count: "exact" }).eq("business_id", context.businessId).order("created_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
+  let query = db.from(config.table).select(config.columns, { count: "exact" }).eq(config.tenantColumn ?? "business_id", context.businessId).order("created_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
   if (id) query = query.eq("id", id);
   if (config.filters) for (const [field, value] of Object.entries(config.filters)) query = query.eq(field, value);
   const status = url.searchParams.get("status");
