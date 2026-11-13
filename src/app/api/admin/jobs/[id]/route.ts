@@ -1,5 +1,14 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
+export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
+ const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
+ const {id}=await params;
+ const {data:job,error}=await database().from("jobs").select("id,job_number,title,status,priority,scheduled_start,scheduled_end,scope_of_work,customer_visible_notes,worker_signed_off_at,senior_approval_status,customer_approval_status").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
+ if(error||!job)return jsonError("Workcard not found.",404);
+ return Response.json({job});
+}
+import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+export const runtime="nodejs";
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
