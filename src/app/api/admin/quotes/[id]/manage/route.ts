@@ -58,8 +58,6 @@ export async function DELETE(request:Request,{params}:{params:Promise<{id:string
   db.from("quotes").select("id").eq("business_id",businessId).eq("supersedes_quote_id",id).limit(1)
  ]);
  if(jobs?.length||appointments?.length||invoices?.length||revisions?.length)return jsonError("This quote is linked to a Workcard, booking, invoice or later revision and cannot be deleted. The linked business records must be retained.",409);
- const {error:itemsError}=await db.from("quote_items").delete().eq("quote_id",id);
- if(itemsError)return jsonError("Could not remove quote line items.",500);
  const {error}=await db.from("quotes").delete().eq("id",id).eq("business_id",businessId);
  if(error)return jsonError("Could not delete quote.",500);
  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"quote.deleted",entity_type:"quote",entity_id:id,details:{quote_number:quote.quote_number}});
