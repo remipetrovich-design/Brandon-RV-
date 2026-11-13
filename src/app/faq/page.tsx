@@ -1,5 +1,6 @@
 import type {Metadata} from "next";
-import {getPublishedSitePage,contentText} from "@/lib/public-site";
+import PublicSiteBuilder from "@/components/public-site-builder";
+import {getPublishedSitePage,getPublishedServices,getPublishedServiceAreas,contentText} from "@/lib/public-site";
 export const dynamic="force-dynamic";
 export const metadata:Metadata={title:"Frequently asked questions",description:"Answers about Brandon RV mobile caravan and motorhome interior repair services."};
 const fallback=[
@@ -13,6 +14,7 @@ const fallback=[
  {question:"How are prices and parts handled?",answer:"The work is assessed individually. You receive the proposed scope and costs before approving work. Job-specific parts are generally arranged after the quote and any agreed parts payment are approved."}
 ];
 export default async function FAQPage(){
- const page=await getPublishedSitePage("faq");const published=Array.isArray(page?.content.items)?page.content.items.filter((x):x is {question:string;answer:string}=>!!x&&typeof x==="object"&&typeof (x as any).question==="string"&&typeof (x as any).answer==="string"):[];const items=published.length?published:fallback;
+ const [page,services,areas]=await Promise.all([getPublishedSitePage("faq"),getPublishedServices(),getPublishedServiceAreas()]);
+ if(page?.content?.builder)return <main><PublicSiteBuilder data={page.content.builder} services={services} areas={areas}/></main>;const published=Array.isArray(page?.content.items)?page.content.items.filter((x):x is {question:string;answer:string}=>!!x&&typeof x==="object"&&typeof (x as any).question==="string"&&typeof (x as any).answer==="string"):[];const items=published.length?published:fallback;
  return <main><section className="page-hero"><div className="shell"><p className="eyebrow"><span className="eyebrow-line"/> GOOD TO KNOW</p><h1>Frequently asked <em>questions.</em></h1><p>{contentText(page?.content,"intro","A few details about mobile service, enquiries and what to expect.")}</p></div></section><section className="content-section"><div className="shell"><div className="detail-list">{items.map((item,i)=><article className="detail-item" key={i}><span>{String(i+1).padStart(2,"0")}</span><h2>{item.question}</h2><p>{item.answer}</p></article>)}</div></div></section></main>;
 }

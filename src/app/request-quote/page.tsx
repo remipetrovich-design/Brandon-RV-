@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import EnquiryForm from "@/components/enquiry-form";
+import PublicSiteBuilder from "@/components/public-site-builder";
+import {getPublishedSitePage,getPublishedServices,getPublishedServiceAreas} from "@/lib/public-site";
 
+export const dynamic="force-dynamic";
 export const metadata: Metadata = { title: "Request a quote", description: "Tell Brandon RV about your caravan or motorhome repair." };
 
-export default function RequestQuotePage() {
+export default async function RequestQuotePage() {
+  const [page,services,areas]=await Promise.all([getPublishedSitePage("request-quote"),getPublishedServices(),getPublishedServiceAreas()]);
+  if(page?.content?.builder)return <main><PublicSiteBuilder data={page.content.builder} services={services} areas={areas}/></main>;
   return <main>
     <section className="page-hero"><div className="shell">
       <p className="eyebrow"><span className="eyebrow-line" /> START AN ENQUIRY</p>
