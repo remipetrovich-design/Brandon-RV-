@@ -6,7 +6,7 @@ type Service={id:string;name:string;category:string|null;price_from:number|null}
 type Entry={id:string;entry_type:"labour"|"parts"|"note"|"test";description:string;quantity_required:number;quantity_used:number;unit_price:number;cost_unit_price:number;tax_rate:number;line_total:number;part_number:string|null;supplier_name:string|null;customer_visible:boolean;invoiceable:boolean;service_id:string|null;services?:{name:string}|null};
 const money=(n:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(n)||0);
 const local=(v:string|null)=>v?new Date(new Date(v).getTime()-new Date(v).getTimezoneOffset()*60000).toISOString().slice(0,16):"";
-const blank=()=>({entry_type:"parts" as const,description:"",service_id:"",quantity_required:"1",quantity_used:"0",unit_price:"0",cost_unit_price:"0",tax_rate:"0",part_number:"",supplier_name:"",customer_visible:true,invoiceable:false});
+const blank=()=>({entry_type:"parts" as "parts"|"labour"|"note"|"test",description:"",service_id:"",quantity_required:"1",quantity_used:"0",unit_price:"0",cost_unit_price:"0",tax_rate:"0",part_number:"",supplier_name:"",customer_visible:true,invoiceable:false});
 export default function AdminWorkcardManagement({jobId}:{jobId:string}){
  const [job,setJob]=useState<Job|null>(null),[services,setServices]=useState<Service[]>([]),[entries,setEntries]=useState<Entry[]>([]);
  const [title,setTitle]=useState(""),[scope,setScope]=useState(""),[notes,setNotes]=useState(""),[status,setStatus]=useState("pending"),[priority,setPriority]=useState("normal"),[start,setStart]=useState(""),[end,setEnd]=useState("");
