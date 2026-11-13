@@ -289,3 +289,14 @@ test("unpublished rows use the public route fallback until the visual version is
  has(workspace,"next.is_published?next.content:publicWebsiteFallbackContent");
  has(workspace,"const content={...storedContent,builder:data}");
 });
+
+test("view page links point to the real combined public routes and section anchors",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const config=await source("../src/lib/website-builder.tsx");
+ has(workspace,'about:"/about-services#brv-about"');
+ has(workspace,'services:"/about-services#brv-services"');
+ has(workspace,'"service-areas":"/how-it-works#service-areas"');
+ has(workspace,'contact:"/general-enquiry"');
+ has(config,'id="brv-about"');
+ has(config,'id="brv-services"');
+});
