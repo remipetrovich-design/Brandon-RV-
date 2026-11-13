@@ -62,9 +62,9 @@ test("builder exposes protected connected components without exposing form schem
  has(config,'href="/request-quote"');
  has(config,"ServicesFeed");
  has(config,"ServiceAreasFeed");
- has(block("RequestQuoteForm"),"permissions:{delete:false,duplicate:false,edit:false,drag:true}");
+ has(block("RequestQuoteForm"),"permissions:{insert:false,delete:false,duplicate:false,edit:false,drag:true}");
  has(block("GeneralEnquiryForm"),"permissions:{delete:false,duplicate:false,edit:false,drag:true}");
- has(block("ServicesFeed"),"permissions:{delete:false,duplicate:false,edit:true,drag:true}");
+ has(block("ServicesFeed"),"permissions:{insert:false,delete:false,duplicate:false,edit:true,drag:true}");
  has(block("ServiceAreasFeed"),"permissions:{delete:false,duplicate:false,edit:true,drag:true}");
  has(config,"<EnquiryForm preview={isEditing}/>");
  has(config,"<WebsiteGeneralEnquiryBlock preview={isEditing}/>");
