@@ -3,6 +3,7 @@ import EnquiryForm from "@/components/enquiry-form";
 import PublicSiteBuilder from "@/components/public-site-builder";
 import {getPublishedSitePage,getPublishedServices,getPublishedServiceAreas} from "@/lib/public-site";
 
+export const dynamic="force-dynamic";
 export const metadata: Metadata = { title: "Request a quote", description: "Tell Brandon RV about your caravan or motorhome repair." };
 
 export default async function RequestQuotePage() {
