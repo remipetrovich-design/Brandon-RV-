@@ -24,7 +24,7 @@ Chris can drag these components into a page and move them up or down without cha
 - **Service Areas feed** — reads published service-area records from the existing service-area manager.
 - **Request a Quote button** — links to the existing `/request-quote` page.
 
-The form components have no editable field definitions in the page builder. In the editor preview, their submit buttons are disabled so testing layout cannot create real enquiries. The published page uses the normal live form behaviour. Their field names, validation, API calls, submission types, database records, permissions and admin workflows stay in the existing application code. Chris can position a form block, but cannot redesign its schema or redirect its submission flow from the builder.
+The form components have no editable field definitions in the page builder, and Chris cannot delete or duplicate them from the page. He can drag them to a different position. The services and service-area feed blocks also cannot be deleted or duplicated; their published records remain managed through the existing admin pages. In the editor preview, their submit buttons are disabled so testing layout cannot create real enquiries. The published page uses the normal live form behaviour. Their field names, validation, API calls, submission types, database records, permissions and admin workflows stay in the existing application code. Chris can position a form block, but cannot redesign its schema or redirect its submission flow from the builder.
 
 Create, approve, activate and publish service records through the Services admin page. Create and publish service-area records through the Service Areas admin page. The builder only displays published records; it cannot create or change them.
 
