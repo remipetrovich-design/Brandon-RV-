@@ -57,7 +57,12 @@ UPDATE public.users SET user_role='website_development_specialist',updated_at=no
 UPDATE public.users SET user_role='senior_apprentice',updated_at=now() WHERE user_role='senior_worker';
 UPDATE public.users SET user_role='office_admin',updated_at=now() WHERE user_role='office';
 
--- Remove legacy administrator aliases after users have been migrated.
+-- Move pending invitations off legacy role keys before retiring those roles.
+UPDATE public.staff_invitations SET role_key='ceo_founder' WHERE role_key='owner';
+UPDATE public.staff_invitations SET role_key='website_development_specialist' WHERE role_key='website_developer';
+UPDATE public.staff_invitations SET role_key='senior_apprentice' WHERE role_key='senior_worker';
+
+-- Remove legacy administrator aliases after users and invitations have been migrated.
 DELETE FROM public.user_roles WHERE role_key IN ('owner','website_developer','senior_worker');
 
 -- Seed a safe operational baseline for workshop workers.
