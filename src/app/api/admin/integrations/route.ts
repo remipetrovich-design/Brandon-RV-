@@ -8,7 +8,7 @@ export async function GET() {
   const db = database(), businessId = access.membership!.business_id;
   const [{ data: control }, { data: credentials }, { data: audit }, { data: mailConfig }] = await Promise.all([
     db.from("integration_control_settings").select("*").eq("business_id", businessId).maybeSingle(),
-    db.from("integration_credentials").select("id,name,description,token_prefix,scopes,allowed_ip_addresses,rate_limit_per_minute,expires_at,last_used_at,revoked_at,created_at").eq("business_id", businessId).order("created_at", { ascending: false }),
+    db.from("integration_credentials").select("id,name,description,token_prefix,is_enabled,scopes,allowed_ip_addresses,rate_limit_per_minute,expires_at,last_used_at,revoked_at,created_at").eq("business_id", businessId).order("created_at", { ascending: false }),
     db.from("integration_audit_logs").select("id,credential_id,integration_name,request_id,method,path,required_scope,action,entity_type,entity_id,status_code,outcome,created_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(100),
     Promise.resolve({ data: null }),
   ]);
