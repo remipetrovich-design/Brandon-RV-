@@ -27,10 +27,15 @@ export async function authenticateIntegration(request: Request, requiredScope?: 
   const allowlist = Array.isArray(credential.allowed_ip_addresses) ? credential.allowed_ip_addresses : [];
   if (allowlist.length && (!ip || !allowlist.includes(ip))) return { context: null, response: Response.json({ error: { code: "IP_NOT_ALLOWED", message: "This source IP address is not allowed for this integration." } }, { status: 403 }) };
 
-  const { data: control, error: controlError } = await db.from("integration_control_settings").select("api_enabled").eq("business_id", credential.business_id).maybeSingle();
+  const { data: control, error: controlError } = await db.from("integration_control_settings").select("api_enabled,default_rate_limit_per_minute").eq("business_id", credential.business_id).maybeSingle();
   if (controlError || !control?.api_enabled) return { context: null, response: Response.json({ error: { code: "API_PAUSED", message: "The Brandon RV external API is currently disabled by an administrator." } }, { status: 503 }) };
 
   if (!hasIntegrationScope(credential.scopes, requiredScope || null)) return { context: null, response: Response.json({ error: { code: "INSUFFICIENT_SCOPE", message: "This integration has not been granted the permission required for this operation.", requiredScope } }, { status: 403 }) };
+
+  const rateLimit = Number(credential.rate_limit_per_minute ?? control.default_rate_limit_per_minute ?? 60);
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { count: recentRequests } = await db.from("integration_audit_logs").select("id", { count: "exact", head: true }).eq("credential_id", credential.id).gte("created_at", since);
+  if ((recentRequests ?? 0) >= rateLimit) return { context: null, response: Response.json({ error: { code: "RATE_LIMITED", message: "This integration has reached its request limit. Try again shortly." } }, { status: 429, headers: { "Retry-After": "60" } }) };
 
   const requestId = request.headers.get("x-request-id")?.slice(0, 120) || randomUUID();
   const now = new Date().toISOString();
