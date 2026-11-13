@@ -2,11 +2,13 @@
 import {FormEvent,useEffect,useMemo,useState} from "react";
 type Enquiry={id:string;request_number:string;request_type:string;contact_name:string;email:string;requested_service:string};
 type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;quote_kind?:string};
-type Service={id:string;name:string;category:string|null;description:string|null;price_from:number|null};\ntype QuoteLine={id:number;description:string;quantity:string;unitPrice:string;serviceId:string;itemType:"labour"|"parts"};
+type Service={id:string;name:string;category:string|null;description:string|null;price_from:number|null};
+type QuoteLine={id:number;description:string;quantity:string;unitPrice:string;serviceId:string;itemType:"labour"|"parts"};
 const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(value);
 export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initialEnquiryId?:string;onCreated?:()=>void}){
  const [enquiries,setEnquiries]=useState<Enquiry[]>([]);
- const [priorQuotes,setPriorQuotes]=useState<PriorQuote[]>([]);\n const [services,setServices]=useState<Service[]>([]);
+ const [priorQuotes,setPriorQuotes]=useState<PriorQuote[]>([]);
+ const [services,setServices]=useState<Service[]>([]);
  const [enquiryId,setEnquiryId]=useState(initialEnquiryId);
  const [supersedesQuoteId,setSupersedesQuoteId]=useState("");
  const [items,setItems]=useState<QuoteLine[]>([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"parts"}]);
