@@ -65,13 +65,19 @@ test("general enquiries never expose the ticket reply composer",async()=>{
  assert.match(editor,/no customer reply composer/);
 });
 
-test("quotes can only be prepared for active Quote Request Jobcards",async()=>{
+test("quotes can be created with or without a linked Quote Request Jobcard",async()=>{
  const api=await source("../src/app/api/admin/quotes/route.ts");
  const form=await source("../src/components/admin-create-quote.tsx");
  assert.match(api,/eq\("request_type","quote_request"\)/);
  assert.match(api,/\.is\("archived_at",null\)/);
- assert.match(form,/Quote Request Jobcard/);
- assert.doesNotMatch(form,/No ticket|Select customer|customerId/);
+ assert.match(api,/requestedCustomerId/);
+ assert.match(api,/\.from\("customers"\).*\.eq\("id",requestedCustomerId\)/s);
+ assert.match(api,/enquiry_id:enquiry\?\.id\?\?null/);
+ assert.match(form,/Link Quote Request \/ Jobcard \(optional\)/);
+ assert.match(form,/No Jobcard — standalone quote/);
+ assert.match(form,/!enquiryId&&<label>Customer/);
+ assert.doesNotMatch(form,/Quote Request Jobcard<select[^>]*required/);
+ assert.match(form,/!enquiryId&&!customerId/);
 });
 
 test("issuing a quote advances the Jobcard atomically",async()=>{
