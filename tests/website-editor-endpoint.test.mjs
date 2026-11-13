@@ -23,7 +23,7 @@ test("website editor saves through a dedicated permission-checked draft endpoint
 
 test("saving a website draft does not overwrite live content or publish it",async()=>{
  const route=await source("../src/app/api/admin/website/[id]/route.ts");
- const migration=await source("../supabase/migrations/20261113120000_website_page_drafts.sql");
+ const migration=await source("../supabase/migrations/20261113112438_website_page_drafts.sql");
  const start=route.indexOf("const draft:");
  const end=route.indexOf("return Response.json({page});",start);
  const draftSave=route.slice(start,end);
