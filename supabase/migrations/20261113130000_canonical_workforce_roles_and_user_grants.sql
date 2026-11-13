@@ -22,6 +22,12 @@ ALTER TABLE public.user_permission_grants ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.user_permission_grants FROM anon,authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.user_permission_grants TO service_role;
 
+-- The legacy senior_worker row already owns the unique display name. Rename it
+-- before seeding the canonical key, then copy its grants before retiring it.
+UPDATE public.user_roles
+SET name='Senior Worker (legacy)'
+WHERE role_key='senior_worker';
+
 INSERT INTO public.user_roles(role_key,name,description,is_system) VALUES
  ('customer','Customer','Default permanent customer identity; not removable.',true),
  ('trial_apprentice','Trial Apprentice','Entry-level supervised workshop role.',true),
@@ -38,6 +44,13 @@ INSERT INTO public.user_roles(role_key,name,description,is_system) VALUES
  ('ceo_founder','CEO / Founder','Unrestricted access across the entire Brandon RV system.',true)
 ON CONFLICT (role_key) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,is_system=true;
 
+-- Preserve the existing senior-worker permission set on the canonical role.
+INSERT INTO public.user_role_permissions(role_key,permission_key)
+SELECT 'senior_apprentice',permission_key
+FROM public.user_role_permissions
+WHERE role_key='senior_worker'
+ON CONFLICT DO NOTHING;
+
 -- Move legacy privileged accounts to the exact new executive role keys.
 UPDATE public.users SET user_role='ceo_founder',updated_at=now() WHERE user_role='owner';
 UPDATE public.users SET user_role='website_development_specialist',updated_at=now() WHERE user_role='website_developer';
@@ -45,7 +58,7 @@ UPDATE public.users SET user_role='senior_apprentice',updated_at=now() WHERE use
 UPDATE public.users SET user_role='office_admin',updated_at=now() WHERE user_role='office';
 
 -- Remove legacy administrator aliases after users have been migrated.
-DELETE FROM public.user_roles WHERE role_key IN ('owner','website_developer');
+DELETE FROM public.user_roles WHERE role_key IN ('owner','website_developer','senior_worker');
 
 -- Seed a safe operational baseline for workshop workers.
 WITH baseline(permission_key) AS (
