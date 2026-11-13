@@ -211,3 +211,11 @@ test("FAQ and gallery defaults retain their existing page introductions",async()
  has(gallery,'type:"TextBlock"');
  has(gallery,'text:intro');
 });
+
+test("initial builder data retains the existing public hero headings for special pages",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ has(config,'pageId==="how-it-works"?"From enquiry to handover."');
+ has(config,'pageId==="service-areas"?"Mobile service around Tamworth."');
+ has(config,'pageId==="faq"?"Frequently asked questions."');
+ has(config,'pageId==="gallery"?"Practical work. Real results."');
+});
