@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     version: "1.0.0",
     enabled: true,
     authentication: "Bearer token",
-    documentation: "/api/integrations/v1/openapi",
+    documentation: "docs/automation-api.openapi.yaml",
     requestId: auth.context!.requestId,
     resources: [
       { name: "business", operations: ["read"], scope: "business.read" },
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       { name: "leave", operations: ["read"], scope: "leave.read" },
       { name: "payroll", operations: ["read"], scope: "payroll.read" },
       { name: "website", operations: ["read"], scope: "website.read" },
-      { name: "business-settings", operations: ["read"], scope: "business.settings.read" },
+      { name: "business-settings", operations: ["read"], scope: "business.settings.read" },\n      { name: "communications", operations: ["read"], scope: "communications.read" },\n      { name: "tasks", operations: ["read"], scope: "tasks.read" },\n      { name: "assets", operations: ["read"], scope: "assets.read" },\n      { name: "onboarding", operations: ["read"], scope: "onboarding.read" },
     ],
     permissionGroups: INTEGRATION_SCOPES,
   }, { headers: { "X-Request-Id": auth.context!.requestId } });
