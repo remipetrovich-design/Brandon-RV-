@@ -47,7 +47,7 @@ test("website builder cannot edit operational form definitions or service-area r
  assert.match(config,/href="\/request-quote"/);
  assert.match(config,/ServicesFeed/);
  assert.match(config,/ServiceAreasFeed/);
- assert.doesNotMatch(config,/requestQuoteForm|EnquiryForm|BookingForm|ServiceAreaEditor/);
+ assert.match(config,/RequestQuoteForm/);\n assert.match(config,/GeneralEnquiryForm/);\n assert.match(config,/fields:\{\},[\\s\\S]*render:\(\)=> <section[\\s\\S]*<EnquiryForm\\/>/);\n assert.match(config,/fields:\{\},[\\s\\S]*render:\(\)=> <section[\\s\\S]*<GeneralEnquiryForm\\/>/);
 });
 
 test("public page builder reads services and service areas from live application data",async()=>{
@@ -73,4 +73,34 @@ test("FAQ and gallery pages can be rearranged without changing their underlying 
  assert.match(config,/legacy\.photos/);
  assert.match(faq,/PublicSiteBuilder/);
  assert.match(gallery,/PublicSiteBuilder/);
+});
+
+test("quote and general-enquiry forms are protected movable components using the existing production forms",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const quote=await source("../src/app/request-quote/page.tsx");
+ const general=await source("../src/app/general-enquiry/page.tsx");
+ const quoteForm=await source("../src/components/enquiry-form.tsx");
+ const generalForm=await source("../src/components/general-enquiry-form.tsx");
+ assert.match(config,/RequestQuoteForm/);
+ assert.match(config,/GeneralEnquiryForm/);
+ assert.match(config,/components:\["RequestQuoteCTA","RequestQuoteForm","GeneralEnquiryForm","ServicesFeed","ServiceAreasFeed"\]/);
+ assert.match(config,/import EnquiryForm from/);
+ assert.match(config,/import GeneralEnquiryForm from/);
+ assert.match(config,/render:\(\)=> <section[\\s\\S]*<EnquiryForm\/>/);
+ assert.match(config,/render:\(\)=> <section[\\s\\S]*<GeneralEnquiryForm\/>/);
+ assert.match(quote,/import EnquiryForm/);
+ assert.match(general,/import GeneralEnquiryForm/);
+ assert.match(quoteForm,/fetch\("\/api\/enquiries"/);
+ assert.match(generalForm,/form\.set\("requestType","public_enquiry"\)/);
+});
+
+test("builder preview reads published service and service-area feeds only",async()=>{
+ const editor=await source("../src/components/admin-website-editor.tsx");
+ const services=await source("../src/app/api/public/services/route.ts");
+ const areas=await source("../src/app/api/public/service-areas/route.ts");
+ assert.match(editor,/fetch\("\/api\/public\/services"/);
+ assert.match(editor,/fetch\("\/api\/public\/service-areas"/);
+ assert.match(services,/eq\("approval_status","approved_for_launch"\)/);
+ assert.match(services,/eq\("is_published",true\)/);
+ assert.match(areas,/eq\("is_published",true\)/);
 });
