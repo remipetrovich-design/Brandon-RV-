@@ -89,7 +89,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
 }
 
 export function defaultWebsiteBuilderData(pageId:string,title:string,legacy:Record<string,unknown>){
- const heroTitle=typeof legacy.hero_title==="string"?legacy.hero_title:title;
+ const heroTitle=typeof legacy.hero_title==="string"?legacy.hero_title:pageId==="how-it-works"?"From enquiry to handover.":pageId==="service-areas"?"Mobile service around Tamworth.":pageId==="faq"?"Frequently asked questions.":pageId==="gallery"?"Practical work. Real results.":title;
  const subtitle=typeof legacy.hero_subtitle==="string"?legacy.hero_subtitle:typeof legacy.intro==="string"?legacy.intro:"";
  const intro=typeof legacy.intro==="string"?legacy.intro:"";
  const hero={type:"Hero",props:{id:pageId+"-hero",title:heroTitle,subtitle,imageUrl:"",imageAlt:""}};
