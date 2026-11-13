@@ -22,7 +22,7 @@ export async function getPublishedServiceAreas(){return readPublishedServiceArea
 export function contentText(content:Record<string,unknown>|undefined,key:string,fallback:string){const value=content?.[key];return typeof value==="string"&&value.trim()?value.trim():fallback;}
 export type PublicBusiness={name:string;brand_line:string|null;phone:string|null;city:string|null;region:string|null;status:string|null};
 const readPublicBusiness=unstable_cache(async():Promise<PublicBusiness>=>{
- const fallback:PublicBusiness={name:"Brandon RV",brand_line:"From Factory Experience to Repairs On The Go",phone:"0407 189 087",city:"Tamworth",region:"NSW",status:"prelaunch"};
+ const fallback:PublicBusiness={name:"Brandon RV",brand_line:"From Factory Experience to Repairs On The Go",phone:null,city:"Tamworth",region:"NSW",status:"prelaunch"};
  const data=await readPublicBusinessRecord();return data?{...fallback,...data}:fallback;
 },["brv-public-business-v1"],{revalidate:60,tags:["brv-public-site"]});
 export async function getPublicBusiness(){return readPublicBusiness();}
