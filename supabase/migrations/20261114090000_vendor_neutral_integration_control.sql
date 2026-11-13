@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.integration_credentials (
   name text NOT NULL CHECK (char_length(name) BETWEEN 2 AND 100),
   description text,
   token_hash text NOT NULL UNIQUE,
-  token_prefix text NOT NULL,
+  token_prefix text NOT NULL,\n  is_enabled boolean NOT NULL DEFAULT true,
   scopes text[] NOT NULL DEFAULT '{}',
   allowed_ip_addresses text[] NOT NULL DEFAULT '{}',
   rate_limit_per_minute integer CHECK (rate_limit_per_minute BETWEEN 1 AND 600),
