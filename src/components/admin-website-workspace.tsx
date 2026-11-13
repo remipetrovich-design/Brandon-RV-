@@ -3,24 +3,27 @@
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {Puck} from "@puckeditor/core";
-import {createWebsiteBuilderConfig,defaultWebsiteBuilderData} from "@/lib/website-builder";
+import {createWebsiteBuilderConfig,defaultWebsiteBuilderData,publicWebsiteFallbackContent} from "@/lib/website-builder";
 
 type Page={
  id:string;slug:string;title:string;content:unknown;meta_title:string|null;meta_description:string|null;
  draft_title?:string|null;draft_content?:unknown;draft_meta_title?:string|null;draft_meta_description?:string|null;
  is_published:boolean;updated_at?:string|null;draft_updated_at?:string|null;
 };
-type Props={pages:Page[]};
+type Props={pages:Page[];business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null};acceptingEnquiries:boolean};
 const asRecord=(value:unknown):Record<string,unknown>=>value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
 const pageLabel=(slug:string)=>slug==="home"?"Home":slug.split("-").map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
+const publicPageHref=(slug:string)=>({home:"/",about:"/about-services#brv-about",services:"/about-services#brv-services","how-it-works":"/how-it-works","service-areas":"/how-it-works#service-areas",faq:"/faq",gallery:"/gallery","request-quote":"/request-quote",contact:"/general-enquiry"} as Record<string,string>)[slug]??("/"+slug);
 
-export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
+export default function AdminWebsiteWorkspace({pages:initialPages,business,acceptingEnquiries}:Props){
  const [pages,setPages]=useState(initialPages);
  const [selectedSlug,setSelectedSlug]=useState(initialPages.find(page=>page.slug==="home")?.slug??initialPages[0]?.slug??"");
  const selectedPage=pages.find(page=>page.slug===selectedSlug)??pages[0];
- const sourceContent=selectedPage?.draft_content??selectedPage?.content;
+ const hasSavedDraft=selectedPage?.draft_content!==null&&selectedPage?.draft_content!==undefined;
+ const sourceContent=hasSavedDraft?selectedPage?.draft_content:selectedPage?.is_published?selectedPage?.content:publicWebsiteFallbackContent(selectedPage?.slug??"home");
  const legacy=asRecord(sourceContent);
- const initialData=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(selectedPage?.slug??"home",selectedPage?.draft_title??selectedPage?.title??"Home",legacy),[selectedPage?.id,selectedPage?.draft_updated_at,selectedPage?.updated_at]);
+ const storedContent=asRecord(selectedPage?.draft_content??selectedPage?.content);
+ const initialData=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(selectedPage?.slug??"home",selectedPage?.draft_title??selectedPage?.title??"Home",legacy,business),[selectedPage?.id,selectedPage?.draft_updated_at,selectedPage?.updated_at,business.phone,business.city,business.region,business.brand_line]);
  const [editorData,setEditorData]=useState<any>(initialData);
  const [pageTitle,setPageTitle]=useState(selectedPage?.draft_title??selectedPage?.title??"");
  const [seoTitle,setSeoTitle]=useState(selectedPage?.draft_meta_title??selectedPage?.meta_title??"");
@@ -30,7 +33,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
  const [notice,setNotice]=useState("Select a page, make changes, then save its draft. Publishing remains a separate action.");
  const [services,setServices]=useState<any[]>([]);
  const [areas,setAreas]=useState<any[]>([]);
- const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true}) as any,[services,areas]);
+ const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true,acceptingEnquiries}) as any,[services,areas]);
 
  useEffect(()=>{let active=true;void Promise.all([fetch("/api/public/services",{cache:"no-store"}).then(r=>r.ok?r.json():{services:[]}),fetch("/api/public/service-areas",{cache:"no-store"}).then(r=>r.ok?r.json():{areas:[]})]).then(([serviceData,areaData])=>{if(active){setServices(serviceData.services??[]);setAreas(areaData.areas??[]);}}).catch(()=>{});return()=>{active=false;};},[]);
 
@@ -38,8 +41,9 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
   if(slug===selectedSlug)return;
   if(dirty&&!window.confirm("You have unsaved changes on this page. Switch pages without saving them?"))return;
   const next=pages.find(page=>page.slug===slug);if(!next)return;
-  const content=asRecord(next.draft_content??next.content);
-  const builder=content.builder&&typeof content.builder==="object"?content.builder:defaultWebsiteBuilderData(next.slug,next.draft_title??next.title,content);
+  const hasDraft=next.draft_content!==null&&next.draft_content!==undefined;
+  const content=asRecord(hasDraft?next.draft_content:next.is_published?next.content:publicWebsiteFallbackContent(next.slug));
+  const builder=content.builder&&typeof content.builder==="object"?content.builder:defaultWebsiteBuilderData(next.slug,next.draft_title??next.title,content,business);
   setSelectedSlug(slug);setEditorData(builder);setPageTitle(next.draft_title??next.title);setSeoTitle(next.draft_meta_title??next.meta_title??"");setSeoDescription(next.draft_meta_description??next.meta_description??"");setDirty(false);setNotice("Editing "+pageLabel(slug)+".");
  }
 
@@ -47,7 +51,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
   if(!selectedPage)return;
   setBusy(true);setNotice("");
   try{
-   const content={...legacy,builder:data};
+   const content={...storedContent,builder:data};
    const response=await fetch("/api/admin/website/"+selectedPage.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:pageTitle,content,meta_title:seoTitle,meta_description:seoDescription})});
    const result=await response.json();
    if(!response.ok){setNotice(result.error??"Could not save this page.");return;}
@@ -64,7 +68,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
   <section className="portal-panel brv-unified-builder" id="brv-unified-builder">
    <div className="brv-builder-toolbar">
     <div className="brv-builder-page-picker"><label htmlFor="brv-page-select">Editing page</label><select id="brv-page-select" value={selectedPage.slug} onChange={event=>switchPage(event.target.value)}>{pages.map(page=><option key={page.id} value={page.slug}>{pageLabel(page.slug)}</option>)}</select></div>
-    <div className="brv-builder-toolbar-actions"><span className={"status-pill "+(selectedPage.is_published?"":"status-pill-draft")}>{selectedPage.is_published?"Live page":"Unpublished"}</span><Link className="button button-secondary brv-builder-view-link" href={"/"+(selectedPage.slug==="home"?"":selectedPage.slug)} target="_blank">View page ↗</Link><button className="button button-primary" type="button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?"Saving…":"Save draft"}</button></div>
+    <div className="brv-builder-toolbar-actions"><span className="status-pill">Live on website</span><span className={"status-pill "+(selectedPage.is_published?"":"status-pill-draft")}>{selectedPage.is_published?(asRecord(selectedPage.content).builder?"Visual editor version published":"Database content published"):"Current public website layout"}</span>{(selectedPage.draft_content!==null&&selectedPage.draft_content!==undefined)&&<span className="status-pill status-pill-draft">Draft saved</span>}<Link className="button button-secondary brv-builder-view-link" href={publicPageHref(selectedPage.slug)} target="_blank">View page ↗</Link><button className="button button-primary" type="button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?"Saving…":"Save draft"}</button></div>
    </div>
    <div className="brv-builder-page-meta">
     <label>Page title<input value={pageTitle} onChange={event=>{setPageTitle(event.target.value);setDirty(true);}} maxLength={160}/></label>

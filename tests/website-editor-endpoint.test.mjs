@@ -125,9 +125,9 @@ test("quote and general-enquiry blocks reuse the existing forms and customer pro
  has(wrapper,'fetch("/api/portal/profile"');
  has(wrapper,"initialName=");
  has(config,'if(pageId==="request-quote")');
- has(config,'type:"RequestQuoteForm"');
+ has(config,'type:"RequestQuotePage"');
  has(config,'if(pageId==="contact")');
- has(config,'type:"GeneralEnquiryForm"');
+ has(config,'type:"ContactPage"');
  has(config,'if(pageId==="how-it-works")');
 });
 
@@ -180,44 +180,43 @@ test("combined page defaults do not duplicate the other page's protected feeds",
  const config=await source("../src/lib/website-builder.tsx");
  const aboutStart=config.indexOf('if(pageId==="about")');
  const servicesStart=config.indexOf('if(pageId==="services")');
- const areasStart=config.indexOf('if(pageId==="service-areas")');
  const howStart=config.indexOf('if(pageId==="how-it-works")');
+ const areasStart=config.indexOf('if(pageId==="service-areas")');
+ const faqStart=config.indexOf('if(pageId==="faq")');
  assert.ok(aboutStart>=0);
  assert.ok(servicesStart>aboutStart);
- assert.ok(areasStart>servicesStart);
- assert.ok(howStart>areasStart);
+ assert.ok(howStart>servicesStart);
+ assert.ok(areasStart>howStart);
  const about=config.slice(aboutStart,servicesStart);
- const services=config.slice(servicesStart,areasStart);
- const serviceAreas=config.slice(areasStart,howStart);
- const how=config.slice(howStart,config.indexOf('if(pageId==="faq")',howStart));
- has(about,'type:"TextBlock"');
+ const services=config.slice(servicesStart,howStart);
+ const how=config.slice(howStart,areasStart);
+ const serviceAreas=config.slice(areasStart,faqStart);
+ has(about,'type:"AboutPage"');
  assert.equal(about.includes('type:"ServicesFeed"'),false);
  assert.equal(about.includes('type:"ServiceAreasFeed"'),false);
- has(services,'type:"ServicesFeed"');
+ has(services,'type:"ServicesPage"');
  assert.equal(services.includes('type:"ServiceAreasFeed"'),false);
- has(serviceAreas,'type:"ServiceAreasFeed"');
+ has(serviceAreas,'type:"ServiceAreasPage"');
  assert.equal(how.includes('type:"ServiceAreasFeed"'),false);
- has(how,'type:"ProcessSteps"');
+ has(how,'type:"ProcessPage"');
 });
-
 test("FAQ and gallery defaults retain their existing page introductions",async()=>{
  const config=await source("../src/lib/website-builder.tsx");
  const faqStart=config.indexOf('if(pageId==="faq")');
  const galleryStart=config.indexOf('if(pageId==="gallery")');
  const faq=config.slice(faqStart,galleryStart);
- const gallery=config.slice(galleryStart,config.lastIndexOf("\n return {"));
- has(faq,'type:"TextBlock"');
- has(faq,'text:intro');
- has(gallery,'type:"TextBlock"');
- has(gallery,'text:intro');
+ const gallery=config.slice(galleryStart,config.indexOf('if(pageId==="request-quote")',galleryStart));
+ has(faq,'type:"FAQPage"');
+ has(faq,'intro:str("intro"');
+ has(gallery,'type:"GalleryPage"');
+ has(gallery,'intro:str("intro"');
 });
-
 test("initial builder data retains the existing public hero headings for special pages",async()=>{
  const config=await source("../src/lib/website-builder.tsx");
- has(config,'pageId==="how-it-works"?"From enquiry to handover."');
- has(config,'pageId==="service-areas"?"Mobile service around Tamworth."');
- has(config,'pageId==="faq"?"Frequently asked questions."');
- has(config,'pageId==="gallery"?"Practical work. Real results."');
+ has(config,'heading:"From enquiry to handover."');
+ has(config,'heading:"Mobile service around Tamworth."');
+ has(config,'heading:"Frequently asked questions."');
+ has(config,'heading:"Practical work. Real results."');
 });
 
 test("website management opens one unified editor for every page",async()=>{
@@ -254,4 +253,67 @@ test("unified website editor includes responsive controls for mobile desktop-mod
  has(css,".brv-builder-page-meta");
  has(css,"@media (max-width: 1100px)");
  has(css,".brv-builder-canvas");
+});
+
+test("website builder starts from the existing public page layouts and fallback content",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ has(config,"publicWebsiteFallbackContent");
+ for(const block of ["HomePage","AboutPage","ServicesPage","ProcessPage","ServiceAreasPage","FAQPage","GalleryPage","RequestQuotePage","ContactPage"])has(config,block);
+ for(const slug of ["home","about","services","how-it-works","service-areas","faq","gallery","request-quote","contact"])has(config,`case "${slug}"`);
+ has(config,"Caravan repairs, without the workshop trip.");
+ has(config,"Mobile caravan and motorhome repair and accessory services around Tamworth, NSW.");
+ has(config,"From enquiry to handover.");
+ has(config,"No work photographs have been published yet.");
+ has(config,"A clear process helps confirm the right work");
+});
+
+test("unpublished database flags do not incorrectly label a route as offline when its public fallback is live",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ has(workspace,"publicWebsiteFallbackContent");
+ has(workspace,"Live on website");
+ has(workspace,"Database content published");
+ has(workspace,"Current public website layout");
+});
+
+test("homepage opens as individually draggable sections matching the current public layout",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ has(config,'content:[{type:"HomeHero"');
+ for(const block of ["HomeHero","HomeQuickFacts","HomeServices","HomeProcess","HomeValues","HomeCTA"])has(config,'type:"'+block+'"');
+ has(config,'permissions:{insert:false,delete:false,duplicate:false,edit:true,drag:true}');
+});
+
+test("unpublished rows use the public route fallback until the visual version is published",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ has(workspace,"selectedPage?.is_published?selectedPage?.content:publicWebsiteFallbackContent");
+ has(workspace,"next.is_published?next.content:publicWebsiteFallbackContent");
+ has(workspace,"const content={...storedContent,builder:data}");
+});
+
+test("view page links point to the real combined public routes and section anchors",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const config=await source("../src/lib/website-builder.tsx");
+ has(workspace,'about:"/about-services#brv-about"');
+ has(workspace,'services:"/about-services#brv-services"');
+ has(workspace,'"service-areas":"/how-it-works#service-areas"');
+ has(workspace,'contact:"/general-enquiry"');
+ has(config,'id="brv-about"');
+ has(config,'id="brv-services"');
+});
+
+test("homepage builder seeds contact details from the current business profile and respects enquiry availability",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ const adminPage=await source("../src/app/admin/website-builder/page.tsx");
+ const publicBuilder=await source("../src/components/public-site-builder.tsx");
+ has(config,"acceptingEnquiries?:boolean");
+ has(config,"business?:BuilderBusiness");
+ has(config,"phone:businessPhone,location:businessLocation");
+ has(config,"brandLine:str(\"hero_subtitle\",businessBrandLine)");
+ has(config,"Enquiries temporarily unavailable");
+ has(workspace,"business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null}");
+ has(workspace,"defaultWebsiteBuilderData(selectedPage?.slug??\"home\",selectedPage?.draft_title??selectedPage?.title??\"Home\",legacy,business)");
+ has(workspace,"acceptingEnquiries})");
+ has(adminPage,"getPublicBusiness()");
+ has(adminPage,"getPublicBusinessSettings()");
+ has(publicBuilder,"getPublicBusinessSettings()");
 });
