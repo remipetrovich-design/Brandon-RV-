@@ -12,7 +12,7 @@ test("database migration supplies every field used by service-linked Workcard en
 
 test("Workcard management endpoint returns complete job context and service-linked actual entries",async()=>{
  const route=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
- for(const field of ["quantity_required","quantity_used","unit_price","cost_unit_price","services(name)","customers(full_name,email,phone)","quotes!jobs_quote_id_fkey","appointments(status,starts_at,ends_at,location"])assert.ok(route.includes(field),"Missing Workcard API field: "+field);
+ for(const field of ["quantity_required","quantity_used","unit_price","cost_unit_price","services:services!job_work_entries_service_id_fkey(name)","customers:users!jobs_customer_id_users_fkey(full_name,email,phone)","from(\"quotes\")","from(\"appointments\")","from(\"services\")","from(\"job_work_entries\")"])assert.ok(route.includes(field),"Missing Workcard API field/query: "+field);
 });
 
 test("accepted quote creates planned Workcard lines without treating the estimate as actual invoice charges",async()=>{
