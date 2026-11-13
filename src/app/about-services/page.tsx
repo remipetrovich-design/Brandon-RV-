@@ -6,7 +6,7 @@ export const dynamic="force-dynamic";
 export const metadata:Metadata={title:"About & Services",description:"Learn about Brandon RV and the caravan and motorhome repair services available around Tamworth, NSW."};
 export default async function AboutServicesPage(){
  const [about,servicesPage,published,areas]=await Promise.all([getPublishedSitePage("about"),getPublishedSitePage("services"),getPublishedServices(),getPublishedServiceAreas()]);
- if(about?.content?.builder||servicesPage?.content?.builder)return <main>{about?.content?.builder?<PublicSiteBuilder data={about.content.builder} services={published} areas={areas}/>:null}{servicesPage?.content?.builder?<PublicSiteBuilder data={servicesPage.content.builder} services={published} areas={areas}/>:null}</main>;
+ if(Boolean(about?.content?.builder)||Boolean(servicesPage?.content?.builder))return <main>{about?.content?.builder?<PublicSiteBuilder data={about.content.builder} services={published} areas={areas}/>:null}{servicesPage?.content?.builder?<PublicSiteBuilder data={servicesPage.content.builder} services={published} areas={areas}/>:null}</main>;
  const intro=contentText(about?.content,"intro","Brandon RV provides mobile caravan and motorhome repair and accessory services around Tamworth, NSW.");
  const aboutTitle=about?.title??"Experience that understands your setup.";
  const serviceIntro=contentText(servicesPage?.content,"intro","Explore the services Brandon RV offers. Contact us to discuss your requirements and arrange the next step.");
