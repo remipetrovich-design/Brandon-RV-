@@ -30,7 +30,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(conflicts?.length)return jsonError("That time conflicts with another confirmed booking. Choose another time.",409);
   const now=new Date().toISOString();
   const {data:appointment,error}=await db.from("appointments").insert({
-   business_id:businessId,customer_id:job.user_id??null,user_id:job.user_id??null,
+   business_id:businessId,customer_id:job.customer_id,user_id:job.user_id??null,
    guest_name:job.guest_name??null,guest_email:job.guest_email??null,
    enquiry_id:enquiryId,quote_id:job.quote_id,vehicle_id:vehicleId,
    starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),
