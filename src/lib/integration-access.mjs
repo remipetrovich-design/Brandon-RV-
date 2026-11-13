@@ -26,7 +26,7 @@ export function validateIntegrationScopes(scopes) {
 }
 
 export function isIntegrationCredentialActive(credential, now = new Date()) {
-  if (!credential || credential.revoked_at) return false;
+  if (!credential || credential.revoked_at || credential.is_enabled === false) return false;
   if (credential.expires_at && new Date(credential.expires_at).getTime() <= now.getTime()) return false;
   return true;
 }
