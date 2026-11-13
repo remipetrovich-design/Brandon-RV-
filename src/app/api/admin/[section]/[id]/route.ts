@@ -54,7 +54,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
     const byAppointment=await db.from("jobs").select("id,job_number,appointment_id,status").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
     linkedWorkcard=byAppointment.data;
    }
-   if(!linkedWorkcard)return jsonError("Create or link a Workcard before confirming this appointment.",409);
+   if(!linkedWorkcard)return jsonError("Create the Workcard from the accepted quote before confirming its booking.",409);
    if(linkedWorkcard.appointment_id&&linkedWorkcard.appointment_id!==id)return jsonError("This Workcard is already linked to another appointment.",409);
    const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",membership.business_id).maybeSingle();
    const settings=settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{};
