@@ -51,9 +51,9 @@ test("builder exposes protected connected components without exposing form schem
  assert.doesNotMatch(route,/body\.service_areas|body\.form_schema|body\.request_quote/);
  assert.match(config,/href="\/request-quote"/);
  assert.match(config,/ServicesFeed/);
- assert.match(config,/ServiceAreasFeed/);
- assert.match(config,/RequestQuoteForm/);
- assert.match(config,/GeneralEnquiryForm/);
+ assert.match(config,/ServiceAreasFeed/);\n assert.match(config,/ServiceAreasFeed:\{[\\s\\S]*permissions:\{delete:false,duplicate:false,edit:true,drag:true\}/);
+ assert.match(config,/RequestQuoteForm/);\n assert.match(config,/RequestQuoteForm:\{[\\s\\S]*permissions:\{delete:false,duplicate:false,edit:false,drag:true\}/);
+ assert.match(config,/GeneralEnquiryForm/);\n assert.match(config,/GeneralEnquiryForm:\{[\\s\\S]*permissions:\{delete:false,duplicate:false,edit:false,drag:true\}/);
  assert.match(config,/fields:\{\}/);
  assert.match(config,/render:\(\)=> <section[\s\S]*<EnquiryForm\/>/);
  assert.match(config,/WebsiteGeneralEnquiryBlock/);
