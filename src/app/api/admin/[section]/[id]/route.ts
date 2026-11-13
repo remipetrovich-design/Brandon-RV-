@@ -1,5 +1,6 @@
 import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
 import {sendEmail} from "@/lib/email";
+import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
 export const runtime="nodejs";
 const config:any={
  enquiries:{table:"enquiries",permission:"enquiries.manage",status:["new","reviewing","quoted","accepted","declined","converted","closed"],fields:["status","internal_notes"]},
@@ -35,17 +36,35 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    if(!issued?.success)return jsonError("Could not confirm quote issue. No changes were made.",500);
    quoteIssued=true;
   }
-  let appointment:any=null;let quote:any=null;
-  if(section==="appointments"&&update.status==="confirmed"){
-   const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email").eq("id",id).eq("business_id",membership.business_id).maybeSingle();appointment=result.data;
-   if(!appointment||!appointment.quote_id)return jsonError("A confirmed booking must be linked to an accepted quote.",409);
-   if(!update.starts_at)update.starts_at=appointment.starts_at??appointment.preferred_start;
-   if(!update.ends_at)update.ends_at=appointment.ends_at??appointment.preferred_end;
-   if(!update.location)update.location=appointment.location;
-   if(!update.starts_at||!update.ends_at||!update.location||Date.parse(update.ends_at)<=Date.parse(update.starts_at))return jsonError("Set the agreed date, start time, end time and service location before confirming.");
-   const quoteResult=await db.from("quotes").select("id,quote_number,status,enquiry_id").eq("id",appointment.quote_id).eq("business_id",membership.business_id).maybeSingle();quote=quoteResult.data;
-   if(!quote||quote.status!=="accepted")return jsonError("The linked quote must be accepted before a booking can be confirmed.",409);
-   update.confirmed_by=user.id;update.confirmed_at=new Date().toISOString();
+  let appointment:any=null;let quote:any=null;let linkedWorkcard:any=null;
+  if(section==="appointments"&&["confirmed","rescheduled"].includes(String(update.status??""))){
+   const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email,confirmed_by,confirmed_at,updated_at").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+   appointment=result.data;
+   if(result.error||!appointment)return jsonError("Could not load the appointment.",404);
+   const startsAt=new Date(String(update.starts_at??appointment.starts_at??appointment.preferred_start??""));
+   const endsAt=new Date(String(update.ends_at??appointment.ends_at??appointment.preferred_end??""));
+   const location=String(update.location??appointment.location??"").trim();
+   if(!location||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)return jsonError("Set the agreed date, start time, finish time and service location.");
+   if(appointment.quote_id){
+    const quoteResult=await db.from("quotes").select("id,quote_number,status,enquiry_id").eq("id",appointment.quote_id).eq("business_id",membership.business_id).maybeSingle();quote=quoteResult.data;
+    if(!quote||quote.status!=="accepted")return jsonError("The linked quote must be accepted before confirming this booking.",409);
+    const byQuote=await db.from("jobs").select("id,job_number,appointment_id,status").eq("business_id",membership.business_id).eq("quote_id",quote.id).maybeSingle();
+    linkedWorkcard=byQuote.data;
+   }else{
+    const byAppointment=await db.from("jobs").select("id,job_number,appointment_id,status").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
+    linkedWorkcard=byAppointment.data;
+   }
+   if(!linkedWorkcard)return jsonError("Create the Workcard from the accepted quote before confirming its booking.",409);
+   if(linkedWorkcard.appointment_id&&linkedWorkcard.appointment_id!==id)return jsonError("This Workcard is already linked to another appointment.",409);
+   const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",membership.business_id).maybeSingle();
+   const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
+   const policyError=validateBookingWindow(startsAt,endsAt,settings);if(policyError)return jsonError(policyError,409);
+   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
+   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",membership.business_id).neq("id",id).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
+   if(conflictError)return jsonError("Could not verify calendar availability.",500);
+   if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
+   update.starts_at=startsAt.toISOString();update.ends_at=endsAt.toISOString();update.location=location;
+   if(update.status==="confirmed"){update.confirmed_by=user.id;update.confirmed_at=new Date().toISOString();}
   }
   update.updated_at=new Date().toISOString();
   let record:any={id};
@@ -56,25 +75,22 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:section+".updated",entity_type:section,entity_id:id,details:update});
   }
   let workcardLinked=false;
-  if(section==="appointments"&&update.status==="confirmed"&&appointment&&quote){
-   const {data:workcardByQuote}=await db.from("jobs").select("id,job_number,appointment_id").eq("business_id",membership.business_id).eq("quote_id",quote.id).maybeSingle();
-   const {data:legacyWorkcard}=workcardByQuote?{data:null}:await db.from("jobs").select("id,job_number,appointment_id").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
-   const workcard=workcardByQuote??legacyWorkcard;
-   if(!workcard){
-    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
-    return jsonError("Create the Workcard from the accepted quote before confirming its booking.",409);
-   }
-   if(workcard.appointment_id&&workcard.appointment_id!==id){
-    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
-    return jsonError("This Workcard is already linked to another booking. Update the existing booking instead.",409);
-   }
-   const {error:linkError}=await db.from("jobs").update({appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,status:"scheduled",updated_at:new Date().toISOString()}).eq("id",workcard.id).eq("business_id",membership.business_id);
-   if(linkError){
-    await db.from("appointments").update({status:"requested",confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",id);
-    return jsonError("Booking could not be confirmed because the existing Workcard could not be updated.",500);
+  if(section==="appointments"&&linkedWorkcard){
+   const scheduleUpdate:any={appointment_id:id,scheduled_start:update.starts_at,scheduled_end:update.ends_at,updated_at:new Date().toISOString()};
+   if(linkedWorkcard.status==="pending")scheduleUpdate.status="scheduled";
+   const {error:workcardError}=await db.from("jobs").update(scheduleUpdate).eq("id",linkedWorkcard.id).eq("business_id",membership.business_id);
+   if(workcardError){
+    await db.from("appointments").update({status:appointment.status,starts_at:appointment.starts_at,ends_at:appointment.ends_at,location:appointment.location,confirmed_by:appointment.confirmed_by??null,confirmed_at:appointment.confirmed_at??null,updated_at:appointment.updated_at??new Date().toISOString()}).eq("id",id).eq("business_id",membership.business_id);
+    return jsonError("Appointment was not changed because its Workcard schedule could not be updated.",500);
    }
    workcardLinked=true;
-   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"workcard.booking_confirmed",entity_type:"job",entity_id:workcard.id,details:{job_number:workcard.job_number,appointment_id:id,quote_id:quote.id}});
+   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"workcard.booking_synced_from_calendar",entity_type:"job",entity_id:linkedWorkcard.id,details:{appointment_id:id,starts_at:update.starts_at,ends_at:update.ends_at,location:update.location}});
+  }
+  if(section==="appointments"&&update.status==="cancelled"){
+   const {data:workcard}=await db.from("jobs").select("id,status").eq("business_id",membership.business_id).eq("appointment_id",id).maybeSingle();
+   if(workcard){
+    await db.from("jobs").update({scheduled_start:null,scheduled_end:null,status:workcard.status==="scheduled"?"pending":workcard.status,updated_at:new Date().toISOString()}).eq("id",workcard.id).eq("business_id",membership.business_id);
+   }
   }
   let emailSent=false;
   if(section==="quotes"&&update.status==="sent"){
