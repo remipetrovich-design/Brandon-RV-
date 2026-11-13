@@ -6,7 +6,8 @@ export async function GET(){
  const [{data:enquiries,error:enquiryError},{data:quotes,error:quoteError},{data:businessSettings},{data:services,error:serviceError}]=await Promise.all([
   db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id,customer_id").eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
   db.from("quotes").select("id,quote_number,enquiry_id,revision_number,status,quote_kind,job_id,total,created_at").eq("business_id",businessId).not("enquiry_id","is",null).order("created_at",{ascending:false}),
-  db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle()
+  db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle(),
+  db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
  ]);
  if(enquiryError||quoteError||serviceError)return jsonError("Could not load quote records or service presets.",500);
  const settings=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
@@ -78,7 +79,9 @@ export async function POST(request:Request){
    if(["accepted","converted"].includes(prior.status))return jsonError("An accepted quote cannot be revised. Use the variation approval workflow for additional work.",409);
    revisionNumber=Number(prior.revision_number??1)+1;
   }
-  const serviceIds=items.map(x=>x.serviceId).filter(Boolean) as string[];\n  if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}\n  const lines:{description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number;sort_order:number;item_type:string;service_id:string|null}[]=items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,line_total:Number((item.quantity*item.unitPrice).toFixed(2)),sort_order:index,item_type:item.itemType,service_id:item.serviceId}));
+  const serviceIds=items.map(x=>x.serviceId).filter(Boolean) as string[];
+  if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
+  const lines:{description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number;sort_order:number;item_type:string;service_id:string|null}[]=items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,line_total:Number((item.quantity*item.unitPrice).toFixed(2)),sort_order:index,item_type:item.itemType,service_id:item.serviceId}));
   const subtotal=Number(lines.reduce((sum:number,item:{line_total:number})=>sum+item.line_total,0).toFixed(2));
   const taxAmount=Number((lines.reduce((sum:number,item:{line_total:number;tax_rate:number})=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
   const total=Number((subtotal+taxAmount).toFixed(2));
