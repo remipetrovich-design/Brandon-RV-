@@ -1,11 +1,12 @@
 import type {Metadata} from "next";
 import Link from "next/link";
 import GeneralEnquiryForm from "@/components/general-enquiry-form";
+import PublicSiteBuilder from "@/components/public-site-builder";
 import {currentUser} from "@/lib/auth";
-import {getPublicBusiness,getPublicBusinessSettings,phoneHref,getPublishedSitePage,contentText} from "@/lib/public-site";
+import {getPublicBusiness,getPublicBusinessSettings,phoneHref,getPublishedSitePage,getPublishedServices,getPublishedServiceAreas,contentText} from "@/lib/public-site";
 export const metadata:Metadata={title:"General Enquiry",description:"General enquiries for Brandon RV in Tamworth, NSW."};
 export default async function GeneralEnquiryPage(){
- const [business,page,settings,user]=await Promise.all([getPublicBusiness(),getPublishedSitePage("contact"),getPublicBusinessSettings(),currentUser()]);
+ const [business,page,settings,user,services,areas]=await Promise.all([getPublicBusiness(),getPublishedSitePage("contact"),getPublicBusinessSettings(),currentUser(),getPublishedServices(),getPublishedServiceAreas()]);\n if(page?.content?.builder)return <main><PublicSiteBuilder data={page.content.builder} services={services} areas={areas}/></main>;
  const phone=business.phone??"0407 189 087";const callLink=phoneHref(phone);
  const location=[business.city,business.region].filter(Boolean).join(" ")||"Tamworth NSW";
  const intro=contentText(page?.content,"intro","For general enquiries, contact Brandon RV with a question about the mobile service, service suitability or how the process works.");
