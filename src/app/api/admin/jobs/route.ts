@@ -52,22 +52,9 @@ export async function POST(request:Request){
    }
    return jsonError("Could not create Workcard.",500);
   }
-  const plannedEntries=(quote.quote_items??[]).map((item:any)=>({
-   business_id:businessId,job_id:job.id,created_by:access.user!.id,
-   source_quote_item_id:item.id,service_id:item.service_id??null,
-   entry_type:item.item_type==="labour"?"labour":"parts",description:item.description,
-   quantity:Number(item.quantity??1),quantity_required:Number(item.quantity??1),quantity_used:0,
-   unit_price:Number(item.unit_price??0),cost_unit_price:0,tax_rate:Number(item.tax_rate??0),
-   line_total:0,customer_visible:true,invoiceable:false
-  }));
-  if(plannedEntries.length){
-   const {error:plannedEntryError}=await db.from("job_work_entries").insert(plannedEntries);
-   if(plannedEntryError){
-    console.error("Workcard planned entries could not be copied from accepted quote",plannedEntryError);
-    await db.from("jobs").delete().eq("id",job.id).eq("business_id",businessId);
-    return jsonError("Could not prepare the Workcard's planned service, labour and parts lines. No Workcard was created.",500);
-   }
-  }
+  // The accepted quote remains the estimate and approved scope reference.
+  // Parts needed and actual work are researched and entered by workshop staff
+  // directly on the Workcard; quote lines are deliberately not copied here.
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review"}});
   return Response.json({job},{status:201});
  }catch(error){

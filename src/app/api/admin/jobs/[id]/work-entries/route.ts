@@ -28,7 +28,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const [quoteResult,appointmentResult,entriesResult,servicesResult]=await Promise.all([
   baseJob.quote_id?db.from("quotes").select("quote_number,status,total,enquiries:enquiries!quotes_enquiry_id_fkey(request_number,vehicle_description,vehicles:vehicles!enquiries_vehicle_id_fkey(make,model,year,registration,vin))").eq("id",baseJob.quote_id).eq("business_id",businessId).maybeSingle():Promise.resolve({data:null,error:null}),
   baseJob.appointment_id?db.from("appointments").select("status,starts_at,ends_at,location,vehicles:vehicles!appointments_vehicle_id_fkey(make,model,year,registration,vin)").eq("id",baseJob.appointment_id).eq("business_id",businessId).maybeSingle():Promise.resolve({data:null,error:null}),
-  db.from("job_work_entries").select("id,entry_type,description,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id,services:services!job_work_entries_service_id_fkey(name)").eq("business_id",businessId).eq("job_id",id).order("created_at"),
+  db.from("job_work_entries").select("id,source_quote_item_id,entry_type,description,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id,services:services!job_work_entries_service_id_fkey(name)").eq("business_id",businessId).eq("job_id",id).order("created_at"),
   db.from("services").select("id,name,category,price_from").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
  ]);
  if(quoteResult.error){console.error("Workcard quote query failed",quoteResult.error);return jsonError("Could not load the Workcard quote and enquiry details.",500);}
@@ -85,7 +85,9 @@ export async function DELETE(request:Request,{params}:{params:Promise<{id:string
  const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(!job)return jsonError("Workcard not found.",404);
  if(job.worker_signed_off_at||["completed","cancelled"].includes(job.status))return jsonError("This Workcard is signed off or closed.",409);
- const {error}=await db.from("job_work_entries").delete().eq("id",entryId).eq("job_id",id).eq("business_id",businessId);
+ const {data:deletedEntry,error}=await db.from("job_work_entries").delete().eq("id",entryId).eq("job_id",id).eq("business_id",businessId).select("id,entry_type,description").maybeSingle();
  if(error){console.error("Workcard entry delete failed",error);return jsonError("Could not delete Workcard entry.",500);}
+ if(!deletedEntry)return jsonError("Workcard entry not found.",404);
+ await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.entry_deleted",entity_type:"job_work_entry",entity_id:entryId,details:{job_id:id,entry_type:deletedEntry.entry_type,description:deletedEntry.description}});
  return Response.json({success:true});
 }
