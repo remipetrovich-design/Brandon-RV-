@@ -28,6 +28,20 @@ test("Parts needed exposes independent add, edit, update and delete controls wit
  for(const token of ["Add part","Edit part","Remove part","addEntry()","editEntry(entry)","removeEntry(x.id)","quantity_required","quantity_used","part_number","supplier_name","cost_unit_price"])assert.ok(ui.includes(token),"Missing Parts needed control or field: "+token);
 });
 
+test("Workcard part deletion is scoped to its Workcard and recorded in the audit history",async()=>{
+ const route=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
+ assert.ok(route.includes('.delete().eq("id",entryId).eq("job_id",id).eq("business_id",businessId)'),"Entry deletion must be scoped to the active business and Workcard.");
+ assert.ok(route.includes('action:"workcard.entry_deleted"'),"Entry deletions must be audited.");
+ assert.ok(route.includes('if(!deletedEntry)return jsonError("Workcard entry not found.",404)'),"Deleting a missing entry must not report success.");
+});
+
+test("Admin Workcards list uses a compact summary and preserves manage permissions",async()=>{
+ const page=await read("../src/app/admin/[section]/page.tsx");
+ assert.ok(page.includes('className="brv-admin-workcard-link"'),"Workcard rows should use the compact Jobcard-style summary.");
+ assert.ok(page.includes('section==="jobs"?canManageJobs?'),"Only staff with Workcard management permission should receive the open link.");
+ assert.ok(!page.includes("Setup review:"),"The list should not expand internal review details into every row.");
+});
+
 test("Workcard UI supports service presets, custom entries, required versus used quantities, and actual costs",async()=>{
  const ui=await read("../src/components/admin-workcard-management.tsx");
  for(const token of ["Custom entry","quantity_required","quantity_used","cost_unit_price","unit_price","part_number","supplier_name","invoiceable","Service preset","Retry loading Workcard","Vehicle","Original estimate"])assert.ok(ui.includes(token),"Missing Workcard UI feature: "+token);
