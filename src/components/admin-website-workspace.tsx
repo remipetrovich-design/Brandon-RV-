@@ -10,12 +10,12 @@ type Page={
  draft_title?:string|null;draft_content?:unknown;draft_meta_title?:string|null;draft_meta_description?:string|null;
  is_published:boolean;updated_at?:string|null;draft_updated_at?:string|null;
 };
-type Props={pages:Page[]};
+type Props={pages:Page[];business:{phone:string|null;city:string|null;region:string|null;brand_line:string|null};acceptingEnquiries:boolean};
 const asRecord=(value:unknown):Record<string,unknown>=>value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
 const pageLabel=(slug:string)=>slug==="home"?"Home":slug.split("-").map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(" ");
 const publicPageHref=(slug:string)=>({home:"/",about:"/about-services#brv-about",services:"/about-services#brv-services","how-it-works":"/how-it-works","service-areas":"/how-it-works#service-areas",faq:"/faq",gallery:"/gallery","request-quote":"/request-quote",contact:"/general-enquiry"} as Record<string,string>)[slug]??("/"+slug);
 
-export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
+export default function AdminWebsiteWorkspace({pages:initialPages,business,acceptingEnquiries}:Props){
  const [pages,setPages]=useState(initialPages);
  const [selectedSlug,setSelectedSlug]=useState(initialPages.find(page=>page.slug==="home")?.slug??initialPages[0]?.slug??"");
  const selectedPage=pages.find(page=>page.slug===selectedSlug)??pages[0];
@@ -23,7 +23,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
  const sourceContent=hasSavedDraft?selectedPage?.draft_content:selectedPage?.is_published?selectedPage?.content:publicWebsiteFallbackContent(selectedPage?.slug??"home");
  const legacy=asRecord(sourceContent);
  const storedContent=asRecord(selectedPage?.draft_content??selectedPage?.content);
- const initialData=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(selectedPage?.slug??"home",selectedPage?.draft_title??selectedPage?.title??"Home",legacy),[selectedPage?.id,selectedPage?.draft_updated_at,selectedPage?.updated_at]);
+ const initialData=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(selectedPage?.slug??"home",selectedPage?.draft_title??selectedPage?.title??"Home",legacy,business),[selectedPage?.id,selectedPage?.draft_updated_at,selectedPage?.updated_at,business.phone,business.city,business.region,business.brand_line]);
  const [editorData,setEditorData]=useState<any>(initialData);
  const [pageTitle,setPageTitle]=useState(selectedPage?.draft_title??selectedPage?.title??"");
  const [seoTitle,setSeoTitle]=useState(selectedPage?.draft_meta_title??selectedPage?.meta_title??"");
@@ -33,7 +33,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
  const [notice,setNotice]=useState("Select a page, make changes, then save its draft. Publishing remains a separate action.");
  const [services,setServices]=useState<any[]>([]);
  const [areas,setAreas]=useState<any[]>([]);
- const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true}) as any,[services,areas]);
+ const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true,acceptingEnquiries}) as any,[services,areas]);
 
  useEffect(()=>{let active=true;void Promise.all([fetch("/api/public/services",{cache:"no-store"}).then(r=>r.ok?r.json():{services:[]}),fetch("/api/public/service-areas",{cache:"no-store"}).then(r=>r.ok?r.json():{areas:[]})]).then(([serviceData,areaData])=>{if(active){setServices(serviceData.services??[]);setAreas(areaData.areas??[]);}}).catch(()=>{});return()=>{active=false;};},[]);
 
@@ -43,7 +43,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
   const next=pages.find(page=>page.slug===slug);if(!next)return;
   const hasDraft=next.draft_content!==null&&next.draft_content!==undefined;
   const content=asRecord(hasDraft?next.draft_content:next.is_published?next.content:publicWebsiteFallbackContent(next.slug));
-  const builder=content.builder&&typeof content.builder==="object"?content.builder:defaultWebsiteBuilderData(next.slug,next.draft_title??next.title,content);
+  const builder=content.builder&&typeof content.builder==="object"?content.builder:defaultWebsiteBuilderData(next.slug,next.draft_title??next.title,content,business);
   setSelectedSlug(slug);setEditorData(builder);setPageTitle(next.draft_title??next.title);setSeoTitle(next.draft_meta_title??next.meta_title??"");setSeoDescription(next.draft_meta_description??next.meta_description??"");setDirty(false);setNotice("Editing "+pageLabel(slug)+".");
  }
 
