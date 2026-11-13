@@ -19,7 +19,7 @@ test("scope validation rejects unknown permissions", () => {
 
 test("revoked and expired credentials are inactive", () => {
   const now = new Date("2026-11-14T00:00:00Z");
-  assert.equal(isIntegrationCredentialActive({ revoked_at: null, expires_at: null }, now), true);
+  assert.equal(isIntegrationCredentialActive({ revoked_at: null, expires_at: null, is_enabled: true }, now), true);\n  assert.equal(isIntegrationCredentialActive({ revoked_at: null, expires_at: null, is_enabled: false }, now), false);
   assert.equal(isIntegrationCredentialActive({ revoked_at: "2026-11-13T00:00:00Z" }, now), false);
   assert.equal(isIntegrationCredentialActive({ revoked_at: null, expires_at: "2026-11-13T00:00:00Z" }, now), false);
 });
