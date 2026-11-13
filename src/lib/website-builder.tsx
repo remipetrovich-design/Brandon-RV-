@@ -7,7 +7,8 @@ type BuilderArea={id:string;name:string;description:string|null;suburbs:string[]
 
 export function createWebsiteBuilderConfig(data:{services?:BuilderService[];areas?:BuilderArea[];isEditing?:boolean}={}){
  const services=data.services??[];
- const areas=data.areas??[];\n const isEditing=data.isEditing===true;
+ const areas=data.areas??[];
+ const isEditing=data.isEditing===true;
  return {
   categories:{
    content:{title:"Page content",components:["Hero","Heading","TextBlock","ImageBlock","Spacer","FAQList","GalleryGrid","ProcessSteps"]},
