@@ -275,3 +275,17 @@ test("unpublished database flags do not incorrectly label a route as offline whe
  has(workspace,"Database content published");
  has(workspace,"Current public website layout");
 });
+
+test("homepage opens as individually draggable sections matching the current public layout",async()=>{
+ const config=await source("../src/lib/website-builder.tsx");
+ has(config,'content:[{type:"HomeHero"');
+ for(const block of ["HomeHero","HomeQuickFacts","HomeServices","HomeProcess","HomeValues","HomeCTA"])has(config,'type:"'+block+'"');
+ has(config,'permissions:{insert:false,delete:false,duplicate:false,edit:true,drag:true}');
+});
+
+test("unpublished rows use the public route fallback until the visual version is published",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ has(workspace,"selectedPage?.is_published?selectedPage?.content:publicWebsiteFallbackContent");
+ has(workspace,"next.is_published?next.content:publicWebsiteFallbackContent");
+ has(workspace,"const content={...storedContent,builder:data}");
+});
