@@ -47,3 +47,12 @@ test("quote-specific PATCH route retains atomic issue and customer email behavio
  assert.match(route,/Your Brandon RV quote/);
  assert.match(route,/sendEmail/);
 });
+
+
+test("accepted quote Workcard selector disambiguates customer and enquiry relationships",async()=>{
+ const route=await read("../src/app/api/admin/jobs/route.ts");
+ assert.match(route,/users!quotes_user_id_users_fkey\(full_name\)/);
+ assert.match(route,/enquiries!quotes_enquiry_id_fkey\(contact_name,request_number,request_type,archived_at\)/);
+ assert.match(route,/status\",\"accepted/);
+ assert.match(route,/workcard_review_status:\"pending_review\"/);
+});
