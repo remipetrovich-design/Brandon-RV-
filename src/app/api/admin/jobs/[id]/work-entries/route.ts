@@ -20,15 +20,23 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
  const {id}=await params;if(!idPattern.test(id))return jsonError("Invalid Workcard ID.");
  const db=database(),businessId=access.membership!.business_id;
- const {data:job,error}=await db.from("jobs").select("id,job_number,title,status,priority,scope_of_work,customer_visible_notes,internal_notes,guest_name,guest_email,estimated_hours,actual_hours,work_summary,scheduled_start,scheduled_end,worker_signed_off_at,senior_approval_status,customer_approval_status,customers:users!jobs_customer_id_users_fkey(full_name,email,phone),quotes!jobs_quote_id_fkey(quote_number,status,total,enquiries(request_number,vehicle_description,vehicles(make,model,year,registration,vin))),appointments(status,starts_at,ends_at,location,vehicles(make,model,year,registration,vin))").eq("id",id).eq("business_id",businessId).maybeSingle();
- if(error){console.error("Workcard lookup failed",error);return jsonError("Could not load Workcard details.",500);}
- if(!job)return jsonError("Workcard not found.",404);
- const [{data:entries,error:entryError},{data:services,error:serviceError}]=await Promise.all([
-  db.from("job_work_entries").select("id,entry_type,description,quantity,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id,staff_id,occurred_at,services(name)").eq("business_id",businessId).eq("job_id",id).order("created_at"),
-  db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
+ const {data:baseJob,error:jobError}=await db.from("jobs")
+  .select("id,job_number,title,status,priority,scope_of_work,customer_visible_notes,internal_notes,guest_name,guest_email,estimated_hours,actual_hours,work_summary,scheduled_start,scheduled_end,worker_signed_off_at,senior_approval_status,customer_approval_status,appointment_id,quote_id,customers:users!jobs_customer_id_users_fkey(full_name,email,phone)")
+  .eq("id",id).eq("business_id",businessId).maybeSingle();
+ if(jobError){console.error("Workcard base query failed",jobError);return jsonError("Could not load Workcard customer and job details.",500);}
+ if(!baseJob)return jsonError("Workcard not found.",404);
+ const [quoteResult,appointmentResult,entriesResult,servicesResult]=await Promise.all([
+  baseJob.quote_id?db.from("quotes").select("quote_number,status,total,enquiries:enquiries!quotes_enquiry_id_fkey(request_number,vehicle_description,vehicles:vehicles!enquiries_vehicle_id_fkey(make,model,year,registration,vin))").eq("id",baseJob.quote_id).eq("business_id",businessId).maybeSingle():Promise.resolve({data:null,error:null}),
+  baseJob.appointment_id?db.from("appointments").select("status,starts_at,ends_at,location,vehicles:vehicles!appointments_vehicle_id_fkey(make,model,year,registration,vin)").eq("id",baseJob.appointment_id).eq("business_id",businessId).maybeSingle():Promise.resolve({data:null,error:null}),
+  db.from("job_work_entries").select("id,entry_type,description,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id,services:services!job_work_entries_service_id_fkey(name)").eq("business_id",businessId).eq("job_id",id).order("created_at"),
+  db.from("services").select("id,name,category,price_from").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
  ]);
- if(entryError||serviceError){console.error("Workcard details query failed",{entryError,serviceError});return jsonError("Could not load Workcard entries or service presets.",500);}
- return Response.json({job,entries:entries??[],services:services??[]});
+ if(quoteResult.error){console.error("Workcard quote query failed",quoteResult.error);return jsonError("Could not load the Workcard quote and enquiry details.",500);}
+ if(appointmentResult.error){console.error("Workcard appointment query failed",appointmentResult.error);return jsonError("Could not load the Workcard booking and vehicle details.",500);}
+ if(entriesResult.error){console.error("Workcard entries query failed",entriesResult.error);return jsonError("Could not load Workcard work entries.",500);}
+ if(servicesResult.error){console.error("Workcard service presets query failed",servicesResult.error);return jsonError("Could not load Workcard service presets.",500);}
+ const job={...baseJob,quotes:quoteResult.data,appointments:appointmentResult.data};
+ return Response.json({job,entries:entriesResult.data??[],services:servicesResult.data??[]});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
