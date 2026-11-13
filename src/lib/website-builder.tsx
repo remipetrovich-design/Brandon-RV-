@@ -61,7 +61,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
     render:({heading,text,label}:any)=><section className="home-final-cta"><div className="shell home-final-cta-inner"><div><h2>{heading}</h2><p>{text}</p></div><div className="home-final-cta-actions"><Link className="button button-primary" href="/request-quote">{label} <span aria-hidden="true">→</span></Link></div></div></section>
    },
    RequestQuoteForm:{
-    permissions:{delete:false,duplicate:false,edit:false,drag:true},
+    permissions:{insert:false,delete:false,duplicate:false,edit:false,drag:true},
     fields:{},
     defaultProps:{},
     render:()=> <section className="content-section"><div className="shell"><EnquiryForm preview={isEditing}/></div></section>
@@ -73,7 +73,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
     render:()=> <section className="content-section"><div className="shell"><WebsiteGeneralEnquiryBlock preview={isEditing}/></div></section>
    },
    ServicesFeed:{
-    permissions:{delete:false,duplicate:false,edit:true,drag:true},
+    permissions:{insert:false,delete:false,duplicate:false,edit:true,drag:true},
     fields:{heading:{type:"text"},intro:{type:"textarea"}},
     defaultProps:{heading:"Our services",intro:"Services currently approved and published by Brandon RV."},
     render:({heading,intro}:any)=><section className="content-section brv-combined-services"><div className="shell"><h2>{heading}</h2><p>{intro}</p>{services.length?<div className="detail-list">{services.map(service=><article className="detail-item" key={service.id}><h3>{service.name}</h3><p>{service.description??"Contact Brandon RV to discuss this service."}</p>{service.pricing_label&&<strong>{service.pricing_label}</strong>}{service.price_from!==null&&<strong>From ${Number(service.price_from).toFixed(2)} AUD</strong>}</article>)}</div>:<p>Service details are being updated. Contact Brandon RV to discuss your requirements.</p>}</div></section>
