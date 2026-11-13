@@ -1,4 +1,6 @@
 import Link from "next/link";
+import EnquiryForm from "@/components/enquiry-form";
+import GeneralEnquiryForm from "@/components/general-enquiry-form";
 
 type BuilderService={id:string;name:string;description:string|null;price_from:number|null;pricing_label:string|null};
 type BuilderArea={id:string;name:string;description:string|null;suburbs:string[]|null;postcodes:string[]|null;travel_fee:number|null;radius_km:number|null};
@@ -9,7 +11,7 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
  return {
   categories:{
    content:{title:"Page content",components:["Hero","Heading","TextBlock","ImageBlock","Spacer","FAQList","GalleryGrid"]},
-   brandon:{title:"Brandon RV connected content",components:["RequestQuoteCTA","ServicesFeed","ServiceAreasFeed"]}
+   brandon:{title:"Protected Brandon RV components",components:["RequestQuoteCTA","RequestQuoteForm","GeneralEnquiryForm","ServicesFeed","ServiceAreasFeed"]}
   },
   components:{
    Hero:{
@@ -51,6 +53,16 @@ export function createWebsiteBuilderConfig(data:{services?:BuilderService[];area
     fields:{heading:{type:"text"},text:{type:"textarea"},label:{type:"text"}},
     defaultProps:{heading:"Need a hand with your RV?",text:"Send through the vehicle details and what needs attention. Brandon RV will review the request and come back to you.",label:"Request a quote"},
     render:({heading,text,label}:any)=><section className="home-final-cta"><div className="shell home-final-cta-inner"><div><h2>{heading}</h2><p>{text}</p></div><div className="home-final-cta-actions"><Link className="button button-primary" href="/request-quote">{label} <span aria-hidden="true">→</span></Link></div></div></section>
+   },
+   RequestQuoteForm:{
+    fields:{},
+    defaultProps:{},
+    render:()=> <section className="content-section"><div className="shell"><EnquiryForm/></div></section>
+   },
+   GeneralEnquiryForm:{
+    fields:{},
+    defaultProps:{},
+    render:()=> <section className="content-section"><div className="shell"><GeneralEnquiryForm/></div></section>
    },
    ServicesFeed:{
     fields:{heading:{type:"text"},intro:{type:"textarea"}},
