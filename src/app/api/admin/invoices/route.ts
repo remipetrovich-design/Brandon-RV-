@@ -2,7 +2,7 @@ import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("invoices.manage");if(access.response)return access.response;const db=database(),businessId=access.membership!.business_id;
- const {data:jobs,error}=await db.from("jobs").select("id,job_number,title,customer_id,quote_id").eq("business_id",businessId).eq("status","completed").order("completed_at",{ascending:false});
+ const {data:jobs,error}=await db.from("jobs").select("id,job_number,title,customer_id,quote_id,customers(full_name)").eq("business_id",businessId).eq("status","completed").order("completed_at",{ascending:false});
  if(error)return jsonError("Could not load completed jobs.",500);
  const ids=(jobs??[]).map(x=>x.id);
  const {data:existing,error:existingError}=ids.length?await db.from("invoices").select("job_id").eq("business_id",businessId).in("job_id",ids):{data:[],error:null};
