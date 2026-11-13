@@ -8,14 +8,14 @@ type Props={id:string;slug:string;title:string;content:unknown;metaTitle:string|
 
 export default function AdminWebsiteEditor({id,slug,title,content,metaTitle,metaDescription}:Props){
  const legacy=content&&typeof content==="object"&&!Array.isArray(content)?content as Record<string,unknown>:{};
- const initialBuilder=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(slug,title,legacy),[id,slug,title]);
+ const initialBuilder=useMemo(()=>legacy.builder&&typeof legacy.builder==="object"?legacy.builder:defaultWebsiteBuilderData(slug,title,legacy),[id,slug,title,content]);
  const [pageTitle,setPageTitle]=useState(title);
  const [seoTitle,setSeoTitle]=useState(metaTitle??"");
  const [seoDescription,setSeoDescription]=useState(metaDescription??"");
  const [notice,setNotice]=useState("Changes are saved as a draft. Publishing the page remains a separate admin action.");
  const [busy,setBusy]=useState(false);
  const [services,setServices]=useState<any[]>([]);
- const [areas,setAreas]=useState<any[]>([]);
+ const [areas,setAreas]=useState<any[]>([]);\n const builderConfig=useMemo(()=>createWebsiteBuilderConfig({services,areas,isEditing:true}) as any,[services,areas]);
  useEffect(()=>{let active=true;void Promise.all([fetch("/api/public/services",{cache:"no-store"}).then(r=>r.ok?r.json():{services:[]}),fetch("/api/public/service-areas",{cache:"no-store"}).then(r=>r.ok?r.json():{areas:[]})]).then(([serviceData,areaData])=>{if(active){setServices(serviceData.services??[]);setAreas(areaData.areas??[]);}}).catch(()=>{});return()=>{active=false;};},[]);
 
  async function save(data:unknown){
@@ -41,7 +41,7 @@ export default function AdminWebsiteEditor({id,slug,title,content,metaTitle,meta
    <p className="panel-footnote">Drag and drop page content and protected Brandon RV components. You can move the quote form, general enquiry form, published services and service areas, but cannot change their fields, submission logic, records or admin workflows.</p>
   </div>
   <div style={{minHeight:720,borderTop:"1px solid var(--line, #d8e0e5)"}}>
-   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={createWebsiteBuilderConfig({services,areas,isEditing:true}) as any} data={initialBuilder as any} onPublish={save}/>
+   <Puck key={id} dictionary={{"header-publish":"Save draft"}} config={builderConfig} data={initialBuilder as any} onPublish={save}/>
   </div>
   <p className="inline-notice" role="status" style={{margin:16}}>{busy?"Saving draft…":notice}</p>
  </div>;
