@@ -114,11 +114,11 @@ export function defaultWebsiteBuilderData(pageId:string,title:string,legacy:Reco
  }
  if(pageId==="faq"){
   const items=Array.isArray(legacy.items)?legacy.items.filter((item:any)=>item&&typeof item.question==="string"&&typeof item.answer==="string").map((item:any)=>({question:item.question,answer:item.answer})):[];
-  return {root:{props:{title}},content:[hero,{type:"FAQList",props:{id:pageId+"-faq",heading:"Frequently asked questions",items}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote",heading:"Have a question about a job?",text:"Send through the vehicle details and what needs attention.",label:"Request a quote"}}]};
+  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"A few details about mobile service, enquiries and what to expect before a booking is confirmed."}},{type:"FAQList",props:{id:pageId+"-faq",heading:"Frequently asked questions",items}},{type:"RequestQuoteCTA",props:{id:pageId+"-quote",heading:"Have a question about a job?",text:"Send through the vehicle details and what needs attention.",label:"Request a quote"}}]};
  }
  if(pageId==="gallery"){
   const items=Array.isArray(legacy.photos)?legacy.photos.filter((item:any)=>item&&typeof item.title==="string"&&typeof item.url==="string").map((item:any)=>({title:item.title,description:String(item.description??""),url:item.url,alt:item.title})):[];
-  return {root:{props:{title}},content:[hero,{type:"GalleryGrid",props:{id:pageId+"-gallery",heading:"Previous work",items}}]};
+  return {root:{props:{title}},content:[hero,{type:"TextBlock",props:{id:pageId+"-intro",heading:"",text:intro||"A selection of genuine repairs and installations will appear here as completed work is documented and customer permission is confirmed."}},{type:"GalleryGrid",props:{id:pageId+"-gallery",heading:"Previous work",items}}]};
  }
  return {
   root:{props:{title}},
