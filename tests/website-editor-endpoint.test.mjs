@@ -235,6 +235,8 @@ test("website management opens one unified editor for every page",async()=>{
  has(workspace,"onChange={(data:any)=>{setEditorData(data);setDirty(true);}}");
  has(workspace,"onPublish={(data:any)=>void save(data)}");
  has(workspace,"window.confirm");
+ has(workspace,'"header-publish":"Save draft"');
+ has(workspace,'page.slug==="home"');
  has(admin,'if(section==="website")redirect("/admin/website-builder")');
 });
 
