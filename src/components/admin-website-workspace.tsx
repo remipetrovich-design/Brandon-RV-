@@ -16,7 +16,7 @@ const pageLabel=(slug:string)=>slug==="home"?"Home":slug.split("-").map(x=>x.cha
 
 export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
  const [pages,setPages]=useState(initialPages);
- const [selectedSlug,setSelectedSlug]=useState(initialPages[0]?.slug??"");
+ const [selectedSlug,setSelectedSlug]=useState(initialPages.find(page=>page.slug==="home")?.slug??initialPages[0]?.slug??"");
  const selectedPage=pages.find(page=>page.slug===selectedSlug)??pages[0];
  const sourceContent=selectedPage?.draft_content??selectedPage?.content;
  const legacy=asRecord(sourceContent);
@@ -73,7 +73,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages}:Props){
    </div>
    <p className="panel-footnote brv-builder-help">Choose a page above, then edit its layout below. On a phone, rotate to landscape if you need more room for the block library and settings. Protected enquiry forms and live admin-managed service data stay connected and cannot be broken.</p>
    <div className="brv-builder-canvas">
-    <Puck key={selectedPage.id} height="100%" viewports={[{width:390,height:"auto",icon:"Smartphone",label:"Phone"},{width:768,height:"auto",icon:"Tablet",label:"Tablet"},{width:1280,height:"auto",icon:"Monitor",label:"Desktop"},{width:"100%",height:"auto",label:"Full width"}]} config={builderConfig} data={editorData as any} onChange={(data:any)=>{setEditorData(data);setDirty(true);}} onPublish={(data:any)=>void save(data)}/>
+    <Puck key={selectedPage.id} dictionary={{"header-publish":"Save draft"}} height="100%" viewports={[{width:390,height:"auto",icon:"Smartphone",label:"Phone"},{width:768,height:"auto",icon:"Tablet",label:"Tablet"},{width:1280,height:"auto",icon:"Monitor",label:"Desktop"},{width:"100%",height:"auto",label:"Full width"}]} config={builderConfig} data={editorData as any} onChange={(data:any)=>{setEditorData(data);setDirty(true);}} onPublish={(data:any)=>void save(data)}/>
    </div>
    <p className="inline-notice brv-builder-notice" role="status">{busy?"Saving draft…":notice}</p>
   </section>
