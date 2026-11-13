@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 const source=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("authorised staff can approve quotes and completed Workcards they prepared or signed off",async()=>{
- const migration=await source("../supabase/migrations/20261114100000_allow_self_approval_for_authorised_staff.sql");
+ const migration=await source("../supabase/migrations/20261114133311_allow_self_approval_for_authorised_staff.sql");
  const quoteRoute=await source("../src/app/api/admin/quotes/[id]/approval/route.ts");
  const workcardRoute=await source("../src/app/api/admin/jobs/[id]/approval/route.ts");
  const workcardUi=await source("../src/components/admin-job-tools.tsx");
