@@ -7,7 +7,7 @@ export const INTEGRATION_SCOPES = [
   { group: "Workcards and work", scopes: ["workcards.read", "workcards.write", "workcards.assign", "workcards.approve", "workcards.complete", "work_entries.read", "work_entries.write", "tasks.read", "tasks.write"] },
   { group: "Parts and suppliers", scopes: ["parts.read", "parts.write", "suppliers.read", "suppliers.write", "supplier_orders.read", "supplier_orders.write"] },
   { group: "Invoices and finance", scopes: ["invoices.read", "invoices.draft", "invoices.issue", "payments.read", "payments.record", "expenses.read", "expenses.write"] },
-  { group: "Staff and workforce", scopes: ["staff.read", "staff.write", "time_entries.read", "time_entries.write", "leave.read", "leave.write", "payroll.read", "assets.read", "assets.write"] },
+  { group: "Staff and workforce", scopes: ["staff.read", "staff.write", "time_entries.read", "time_entries.write", "leave.read", "leave.write", "payroll.read", "assets.read", "assets.write", "onboarding.read", "onboarding.write"] },
   { group: "Administration", scopes: ["reports.read", "audit.read", "files.read", "files.write"] },
 ];
 
