@@ -18,7 +18,6 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const {data:job,error:jobError}=await db.from("jobs").select("id,job_number,status,appointment_id,quote_id,customer_id,user_id,guest_name,guest_email").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(jobError||!job)return jsonError("Workcard not found.",404);
   if(["completed","cancelled"].includes(job.status))return jsonError("A booking cannot be confirmed for a closed Workcard.",409);
-  if(!job.customer_id)return jsonError("This Workcard needs a linked customer record before a booking can be confirmed.",409);
   let quote:any=null,enquiryId:string|null=null,vehicleId:string|null=null;
   if(job.quote_id){
    const result=await db.from("quotes").select("id,status,enquiry_id").eq("id",job.quote_id).eq("business_id",businessId).maybeSingle();quote=result.data;
@@ -29,7 +28,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   let existing:any=null;
   let existingError:any=null;
   if(job.appointment_id){
-   const result=await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle();
+   const result=await db.from("appointments").select("id,status,quote_id,starts_at,ends_at,location,confirmed_by,confirmed_at,updated_at").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle();
    existing=result.data;existingError=result.error;
   }
   if(existingError)return jsonError("Could not load the customer's booking request.",500);
@@ -62,7 +61,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const linked=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at,status:"scheduled",updated_at:now}).eq("id",id).eq("business_id",businessId);
   if(linked.error){
    console.error("Workcard booking link failed",linked.error);
-   if(existing)await db.from("appointments").update({status:existing.status,starts_at:existing.starts_at,ends_at:existing.ends_at,location:existing.location,confirmed_by:null,confirmed_at:null,updated_at:new Date().toISOString()}).eq("id",appointment.id).eq("business_id",businessId);
+   if(existing)await db.from("appointments").update({status:existing.status,starts_at:existing.starts_at,ends_at:existing.ends_at,location:existing.location,confirmed_by:existing.confirmed_by??null,confirmed_at:existing.confirmed_at??null,updated_at:existing.updated_at??new Date().toISOString()}).eq("id",appointment.id).eq("business_id",businessId);
    else await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);
    return jsonError("Booking was not saved because it could not be linked to the Workcard.",500);
   }
