@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,isManagerOrAbove} from "../src/lib/user-role-policy.mjs";
+import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,isManagerOrAbove,BUILT_IN_STAFF_ROLES} from "../src/lib/user-role-policy.mjs";
 
 test("customer-only accounts have no employee access",()=>{
  assert.equal(hasEmployeeAccess({user_role:null,employment_status:null}),false);
@@ -58,4 +58,9 @@ test("every management and executive rank bypasses booking scheduling restrictio
 
 test("supervisors and workers retain configured booking restrictions",()=>{
  for(const role of ["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","accounts"]){assert.equal(isManagerOrAbove(role),false,role+" should retain booking restrictions");}
+});
+
+
+test("management aliases are recognised as built-in workforce roles",()=>{
+ for(const role of ["administrator","general_manager"])assert.ok(BUILT_IN_STAFF_ROLES.includes(role));
 });
