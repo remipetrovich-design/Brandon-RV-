@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,currentUser,currentMembership,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
 import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
@@ -6,17 +6,20 @@ export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
- const access=await authorizePermission("enquiries.view");if(access.response)return access.response;
+ const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
+ const membership=await currentMembership(user.id);if(!membership)return jsonError("Business access required.",403);
+ const [canViewAppointments,canManageAppointments]=await Promise.all([userHasPermission(user.id,"appointments.view"),userHasPermission(user.id,"appointments.manage")]);
+ if(!canViewAppointments&&!canManageAppointments)return jsonError("You do not have permission to view bookings.",403);
  const {id}=await params;
  if(!idPattern.test(id))return jsonError("Invalid Jobcard ID.");
- const db=database(),businessId=access.membership!.business_id;
+ const db=database(),businessId=membership.business_id;
  const {data:enquiry,error:enquiryError}=await db.from("enquiries").select("id,request_number,stage").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(enquiryError||!enquiry)return jsonError("Jobcard not found.",404);
  const {data:quotes,error:quoteError}=await db.from("quotes").select("id").eq("business_id",businessId).eq("enquiry_id",id);
  if(quoteError)return jsonError("Could not load Jobcard quote links.",500);
  const quoteIds=(quotes??[]).map(quote=>quote.id);
  const [byEnquiry,byQuote]=await Promise.all([
-  db.from("appointments").select("id,status,quote_id,enquiry_id,preferred_start,preferred_end,starts_at,ends_at,location,customer_notes,internal_notes,created_at,updated_at").eq("business_id",businessId).eq("enquiry_id",id).order("created_at",{ascending:false}),
+  db.from("appointments").select("id,status,quote_id,enquiry_id,preferred_start,starts_at,location,customer_notes,internal_notes,created_at,updated_at").eq("business_id",businessId).eq("enquiry_id",id).order("created_at",{ascending:false}),
   quoteIds.length?db.from("appointments").select("id,status,quote_id,enquiry_id,preferred_start,preferred_end,starts_at,ends_at,location,customer_notes,internal_notes,created_at,updated_at").eq("business_id",businessId).in("quote_id",quoteIds).order("created_at",{ascending:false}):Promise.resolve({data:[],error:null})
  ]);
  if(byEnquiry.error||byQuote.error)return jsonError("Could not load Jobcard booking requests.",500);
@@ -30,7 +33,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const jobs=[...(byQuoteJobs.data??[]),...(byAppointmentJobs.data??[])];
  const jobByQuote=new Map(jobs.filter(job=>job.quote_id).map(job=>[job.quote_id,job]));
  const jobByAppointment=new Map(jobs.filter(job=>job.appointment_id).map(job=>[job.appointment_id,job]));
- return Response.json({enquiry,bookings:appointments.map(appointment=>({...appointment,active:["requested","confirmed","rescheduled"].includes(appointment.status),workcard:jobByAppointment.get(appointment.id)??jobByQuote.get(appointment.quote_id)??null}))});
+ return Response.json({enquiry,bookings:appointments.map(appointment=>({...appointment,internal_notes:canManageAppointments?appointment.internal_notes:null,active:["requested","confirmed","rescheduled"].includes(appointment.status),workcard:jobByAppointment.get(appointment.id)??jobByQuote.get(appointment.quote_id)??null}))});
 }
 
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
