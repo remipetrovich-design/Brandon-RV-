@@ -15,7 +15,7 @@ type LinkedCustomer={id:string;full_name:string;email:string|null;phone:string|n
 type Vehicle={id:string;make:string|null;model:string|null;year:number|null;vehicle_type:string|null;registration:string|null;vin:string|null;notes:string|null};
 const stageGroups=[
  {label:"1 · Enquiry & assessment",values:["new","contacted","awaiting_information","assessment_required"]},
- {label:"2 · Quote & approval",values:["quote_in_progress","quote_sent","awaiting_approval","approved"]},
+ {label:"2 · Quote & approval",values:["quote_in_progress","quote_sent","awaiting_approval","approved","workcard_created"]},
  {label:"3 · Parts procurement",values:["parts_required","parts_ordered","parts_received"]},
  {label:"4 · Booking & scheduling",values:["ready_to_schedule","booking_requested","booked"]},
  {label:"5 · Work & quality",values:["work_in_progress","quality_check","ready_to_invoice"]},
