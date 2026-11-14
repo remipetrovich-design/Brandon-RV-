@@ -81,7 +81,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    unit_price:unitPrice,cost_unit_price:costUnitPrice,
    line_total:Number((quantityUsed*unitPrice).toFixed(2)),
    invoiceable:body.invoiceable===undefined?current.invoiceable:Boolean(body.invoiceable)&&quantityUsed>0&&["labour","parts"].includes(current.entry_type),
-   customer_visible:body.customerVisible===undefined?current.customer_visible:Boolean(body.customerVisible),
+   customer_visible:(body.customerVisible===undefined?current.customer_visible:Boolean(body.customerVisible))&&(quantityUsed>0||!["labour","parts"].includes(current.entry_type)),
   };
   if(body.partNumber!==undefined)patch.part_number=String(body.partNumber).trim().slice(0,100)||null;
   if(body.supplierName!==undefined)patch.supplier_name=String(body.supplierName).trim().slice(0,160)||null;
