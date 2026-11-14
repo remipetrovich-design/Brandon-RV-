@@ -12,13 +12,13 @@ const blank=()=>({entry_type:"parts" as "parts"|"labour"|"note"|"test",descripti
 function WorkcardReadOnly({job,entries}:{job:Job;entries:Entry[]}) {
  const vehicle=[job.appointments?.vehicles?.year??job.quotes?.enquiries?.vehicles?.year,job.appointments?.vehicles?.make??job.quotes?.enquiries?.vehicles?.make,job.appointments?.vehicles?.model??job.quotes?.enquiries?.vehicles?.model].filter(Boolean).join(" ");
  return <section className="brv-workcard-readonly" aria-label="Workcard details">
-  <header><span className="panel-kicker">WORKER VIEW</span><h2>{job.job_number} · {job.title}</h2><p>Status: {job.status.replaceAll("_"," ")}</p></header>
+  <header><span className="panel-kicker">READ-ONLY VIEW</span><h2>{job.job_number} · {job.title}</h2><p>Status: {job.status.replaceAll("_"," ")}</p></header>
   <div className="brv-quote-preview">
    <div><span>Customer</span><strong>{job.customers?.full_name??job.guest_name??"Customer not linked"}</strong></div>
    <div><span>Contact</span><strong>{job.customers?.phone??job.customers?.email??job.guest_email??"Not supplied"}</strong></div>
    <div><span>Vehicle</span><strong>{vehicle||"Not recorded"}</strong></div>
    <div><span>Registration</span><strong>{job.appointments?.vehicles?.registration??job.quotes?.enquiries?.vehicles?.registration??"Not supplied"}</strong></div>
-   <div><span>Booking</span><strong>{job.appointments?.starts_at?new Date(job.appointments.starts_at).toLocaleString("en-AU"):"Not scheduled"}</strong></div>
+   <div><span>Booking</span><strong>{job.appointments?.starts_at?"Confirmed: "+new Date(job.appointments.starts_at).toLocaleString("en-AU"):job.appointments?.preferred_start?"Requested: "+new Date(job.appointments.preferred_start).toLocaleString("en-AU"):"Not scheduled"}</strong></div>
    <div><span>Service location</span><strong>{job.appointments?.location??job.quotes?.enquiries?.location??"Not recorded"}</strong></div>
   </div>
   <section><h3>Approved work scope</h3><p>{job.scope_of_work??"No approved scope recorded."}</p></section>
