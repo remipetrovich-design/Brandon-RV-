@@ -21,11 +21,11 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const access=await authorizePermission("jobs.view");if(access.response)return access.response;
  const {id}=await params;if(!idPattern.test(id))return jsonError("Invalid Workcard ID.");
  const db=database(),businessId=access.membership!.business_id,userId=access.user!.id;
- const [canManage,canViewCosts,canViewSales,canViewSuppliers]=await Promise.all([
-  userHasPermission(userId,"jobs.manage"),userHasPermission(userId,"expenses.view"),
+ const [canManage,canManageBookings,canViewCosts,canViewSales,canViewSuppliers]=await Promise.all([
+  userHasPermission(userId,"jobs.manage"),userHasPermission(userId,"appointments.manage"),userHasPermission(userId,"expenses.view"),
   userHasPermission(userId,"invoices.view"),userHasPermission(userId,"suppliers.view")
  ]);
- if(!canManage){
+ if(!canManage&&!canManageBookings){
   const {data:staff,error:staffError}=await db.from("staff").select("id").eq("user_id",userId).eq("business_id",businessId).eq("employment_status","active").maybeSingle();
   if(staffError||!staff)return jsonError("You can only view Workcards assigned to your employee account.",403);
   const {data:assignment,error:assignmentError}=await db.from("job_assignments").select("id").eq("business_id",businessId).eq("job_id",id).eq("staff_id",staff.id).in("status",["assigned","accepted","completed"]).maybeSingle();
@@ -65,7 +65,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   invoiceable:canViewSales?entry.invoiceable:false
  }));
  const services=(servicesResult.data??[]).map(service=>({...service,price_from:canViewSales?service.price_from:null}));
- return Response.json({job,entries,services,permissions:{canManage,canViewCosts,canViewSales,canViewSuppliers,canManageCosts:await userHasPermission(userId,"expenses.manage"),canManageSales:await userHasPermission(userId,"invoices.manage"),canManageSuppliers:await userHasPermission(userId,"suppliers.manage")}});
+ return Response.json({job,entries,services,permissions:{canManage,canManageBookings,canViewCosts,canViewSales,canViewSuppliers,canManageCosts:await userHasPermission(userId,"expenses.manage"),canManageSales:await userHasPermission(userId,"invoices.manage"),canManageSuppliers:await userHasPermission(userId,"suppliers.manage")}});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
