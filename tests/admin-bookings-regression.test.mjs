@@ -88,6 +88,7 @@ test("Jobcard booking does not require an agreed finish time and manager-level r
  assert.match(calendarRoute,/isManagerOrAbove/);
  assert.match(calendarEditRoute,/isManagerOrAbove/);
  assert.match(calendarEditRoute,/update\.ends_at=endsAt\?\.toISOString\(\)\?\?null/);
+ assert.match(calendarEditRoute,/update\.ends_at!==undefined\?update\.ends_at:null/);
  assert.match(roles,/isManagerOrAbove/);
  assert.match(policy,/bypassRestrictions/);
  assert.match(policy,/const localParts/);
