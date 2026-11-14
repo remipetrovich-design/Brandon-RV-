@@ -142,3 +142,12 @@ test("worker Workcard includes the original Jobcard description, contact context
  for(const field of ["requested_service","description","location","contact_name","enquiry_attachments","createSignedUrl"])assert.ok(route.includes(field),"Missing original Jobcard context: "+field);
  for(const token of ["ORIGINAL JOBCARD REQUEST","jobcardAttachments","Original customer Jobcard attachment"])assert.ok(ui.includes(token),"Missing original Jobcard details on worker Workcard: "+token);
 });
+
+
+test("workers cannot change accepted quantities or customer prices outside an approved variation",async()=>{
+ const route=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
+ assert.ok(route.includes("const quantityRequired=Number(current.quantity_required)"),"Approved quantities must remain fixed.");
+ assert.ok(route.includes("const unitPrice=Number(current.unit_price)"),"Customer prices must remain fixed to the approved quote.");
+ assert.ok(route.includes("Actual use exceeds the approved quantity"),"Extra quantity requires an approved variation.");
+ assert.ok(route.includes("Only items from an accepted quote or approved variation can be marked invoiceable"),"Unapproved worker-added lines cannot be invoiced.");
+});
