@@ -26,6 +26,33 @@ const stages=stageGroups.flatMap(group=>group.values);
 const localDateTime=(value:string|null|undefined)=>value?new Date(new Date(value).getTime()-new Date(value).getTimezoneOffset()*60000).toISOString().slice(0,16):"";
 const pretty=(v:string)=>v?.replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase())??"";
 const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v||0));
+const nextAction:Record<string,string>={
+ new:"Review the request and contact the customer.",
+ contacted:"Confirm the details or request any missing information.",
+ awaiting_information:"Wait for the customer's details, then assess the request.",
+ assessment_required:"Complete the assessment before preparing a quote.",
+ quote_in_progress:"Prepare an itemised quote for the approved scope.",
+ quote_sent:"Wait for the customer's decision.",
+ awaiting_approval:"Wait for the customer's decision.",
+ approved:"Create the Workcard and complete its setup review.",
+ workcard_created:"Review the Workcard and assign an eligible worker.",
+ parts_required:"Identify required parts and confirm any scope changes with the customer.",
+ parts_ordered:"Track the supplier order and verify delivery.",
+ parts_received:"Check received parts, then arrange the booking.",
+ ready_to_schedule:"Agree a date and start time, then confirm the booking.",
+ booking_requested:"Review the requested time and confirm or reschedule it.",
+ booked:"Have the assigned worker accept the Workcard and complete the approved work.",
+ work_in_progress:"Record actual work, parts, tests and worker sign-off.",
+ quality_check:"Complete the separate senior review.",
+ ready_to_invoice:"Prepare the final itemised invoice.",
+ invoiced:"Track the invoice and payment.",
+ awaiting_payment:"Reconcile payment when it is received.",
+ paid:"Complete customer handover and close the Jobcard.",
+ completed:"Jobcard complete.",
+ declined:"The quote was declined and the Jobcard is closed.",
+ cancelled:"The Jobcard was cancelled.",
+ closed:"The Jobcard is closed."
+};
 
 export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,canManageQuotes=false,canManageJobs=false,canManageBookings=false}:{enquiryId:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canManageJobs?:boolean;canManageBookings?:boolean}){
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
@@ -79,9 +106,13 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  }
  if(!record)return <section className="portal-panel"><p>{notice||"Loading Jobcard…"}</p></section>;
  const isQuoteRequest=record.request_type==="quote_request",acceptedQuote=quotes.find(q=>q.status==="accepted"),activeQuotes=[...quotes].sort((a,b)=>b.revision_number-a.revision_number);
+ const currentWorkflowStep=stageGroups.slice(0,6).findIndex(group=>group.values.includes(record.stage));
+ const isClosedOutcome=["declined","cancelled","closed"].includes(record.stage);
  return <div className="brv-enquiry-editor brv-ticket-workspace brv-ticket-tabbed-workspace">
   <section className="portal-panel brv-ticket-summary">
    <div className="portal-panel-heading"><div><span className="panel-kicker">{isQuoteRequest?"CUSTOMER JOBCARD":"CUSTOMER ENQUIRY"} · {record.request_number}</span><h2>{record.requested_service||"Customer request"}</h2><p>{record.contact_name} · Received {new Date(record.created_at).toLocaleString("en-AU")} · {pretty(record.source??"website")}</p></div><span className="status-pill">{pretty(record.stage)}</span></div>
+   {isQuoteRequest&&<div className="brv-jobcard-next-step"><span className="panel-kicker">{isClosedOutcome?"JOB OUTCOME":"NEXT STEP"}</span><strong>{nextAction[record.stage]??"Review the Jobcard and choose the next appropriate action."}</strong></div>}
+   {isQuoteRequest&&!isClosedOutcome&&<ol className="brv-jobcard-progress" aria-label="Jobcard workflow progress">{stageGroups.slice(0,6).map((group,index)=><li key={group.label} className={index<currentWorkflowStep?"complete":index===currentWorkflowStep?"current":""} aria-current={index===currentWorkflowStep?"step":undefined}><span>{index+1}</span><small>{group.label.replace(/^\d+ · /,"")}</small></li>)}</ol>}
   </section>
   <div className="brv-ticket-tabs" role="tablist" aria-label="Request workspace" onKeyDown={handleTabKeyDown}>
    <button id="brv-tab-customer" type="button" role="tab" aria-selected={selectedTab==="customer"} aria-controls="brv-panel-customer" tabIndex={selectedTab==="customer"?0:-1} onClick={()=>setSelectedTab("customer")}>Customer &amp; Vehicle</button>
@@ -162,7 +193,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
   {isQuoteRequest&&<section id="brv-panel-booking" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-booking" hidden={selectedTab!=="booking"}>
    <div className="portal-panel-heading"><div><span className="panel-kicker">BOOKING</span><h2>Booking requests &amp; appointments</h2><p>Manage each customer request here. Confirmations and changes synchronise to the linked Workcard.</p></div><a className="button button-secondary" href="/admin/appointments">Open bookings calendar →</a></div>
    {bookings.length?bookings.map(b=><article className="brv-ticket-quote booking-action" key={b.id}><div><strong>{pretty(b.status)} · {b.workcard?.job_number??"Workcard not created yet"}</strong><span>Customer preferred: {b.preferred_start?new Date(b.preferred_start).toLocaleString("en-AU"):"Not supplied"}</span><span>Confirmed: {b.starts_at?new Date(b.starts_at).toLocaleString("en-AU"):"Not confirmed"}</span><span>Location: {b.location??"Not supplied"}</span><span>Customer notes: {b.customer_notes??"None"}</span>{b.workcard&&<a className="text-link" href={"/admin/jobs/"+b.workcard.id}>Open linked Workcard →</a>}{!canManageBookings&&<p className="panel-footnote">View only. Booking changes require appointment management permission.</p>}
-    {canManageBookings&&["requested","confirmed","rescheduled"].includes(b.status)&&<div className="brv-workcard-entry-form"><h3>{b.status==="requested"?"Confirm customer booking": "Change confirmed booking"}</h3><div className="form-grid"><label>Agreed start<input type="datetime-local" value={bookingEdits[b.id]?.starts_at??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],starts_at:e.target.value}}))}/></label></div><label>Service location<input value={bookingEdits[b.id]?.location??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],location:e.target.value}}))} maxLength={200}/></label><div className="brv-ticket-action-buttons">{b.status!=="confirmed"&&<button type="button" className="button button-primary" disabled={busy} onClick={()=>void updateBooking(b.id,"confirm")}>Confirm booking</button>}<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"reschedule")}>Reschedule booking</button>{confirmCancelId===b.id?<><button type="button" className="button brv-action-danger" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Confirm cancellation</button><button type="button" className="button button-secondary" disabled={busy} onClick={()=>setConfirmCancelId(null)}>Keep booking</button></>:<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Cancel booking</button>}</div></div>}
+    {canManageBookings&&["requested","confirmed","rescheduled"].includes(b.status)&&<div className="brv-workcard-entry-form"><h3>{b.status==="requested"?"Confirm customer booking": "Change confirmed booking"}</h3><div className="form-grid"><label>Booking date and start time<input type="datetime-local" value={bookingEdits[b.id]?.starts_at??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],starts_at:e.target.value}}))}/></label></div><label>Service location<input value={bookingEdits[b.id]?.location??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],location:e.target.value}}))} maxLength={200}/></label><div className="brv-ticket-action-buttons">{b.status!=="confirmed"&&<button type="button" className="button button-primary" disabled={busy} onClick={()=>void updateBooking(b.id,"confirm")}>Confirm booking</button>}<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"reschedule")}>Reschedule booking</button>{confirmCancelId===b.id?<><button type="button" className="button brv-action-danger" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Confirm cancellation</button><button type="button" className="button button-secondary" disabled={busy} onClick={()=>setConfirmCancelId(null)}>Keep booking</button></>:<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Cancel booking</button>}</div></div>}
    </div></article>):<p className="panel-footnote">No booking requests or appointments are linked to this Jobcard yet.</p>}
   </section>}
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
