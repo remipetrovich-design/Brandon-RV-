@@ -56,12 +56,12 @@ test("Workcard part-order fields preserve ordered, received and outstanding quan
 
 test("worker Workcard displays prepared scope and parts, then records actual completion details",async()=>{
  const ui=await read("../src/components/staff-work-orders.tsx");
- for(const token of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","Update prepared item","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
+ for(const token of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","Save prepared item","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
 });
 
 test("Parts needed exposes independent add, edit, update and delete controls with research fields",async()=>{
  const ui=await read("../src/components/admin-workcard-management.tsx");
- for(const token of ["Add part","Edit part","Remove part","addEntry()","editEntry(entry)","removeEntry(x.id)","quantity_required","quantity_used","part_number","supplier_name","cost_unit_price","!x.source_quote_item_id"])assert.ok(ui.includes(token),"Missing Parts needed control, independent-source filter or field: "+token);
+ for(const token of ["Add part","Edit part","Remove part","addEntry()","editEntry(entry)","removeEntry(x.id)","quantity_required","quantity_used","part_number","supplier_name","cost_unit_price","entries.filter(x=>x.entry_type===\"parts\")"])assert.ok(ui.includes(token),"Missing Parts needed control, independent-source filter or field: "+token);
  const entriesApi=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
  assert.ok(entriesApi.includes("id,source_quote_item_id,entry_type"),"The Parts needed view must be able to distinguish quote-linked lines.");
 });
@@ -113,4 +113,21 @@ test("final invoice uses actual Workcard entries, never the original quote total
  for(const field of ['from("job_work_entries")','eq("invoiceable",true)',"quantity_used","invoice.created_from_actual_work"])assert.ok(invoice.includes(field));
  assert.ok(!invoice.includes("quote.subtotal"));
  assert.ok(!invoice.includes("quote.total"));
+});
+
+
+test("worker sign-off creates charges only from actual invoiceable usage, never planned quote quantities",async()=>{
+ const route=await read("../src/app/api/staff/jobs/[id]/status/route.ts");
+ assert.ok(route.includes('x.invoiceable&&Number(x.quantity_used)>0'),"Only actual, invoiceable use can be billed.");
+ assert.ok(route.includes("quantity:Number(x.quantity_used)"),"Invoice quantities must use actual usage.");
+ assert.ok(!route.includes("if(!items.length&&job.quote_id)"),"The accepted quote must never be used as a fallback invoice.");
+ assert.ok(route.includes("Planned quote quantities are never substituted"),"The intended separation must remain explicit.");
+});
+
+test("worker completion data is returned on the original customer Jobcard",async()=>{
+ const page=await read("../src/app/portal/jobcards/[id]/page.tsx");
+ assert.ok(page.includes("in("quote_id",quoteIds)"),"The original Jobcard must load its linked Workcard.");
+ assert.ok(page.includes("work_summary"),"The worker completion summary must return to the Jobcard.");
+ assert.ok(page.includes('eq("customer_visible",true)'),"Only customer-visible completed work may be shown.");
+ assert.ok(page.includes("CustomerWorkApproval"),"The customer Jobcard must expose the review and handover step.");
 });
