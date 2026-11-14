@@ -76,7 +76,7 @@ export async function POST(request:Request){
     return jsonError("Could not prepare the Workcard from the accepted quote. No incomplete Workcard was kept.",500);
    }
   }
-  const {error:jobcardError}=await db.from("enquiries").update({stage:"converted",status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
+  const {error:jobcardError}=await db.from("enquiries").update({stage:"workcard_created",status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
   if(jobcardError){
    console.error("Jobcard conversion update failed",jobcardError);
    await db.from("job_work_entries").delete().eq("job_id",job.id).eq("business_id",businessId);
@@ -84,7 +84,7 @@ export async function POST(request:Request){
    return jsonError("Could not link the Workcard back to its original Jobcard. No incomplete conversion was kept.",500);
   }
   if(enquiry.stage!=="converted"){
-   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage??null,to_stage:"converted",changed_by:access.user!.id,note:"Accepted quote converted into a prepared Workcard."});
+   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage??null,to_stage:"workcard_created",changed_by:access.user!.id,note:"Accepted quote converted into a prepared Workcard."});
   }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review",prepared_entry_count:plannedEntries.length}});
   return Response.json({job},{status:201});
