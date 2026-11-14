@@ -8,8 +8,8 @@ const idPattern=/^[0-9a-f-]{36}$/i;
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
  const membership=await currentMembership(user.id);if(!membership)return jsonError("Business access required.",403);
- const [canViewAppointments,canManageAppointments]=await Promise.all([userHasPermission(user.id,"appointments.view"),userHasPermission(user.id,"appointments.manage")]);
- if(!canViewAppointments&&!canManageAppointments)return jsonError("You do not have permission to view bookings.",403);
+ const [canViewEnquiries,canViewAppointments,canManageAppointments]=await Promise.all([userHasPermission(user.id,"enquiries.view"),userHasPermission(user.id,"appointments.view"),userHasPermission(user.id,"appointments.manage")]);
+ if(!canViewEnquiries||(!canViewAppointments&&!canManageAppointments))return jsonError("You do not have permission to view this Jobcard booking.",403);
  const {id}=await params;
  if(!idPattern.test(id))return jsonError("Invalid Jobcard ID.");
  const db=database(),businessId=membership.business_id;
@@ -39,6 +39,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("appointments.manage");if(access.response)return access.response;
+  if(!(await userHasPermission(access.user!.id,"enquiries.view")))return jsonError("You do not have permission to manage bookings for this Jobcard.",403);
  try{
   const {id}=await params,body=await request.json(),appointmentId=String(body.appointmentId??""),action=String(body.action??"");
   if(!idPattern.test(id)||!idPattern.test(appointmentId))return jsonError("Invalid Jobcard or booking ID.");
