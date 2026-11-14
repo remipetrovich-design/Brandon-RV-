@@ -66,6 +66,6 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    return jsonError("Booking was not saved because it could not be linked to the Workcard.",500);
   }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:existing?"workcard.booking_confirmed":"workcard.booking_created",entity_type:"job",entity_id:id,details:{job_number:job.job_number,appointment_id:appointment.id,booking_request_accepted:existing?.status==="requested",starts_at:appointment.starts_at,ends_at:appointment.ends_at,location}});
-  return Response.json({appointment,acceptedRequest:existing?.status==="requested"??false},{status:existing?200:201});
+  return Response.json({appointment,acceptedRequest:existing?.status==="requested"},{status:existing?200:201});
  }catch(error){console.error("Workcard booking confirmation failed",error);return jsonError("Could not confirm or create booking.",500);}
 }
