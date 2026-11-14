@@ -16,7 +16,15 @@ export async function GET(){
  const appointmentIds=[...new Set((jobs??[]).map(x=>x.appointment_id).filter(Boolean))];
  const {data:appointments}=appointmentIds.length?await db.from("appointments").select("id,status,starts_at,ends_at,preferred_start,location,customer_notes,vehicle_id,vehicles(make,model,year,vehicle_type,registration,vin)").eq("business_id",membership.business_id).in("id",appointmentIds):{data:[]};
  const appointmentById=new Map((appointments??[]).map(x=>[x.id,x]));
- const jobById=new Map((jobs??[]).map(x=>[x.id,{...x,booking:appointmentById.get(x.appointment_id)??null}]));
+ const enquiryIds=[...new Set((jobs??[]).map(x=>x.quotes?.enquiries?.id).filter(Boolean))];
+ const {data:jobcardFiles,error:jobcardFilesError}=enquiryIds.length?await db.from("enquiry_attachments").select("id,enquiry_id,file_name,mime_type,storage_path,created_at").in("enquiry_id",enquiryIds).order("created_at",{ascending:false}):{data:[],error:null};
+ if(jobcardFilesError)return jsonError("Could not load original Jobcard attachments.",500);
+ const filesByEnquiry=new Map<string,any[]>();
+ for(const file of jobcardFiles??[]){
+  const {data:signed}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);
+  const group=filesByEnquiry.get(file.enquiry_id)??[];group.push({...file,url:signed?.signedUrl??null});filesByEnquiry.set(file.enquiry_id,group);
+ }
+ const jobById=new Map((jobs??[]).map(x=>[x.id,{...x,booking:appointmentById.get(x.appointment_id)??null,jobcardAttachments:filesByEnquiry.get(x.quotes?.enquiries?.id)??[]} ]));
  const entriesByJob=new Map<string,any[]>();
  for(const entry of entries??[]){const group=entriesByJob.get(entry.job_id)??[];group.push(entry);entriesByJob.set(entry.job_id,group);}
  return Response.json({workcards:(assignments??[]).map(a=>({...a,job:jobById.get(a.job_id)??null,entries:entriesByJob.get(a.job_id)??[]})).filter(x=>x.job)});
