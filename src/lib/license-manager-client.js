@@ -1,7 +1,8 @@
 /** Portable, opt-in License Manager client. No V1 Base imports or side effects. */
 export const LICENSE_AUTHORITIES = Object.freeze({
+  // Main and fallback now resolve through the unified License Manager API.
   main: 'https://incendiarynetworks.cc/api/v1',
-  fallback: 'https://lm.incendiarynetworks.cc/api/v1'
+  fallback: 'https://incendiarynetworks.cc/api/v1'
 });
 
 export class LicenseError extends Error {
@@ -37,10 +38,7 @@ export function createLicenseClient(options = {}) {
   const timeoutMs = Math.max(1000, Number(options.timeoutMs || 7000));
   const storage = options.storage || null;
   const cacheKey = 'license-manager-client:' + product + ':' + installationId;
-  const sourceUrls = [
-    LICENSE_AUTHORITIES.main + '/source-configuration',
-    LICENSE_AUTHORITIES.fallback + '/source-configuration'
-  ];
+  const sourceUrls = [LICENSE_AUTHORITIES.main + '/source-configuration'];
   let currentAuthority = null;
   let lastValid = null;
 
