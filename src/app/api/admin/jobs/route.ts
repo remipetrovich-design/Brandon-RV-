@@ -41,7 +41,8 @@ export async function POST(request:Request){
   const jobNumber="BRV-WC-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+crypto.randomUUID().replaceAll("-","").slice(0,8).toUpperCase();
   const {data:linkedAppointment,error:appointmentLookupError}=await db.from("appointments").select("id,status,starts_at,ends_at").eq("business_id",businessId).eq("quote_id",quote.id).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
   if(appointmentLookupError)return jsonError("Could not link the existing customer booking to the new Workcard.",500);
-  const bookingConfirmed=Boolean(linkedAppointment&&["confirmed","rescheduled"].includes(linkedAppointment.status));\n  const nextEnquiryStage=bookingConfirmed?"booked":linkedAppointment?.status==="requested"?"booking_requested":"workcard_created";
+  const bookingConfirmed=Boolean(linkedAppointment&&["confirmed","rescheduled"].includes(linkedAppointment.status));
+  const nextEnquiryStage=bookingConfirmed?"booked":linkedAppointment?.status==="requested"?"booking_requested":"workcard_created";
   const {data:job,error}=await db.from("jobs").insert({
    business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,
    user_id:quote.user_id??enquiry.user_id??null,guest_name:enquiry.contact_name,guest_email:enquiry.email,
