@@ -67,14 +67,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const body=await request.json(),entryId=String(body.entryId??"");
   if(!/^[0-9a-f-]{36}$/i.test(entryId))return jsonError("Select a valid prepared Workcard item.");
   const {data:current,error:currentError}=await access.db.from("job_work_entries")
-   .select("id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,part_number,supplier_name,invoiceable,customer_visible")
+   .select("id,source_quote_item_id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,part_number,supplier_name,invoiceable,customer_visible")
    .eq("id",entryId).eq("job_id",id).eq("business_id",membership.business_id).maybeSingle();
   if(currentError||!current)return jsonError("Prepared Workcard item not found.",404);
   const quantityRequired=body.quantityRequired===undefined?Number(current.quantity_required):Number(body.quantityRequired);
   const quantityUsed=body.quantityUsed===undefined?Number(current.quantity_used):Number(body.quantityUsed);
   const unitPrice=body.unitPrice===undefined?Number(current.unit_price):Number(body.unitPrice);
   const costUnitPrice=body.costUnitPrice===undefined?Number(current.cost_unit_price):Number(body.costUnitPrice);
-  if(![quantityRequired,quantityUsed,unitPrice,costUnitPrice].every(Number.isFinite)||quantityRequired<0||quantityUsed<0||quantityRequired>10000||quantityUsed>10000||unitPrice<0||costUnitPrice<0||unitPrice>10000000||costUnitPrice>10000000)return jsonError("Enter valid required and actual quantities, costs and customer charges.");
+  if(![quantityRequired,quantityUsed,unitPrice,costUnitPrice].every(Number.isFinite)||quantityRequired<0||quantityUsed<0||quantityRequired>10000||quantityUsed>10000||unitPrice<0||costUnitPrice<0||unitPrice>10000000||costUnitPrice>10000000)return jsonError("Enter valid actual quantities and costs.");\n  if(quantityUsed>quantityRequired)return jsonError("Actual use exceeds the approved quantity. Record the additional requirement as a customer-approved variation before using it.",409);\n  if(body.invoiceable===true&&!current.source_quote_item_id)return jsonError("Only items from an accepted quote or approved variation can be marked invoiceable.",409);
   const patch:Record<string,unknown>={
    quantity:quantityUsed>0?quantityUsed:Math.max(quantityRequired,0.01),
    quantity_required:quantityRequired,quantity_used:quantityUsed,
