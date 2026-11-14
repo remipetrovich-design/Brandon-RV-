@@ -13,7 +13,7 @@ function parse(body:any){
  const taxRate=Number(body.tax_rate??0);
  if(!types.includes(entryType)||description.length<3)return {error:"Choose a valid entry type and enter a description."};
  if(![quantityRequired,quantityUsed,unitPrice,costUnitPrice,taxRate].every(Number.isFinite)||quantityRequired<0||quantityUsed<0||quantityRequired>10000||quantityUsed>10000||unitPrice<0||costUnitPrice<0||unitPrice>10000000||costUnitPrice>10000000||taxRate<0||taxRate>100)return {error:"Enter valid quantities, costs, charge prices and tax."};
- if(body.invoiceable===true&&(!["labour","parts"].includes(entryType)||quantityUsed<=0))return {error:"Only labour or parts with an actual quantity used can be invoiced."};
+ if(body.invoiceable===true&&(!["labour","parts"].includes(entryType)||quantityUsed<=0))return {error:"Only labour or parts with an actual quantity used can be invoiced."};\n if(body.service_id&&entryType!=="labour")return {error:"A service preset must be recorded as labour/service, not as a part."};
  return {value:{entry_type:entryType,description,quantity:quantityUsed||1,quantity_required:quantityRequired,quantity_used:quantityUsed,unit_price:unitPrice,cost_unit_price:costUnitPrice,tax_rate:taxRate,line_total:Number((quantityUsed*unitPrice).toFixed(2)),part_number:clean(body.part_number,100)||null,supplier_name:clean(body.supplier_name,160)||null,customer_visible:body.customer_visible!==false,invoiceable:body.invoiceable===true,service_id:body.service_id&&idPattern.test(String(body.service_id))?String(body.service_id):null}};
 }
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
