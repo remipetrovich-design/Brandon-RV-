@@ -33,7 +33,7 @@ test("accepted quote converts the Jobcard into a pre-populated Workcard without 
  assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"The approved scope remains attached to the Workcard.");
  assert.ok(route.includes("const plannedEntries="),"Accepted quote lines must become prepared Workcard entries.");
  assert.ok(route.includes("source_quote_item_id:item.id"),"Each prepared line must retain its source quote line.");
- assert.ok(route.includes('update({stage:"converted",status:"converted"'),"The original Jobcard must record its conversion to a Workcard.");
+ assert.ok(route.includes("update({stage:nextEnquiryStage,status:\"converted\""),"The original Jobcard must record its conversion to a Workcard or the procurement/booking stage.");
  assert.ok(route.includes("enquiry_stage_history"),"The Jobcard conversion must be recorded in its stage history.");
  assert.ok(route.includes("quantity_required:Number(item.quantity)"),"Required quantities must be carried into the Workcard.");
  assert.ok(route.includes("quantity_used:0"),"Planned quantities must not be mistaken for actual usage.");
@@ -160,4 +160,9 @@ test("workers cannot change accepted quantities or customer prices outside an ap
  assert.ok(route.includes("Actual use exceeds the approved quantity"),"Extra quantity requires an approved variation.");
  assert.ok(route.includes("Only items from an accepted quote or approved variation can be marked invoiceable"),"Unapproved worker-added lines cannot be invoiced.");
  assert.ok(route.includes("quantityUsed>quantityReceived-quantityReturned"),"Workers cannot record use beyond parts actually received and retained.");
+});
+
+test("expanded Jobcard pipeline stages are accepted by the database constraint",async()=>{
+ const migration=await read("../supabase/migrations/20261114120000_expand_jobcard_pipeline_stages.sql");
+ for(const stage of ["workcard_created","parts_required","parts_ordered","parts_received","ready_to_schedule","booking_requested","booked","work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed","cancelled"])assert.ok(migration.includes("'"+stage+"'"),"Missing database pipeline stage: "+stage);
 });

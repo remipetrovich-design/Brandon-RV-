@@ -39,10 +39,15 @@ export async function POST(request:Request){
   if(title.length<3||scope.length<3)return jsonError("Enter a Workcard title and approved scope of work.");
   // jobs.job_number is NOT NULL and has no database default. Generate it here.
   const jobNumber="BRV-WC-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+crypto.randomUUID().replaceAll("-","").slice(0,8).toUpperCase();
+  const {data:linkedAppointment,error:appointmentLookupError}=await db.from("appointments").select("id,status,starts_at,ends_at").eq("business_id",businessId).eq("quote_id",quote.id).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
+  if(appointmentLookupError)return jsonError("Could not link the existing customer booking to the new Workcard.",500);
+  const bookingConfirmed=Boolean(linkedAppointment&&["confirmed","rescheduled"].includes(linkedAppointment.status));
+  const hasQuotedParts=(quote.quote_items??[]).some((item:any)=>item.item_type==="parts");
+  const nextEnquiryStage=hasQuotedParts?"parts_required":bookingConfirmed?"booked":linkedAppointment?.status==="requested"?"booking_requested":"workcard_created";
   const {data:job,error}=await db.from("jobs").insert({
    business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,
    user_id:quote.user_id??enquiry.user_id??null,guest_name:enquiry.contact_name,guest_email:enquiry.email,
-   quote_id:quote.id,job_number:jobNumber,title,scope_of_work:scope,status:"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
+   quote_id:quote.id,appointment_id:linkedAppointment?.id??null,scheduled_start:bookingConfirmed?linkedAppointment?.starts_at??null:null,scheduled_end:bookingConfirmed?linkedAppointment?.ends_at??null:null,job_number:jobNumber,title,scope_of_work:scope,status:bookingConfirmed?"scheduled":"pending",senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
   }).select("id,job_number,title,status,senior_approval_status,quote_id").single();
   if(error||!job){
    console.error("Workcard insert failed",error);
@@ -56,7 +61,7 @@ export async function POST(request:Request){
   // These are planned lines only: no quantity is treated as used or invoiceable.
   const plannedEntries=(quote.quote_items??[]).map((item:any)=>({
    business_id:businessId,job_id:job.id,created_by:access.user!.id,
-   source_quote_item_id:item.id,entry_type:item.item_type==="labour"?"labour":"parts",
+   source_quote_item_id:item.id,entry_type:item.item_type==="parts"?"parts":"labour",
    description:String(item.description),quantity:Number(item.quantity),
    quantity_required:Number(item.quantity),quantity_used:0,
    quantity_ordered:0,quantity_received:0,
@@ -73,7 +78,7 @@ export async function POST(request:Request){
     return jsonError("Could not prepare the Workcard from the accepted quote. No incomplete Workcard was kept.",500);
    }
   }
-  const {error:jobcardError}=await db.from("enquiries").update({stage:"converted",status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
+  const {error:jobcardError}=await db.from("enquiries").update({stage:nextEnquiryStage,status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
   if(jobcardError){
    console.error("Jobcard conversion update failed",jobcardError);
    await db.from("job_work_entries").delete().eq("job_id",job.id).eq("business_id",businessId);
@@ -81,7 +86,7 @@ export async function POST(request:Request){
    return jsonError("Could not link the Workcard back to its original Jobcard. No incomplete conversion was kept.",500);
   }
   if(enquiry.stage!=="converted"){
-   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage??null,to_stage:"converted",changed_by:access.user!.id,note:"Accepted quote converted into a prepared Workcard."});
+   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage??null,to_stage:nextEnquiryStage,changed_by:access.user!.id,note:"Accepted quote converted into a prepared Workcard."});
   }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review",prepared_entry_count:plannedEntries.length}});
   return Response.json({job},{status:201});

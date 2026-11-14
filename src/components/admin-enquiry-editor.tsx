@@ -13,14 +13,24 @@ type RecordData={id:string;request_number:string;request_type:string;contact_nam
 type Quote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;quote_kind?:string;total:number;created_at:string};
 type LinkedCustomer={id:string;full_name:string;email:string|null;phone:string|null;address:string|null;suburb:string|null;state:string|null;postcode:string|null};
 type Vehicle={id:string;make:string|null;model:string|null;year:number|null;vehicle_type:string|null;registration:string|null;vin:string|null;notes:string|null};
-const stages=["new","contacted","awaiting_information","assessment_required","quote_in_progress","quote_sent","awaiting_approval","approved","declined","converted","closed"];
+const stageGroups=[
+ {label:"1 · Enquiry & assessment",values:["new","contacted","awaiting_information","assessment_required"]},
+ {label:"2 · Quote & approval",values:["quote_in_progress","quote_sent","awaiting_approval","approved","workcard_created"]},
+ {label:"3 · Parts procurement",values:["parts_required","parts_ordered","parts_received"]},
+ {label:"4 · Booking & scheduling",values:["ready_to_schedule","booking_requested","booked"]},
+ {label:"5 · Work & quality",values:["work_in_progress","quality_check","ready_to_invoice"]},
+ {label:"6 · Invoice & payment",values:["invoiced","awaiting_payment","paid","completed"]},
+ {label:"Other outcomes",values:["declined","cancelled","converted","closed"]}
+];
+const stages=stageGroups.flatMap(group=>group.values);
+const localDateTime=(value:string|null|undefined)=>value?new Date(new Date(value).getTime()-new Date(value).getTimezoneOffset()*60000).toISOString().slice(0,16):"";
 const pretty=(v:string)=>v?.replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase())??"";
 const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(v||0));
 
 export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,canManageQuotes=false,canManageJobs=false}:{enquiryId:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canManageJobs?:boolean}){
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
- const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]);
+ const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;ends_at:string;location:string}>>({});
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote"|"workcard"|"booking">("customer");
  function handleTabKeyDown(event:KeyboardEvent<HTMLDivElement>){
   const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?["quote","workcard","booking"]:[])];
@@ -35,7 +45,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    const [r,qr]=await Promise.all(requests),d=await r.json();
    if(!r.ok){setNotice(d.error??"Could not load Jobcard.");return;}
    setRecord(d.enquiry);setCustomer(d.customer??null);setVehicle(d.vehicle??null);setStaff(d.staff??[]);
-   if(d.enquiry?.request_type==="quote_request"){const br=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"});const bd=await br.json();if(br.ok)setBookings(bd.bookings??[]);else setNotice(bd.error??"Could not load booking requests.");}
+   if(d.enquiry?.request_type==="quote_request"){const br=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"});const bd=await br.json();if(br.ok){const rows=bd.bookings??[];setBookings(rows);setBookingEdits(Object.fromEntries(rows.map((b:any)=>[b.id,{starts_at:localDateTime(b.starts_at??b.preferred_start),ends_at:localDateTime(b.ends_at??b.preferred_end),location:b.location??""}])));}else setNotice(bd.error??"Could not load booking requests.");}
    setAssigned((d.assignments??[]).map((x:any)=>x.staff_id));setHistory(d.history??[]);setAttachments(d.attachments??[]);
    if(qr){const qd=await qr.json();if(qr.ok){const ticketQuotes=(qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard");setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}}
   }catch{setNotice("Could not load Jobcard details.");}
@@ -48,9 +58,21 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
   if(!a.ok){setNotice("Jobcard changes saved, but staff assignments failed: "+(ad.error??"Unknown error"));await load();return;}
   setNotice("Jobcard details and assignments saved.");setStageNote("");await load();
  }catch{setNotice("Could not save Jobcard changes.");}finally{setBusy(false);}}
+ async function updateBooking(appointmentId:string,action:"confirm"|"reschedule"|"cancel"){
+  const draft=bookingEdits[appointmentId];
+  if(action==="cancel"&&!window.confirm("Cancel this booking request? The Jobcard will return to scheduling."))return;
+  if(action!=="cancel"&&(!draft?.starts_at||!draft?.ends_at||!draft.location.trim())){setNotice("Enter the agreed start, finish and service location.");return;}
+  setBusy(true);setNotice("");
+  try{
+   const r=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({appointmentId,action,starts_at:draft?.starts_at?new Date(draft.starts_at).toISOString():null,ends_at:draft?.ends_at?new Date(draft.ends_at).toISOString():null,location:draft?.location??""})});
+   const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update booking.");return;}
+   setNotice(action==="cancel"?"Booking cancelled.":action==="confirm"?"Booking confirmed and linked to the Workcard.":"Booking rescheduled and Workcard updated.");
+   await load();
+  }catch{setNotice("Could not update booking.");}finally{setBusy(false);}
+ }
  async function changeStage(stage:string){
   if(!record)return;
-  if(["closed","declined"].includes(stage)&&!window.confirm("This will close the Jobcard and revoke its guest access. Continue?"))return;
+  if(["closed","declined","cancelled"].includes(stage)&&!window.confirm("This will close the Jobcard and revoke its guest access. Continue?"))return;
   setBusy(true);setNotice("");
   try{const r=await fetch("/api/admin/enquiries/"+enquiryId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({stage,stage_note:stageNote||"Updated from Jobcard action"})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update Jobcard status.");return;}setNotice("Jobcard status changed to "+pretty(stage)+".");setStageNote("");await load();}
   catch{setNotice("Could not update Jobcard status.");}finally{setBusy(false);}
@@ -101,7 +123,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
     {!["closed","declined","archived"].includes(record.stage)&&<button className="button button-secondary" type="button" disabled={busy} onClick={()=>void changeStage("closed")}>Close ticket</button>}
    </div></section>}
    <form className="auth-form brv-ticket-edit" onSubmit={save}>
-    <label>Pipeline status<select value={record.stage} disabled={!canManageEnquiries} onChange={e=>setRecord({...record,stage:e.target.value})}>{stages.map(s=><option key={s} value={s}>{pretty(s)}</option>)}</select></label>
+    <label>Pipeline status<select value={record.stage} disabled={!canManageEnquiries} onChange={e=>setRecord({...record,stage:e.target.value})}>{stageGroups.map(group=><optgroup key={group.label} label={group.label}>{group.values.map(stage=><option key={stage} value={stage}>{pretty(stage)}</option>)}</optgroup>)}</select></label><p className="panel-footnote">Stages follow the job from first enquiry through assessment, quote approval, parts, booking, work, quality checks, invoice and payment. Update the stage when each step is completed.</p>
     <label>Customer request<textarea rows={6} required value={record.description??""} readOnly={!canManageEnquiries} onChange={e=>setRecord({...record,description:e.target.value})}/></label>
     <fieldset className="brv-ticket-staff-fieldset" disabled={!canManageEnquiries}><legend>Assign staff to follow up</legend><p className="panel-footnote">Choose everyone responsible for contacting the customer. Workcard assignment happens separately after senior setup review.</p>
      {staff.length?<div className="brv-ticket-staff-options">{staff.map(s=><label className="brv-ticket-staff-option" key={s.id}><input type="checkbox" checked={assigned.includes(s.id)} onChange={e=>setAssigned(current=>e.target.checked?[...current,s.id]:current.filter(id=>id!==s.id))}/><span><strong>{s.full_name}</strong>{s.job_title&&<small>{s.job_title}</small>}</span></label>)}</div>:<p className="panel-footnote">No active staff are available for assignment.</p>}
@@ -138,8 +160,10 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    {!acceptedQuote&&<p className="panel-footnote">A Workcard becomes available after the customer accepts a quote.</p>}
   </section>}
   {isQuoteRequest&&<section id="brv-panel-booking" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-booking" hidden={selectedTab!=="booking"}>
-   <div className="portal-panel-heading"><div><span className="panel-kicker">BOOKING</span><h2>Booking requests &amp; appointments</h2><p>Customer booking requests are displayed here against this original Jobcard.</p></div><a className="button button-secondary" href="/admin/appointments">Open bookings calendar →</a></div>
-   {bookings.length?bookings.map(b=><article className="brv-ticket-quote" key={b.id}><div><strong>{pretty(b.status)} · {b.workcard?.job_number??"No Workcard linked"}</strong><span>Customer preferred: {b.preferred_start?new Date(b.preferred_start).toLocaleString("en-AU"):"Not supplied"}{b.preferred_end?" – "+new Date(b.preferred_end).toLocaleString("en-AU"):""}</span><span>Confirmed: {b.starts_at?new Date(b.starts_at).toLocaleString("en-AU"):"Not confirmed"}{b.ends_at?" – "+new Date(b.ends_at).toLocaleString("en-AU"):""}</span><span>Location: {b.location??"Not supplied"}</span><span>Customer notes: {b.customer_notes??"None"}</span>{b.workcard&&<a className="text-link" href={"/admin/jobs/"+b.workcard.id}>Open linked Workcard →</a>}</div></article>):<p className="panel-footnote">No booking requests or appointments are linked to this Jobcard yet.</p>}
+   <div className="portal-panel-heading"><div><span className="panel-kicker">BOOKING</span><h2>Booking requests &amp; appointments</h2><p>Manage each customer request here. Confirmations and changes synchronise to the linked Workcard.</p></div><a className="button button-secondary" href="/admin/appointments">Open bookings calendar →</a></div>
+   {bookings.length?bookings.map(b=><article className="brv-ticket-quote booking-action" key={b.id}><div><strong>{pretty(b.status)} · {b.workcard?.job_number??"Workcard not created yet"}</strong><span>Customer preferred: {b.preferred_start?new Date(b.preferred_start).toLocaleString("en-AU"):"Not supplied"}{b.preferred_end?" – "+new Date(b.preferred_end).toLocaleString("en-AU"):""}</span><span>Confirmed: {b.starts_at?new Date(b.starts_at).toLocaleString("en-AU"):"Not confirmed"}{b.ends_at?" – "+new Date(b.ends_at).toLocaleString("en-AU"):""}</span><span>Location: {b.location??"Not supplied"}</span><span>Customer notes: {b.customer_notes??"None"}</span>{b.workcard&&<a className="text-link" href={"/admin/jobs/"+b.workcard.id}>Open linked Workcard →</a>}
+    {canManageEnquiries&&["requested","confirmed","rescheduled"].includes(b.status)&&<div className="brv-workcard-entry-form"><h3>{b.status==="requested"?"Confirm customer booking": "Change confirmed booking"}</h3><div className="form-grid"><label>Agreed start<input type="datetime-local" value={bookingEdits[b.id]?.starts_at??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],starts_at:e.target.value}}))}/></label><label>Agreed finish<input type="datetime-local" value={bookingEdits[b.id]?.ends_at??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],ends_at:e.target.value}}))}/></label></div><label>Service location<input value={bookingEdits[b.id]?.location??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],location:e.target.value}}))} maxLength={200}/></label><div className="brv-ticket-action-buttons">{b.status!=="confirmed"&&<button type="button" className="button button-primary" disabled={busy} onClick={()=>void updateBooking(b.id,"confirm")}>Confirm booking</button>}<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"reschedule")}>Reschedule booking</button><button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Cancel booking</button></div></div>}
+   </div></article>):<p className="panel-footnote">No booking requests or appointments are linked to this Jobcard yet.</p>}
   </section>}
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
  </div>;
