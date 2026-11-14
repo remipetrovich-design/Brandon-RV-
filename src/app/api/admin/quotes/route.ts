@@ -88,7 +88,8 @@ export async function POST(request:Request){
    revisionNumber=Number(prior.revision_number??1)+1;
   }
   const serviceIds=items.map(x=>x.serviceId).filter(Boolean) as string[];
-  if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}\n  if(items.some(item=>item.serviceId&&item.itemType!=="labour"))return jsonError("A service preset must be quoted as labour/service, not as a parts line.");
+  if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
+  if(items.some(item=>item.serviceId&&item.itemType!=="labour"))return jsonError("A service preset must be quoted as labour/service, not as a parts line.");
   const lines:{description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number;sort_order:number;item_type:string;service_id:string|null}[]=items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,line_total:Number((item.quantity*item.unitPrice).toFixed(2)),sort_order:index,item_type:item.itemType,service_id:item.serviceId}));
   const subtotal=Number(lines.reduce((sum:number,item:{line_total:number})=>sum+item.line_total,0).toFixed(2));
   const taxAmount=Number((lines.reduce((sum:number,item:{line_total:number;tax_rate:number})=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
