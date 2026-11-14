@@ -131,7 +131,7 @@ test("worker sign-off creates charges only from actual invoiceable usage, never 
 
 test("worker completion data is returned on the original customer Jobcard",async()=>{
  const page=await read("../src/app/portal/jobcards/[id]/page.tsx");
- assert.ok(page.includes("in("quote_id",quoteIds)"),"The original Jobcard must load its linked Workcard.");
+ assert.ok(page.includes('in("quote_id",quoteIds)'),"The original Jobcard must load its linked Workcard.");
  assert.ok(page.includes("work_summary"),"The worker completion summary must return to the Jobcard.");
  assert.ok(page.includes('eq("customer_visible",true)'),"Only customer-visible completed work may be shown.");
  assert.ok(page.includes("CustomerWorkApproval"),"The customer Jobcard must expose the review and handover step.");
