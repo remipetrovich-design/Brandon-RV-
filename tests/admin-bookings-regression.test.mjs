@@ -34,3 +34,36 @@ test("Jobcard booking feed loads customer requests by original enquiry and activ
  assert.match(route,/eq\("enquiry_id",id\)/);
  assert.match(route,/requested.*confirmed.*rescheduled/);
 });
+
+test("Jobcard booking tab exposes actions to confirm, reschedule and cancel each booking",async()=>{
+ const editor=await read("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/booking-action/);
+ assert.match(editor,/Confirm booking/);
+ assert.match(editor,/Reschedule booking/);
+ assert.match(editor,/Cancel booking/);
+ const route=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ assert.match(route,/export async function PATCH/);
+ assert.match(route,/appointment_id/);
+});
+
+test("Workcard shows confirmed booking date, time and location even when its booking controls are hidden",async()=>{
+ const editor=await read("../src/components/admin-workcard-management.tsx");
+ assert.match(editor,/Confirmed booking details/);
+ assert.match(editor,/job\.appointments\.starts_at/);
+ assert.match(editor,/job\.appointments\.location/);
+});
+
+test("service presets create service or labour quote lines rather than parts lines",async()=>{
+ const editor=await read("../src/components/admin-create-quote.tsx");
+ assert.match(editor,/itemType:"labour"/);
+ assert.match(editor,/itemType:"labour"[^}]*serviceId/);
+ const jobs=await read("../src/app/api/admin/jobs/route.ts");
+ assert.match(jobs,/entry_type:item\.item_type==="parts"\?"parts":"labour"/);
+});
+
+test("Jobcard pipeline includes procurement, booking, work, quality, invoice and payment stages",async()=>{
+ const editor=await read("../src/components/admin-enquiry-editor.tsx");
+ for(const stage of ["parts_required","parts_ordered","parts_received","ready_to_schedule","booking_requested","booked","work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed"]) assert.ok(editor.includes(stage),"missing stage "+stage);
+ const route=await read("../src/app/api/admin/enquiries/[id]/route.ts");
+ assert.match(route,/parts_required/);
+});
