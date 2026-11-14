@@ -1,5 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
-import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
+import {validateBookingWindow} from "@/lib/booking-rules";
+import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
 import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
@@ -46,11 +47,11 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
   const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
   const policyError=validateBookingWindow(startsAt,endsAt,settings,new Date(),bypassRestrictions);if(policyError)return jsonError(policyError,409);
-  if(endsAt&&!bypassRestrictions){
-   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
-   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).neq("id",existing?.id??"00000000-0000-0000-0000-000000000000").in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
+  if(!bypassRestrictions){
+   const {data:busyAppointments,error:conflictError}=await db.from("appointments").select("id,starts_at,ends_at").eq("business_id",businessId).neq("id",existing?.id??"00000000-0000-0000-0000-000000000000").in("status",["confirmed","rescheduled"]).not("starts_at","is",null);
    if(conflictError)return jsonError("Could not verify booking availability.",500);
-   if(conflicts?.length)return jsonError("That time conflicts with another confirmed booking. Choose another time.",409);
+   const conflict=(busyAppointments??[]).some(existingBooking=>bookingWindowsConflict(startsAt,endsAt,existingBooking.starts_at,existingBooking.ends_at,settings));
+   if(conflict)return jsonError("That time conflicts with another confirmed booking. Choose another time.",409);
   }
   const now=new Date().toISOString();
   let appointment:any;
