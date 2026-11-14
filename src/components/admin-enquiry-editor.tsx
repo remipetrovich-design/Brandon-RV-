@@ -64,7 +64,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
   if(action!=="cancel"&&(!draft?.starts_at||!draft.location.trim())){setNotice("Enter the booking start and service location.");return;}
   setBusy(true);setNotice("");
   try{
-   const r=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({appointmentId,action,starts_at:draft?.starts_at?new Date(draft.starts_at).toISOString():null,location:draft?.location??""})});
+   const r=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({appointmentId,action,starts_at:draft?.starts_at?new Date(draft.starts_at).toISOString():null,ends_at:null,location:draft?.location??""})});
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update booking.");return;}
    setNotice(action==="cancel"?"Booking cancelled.":action==="confirm"?"Booking confirmed and linked to the Workcard.":"Booking rescheduled and Workcard updated.");
    await load();
