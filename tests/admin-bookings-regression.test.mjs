@@ -138,3 +138,27 @@ test("Workcard read-only view does not expose edit controls",async()=>{
  assert.match(editor,/WorkcardReadOnly/);
  assert.match(editor,/:job\?canManage\?/);
 });
+
+
+test("open-ended bookings retain lower-rank conflict checks using internal configured duration",async()=>{
+ const policy=await read("../src/lib/booking-window-policy.mjs");
+ const jobcard=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ const workcard=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
+ const calendar=await read("../src/app/api/admin/appointments/route.ts");
+ assert.match(policy,/appointment_duration_minutes/);
+ assert.match(jobcard,/bookingWindowsConflict/);
+ assert.match(workcard,/bookingWindowsConflict/);
+ assert.match(calendar,/bookingWindowsConflict/);
+ assert.match(jobcard,/if\(!bypassRestrictions\)/);
+ assert.match(workcard,/if\(!bypassRestrictions\)/);
+ assert.match(calendar,/if\(!bypassRestrictions\)/);
+});
+
+test("booking register and record actions do not ask for an agreed finish",async()=>{
+ const section=await read("../src/app/admin/[section]/page.tsx");
+ const actions=await read("../src/components/admin-record-actions.tsx");
+ const workcard=await read("../src/components/admin-workcard-management.tsx");
+ assert.doesNotMatch(section,/preferred_end|ends_at/);
+ assert.doesNotMatch(actions,/Confirmed end|setEnd|endsAt/);
+ assert.doesNotMatch(workcard,/Agreed finish|bookingEnd|setEnd/);
+});
