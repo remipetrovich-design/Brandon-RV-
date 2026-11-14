@@ -65,7 +65,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
   invoiceable:canViewSales?entry.invoiceable:false
  }));
  const services=(servicesResult.data??[]).map(service=>({...service,price_from:canViewSales?service.price_from:null}));
- return Response.json({job,entries,services,permissions:{canManage,canViewCosts,canViewSales,canViewSuppliers}});
+ return Response.json({job,entries,services,permissions:{canManage,canViewCosts,canViewSales,canViewSuppliers,canManageCosts:await userHasPermission(userId,"expenses.manage"),canManageSales:await userHasPermission(userId,"invoices.manage"),canManageSuppliers:await userHasPermission(userId,"suppliers.manage")}});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -79,6 +79,12 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(jobError||!job)return jsonError("Workcard not found.",404);
   if(job.worker_signed_off_at||["completed","cancelled"].includes(job.status))return jsonError("This Workcard is signed off or closed. Record additional work through an approved variation.",409);
   const value=parsed.value!;
+  const [canManageCosts,canManageSales,canManageSuppliers]=await Promise.all([
+   userHasPermission(access.user!.id,"expenses.manage"),userHasPermission(access.user!.id,"invoices.manage"),userHasPermission(access.user!.id,"suppliers.manage")
+  ]);
+  if(!canManageCosts)value.cost_unit_price=0;
+  if(!canManageSales){value.unit_price=0;value.tax_rate=0;value.line_total=0;value.invoiceable=false;}
+  if(!canManageSuppliers)value.supplier_name=null;
   if(value.service_id){const {data:service}=await db.from("services").select("id,name,is_active").eq("id",value.service_id).eq("business_id",businessId).maybeSingle();if(!service||!service.is_active)return jsonError("Select an active service from this business.");}
   const {data:entry,error}=await db.from("job_work_entries").insert({...value,business_id:businessId,job_id:id,created_by:access.user!.id}).select("id,entry_type,description,quantity,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id").single();
   if(error||!entry){console.error("Workcard entry insert failed",error);return jsonError("Could not add Workcard entry.",500);}
@@ -98,6 +104,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!job)return jsonError("Workcard not found.",404);
   if(job.worker_signed_off_at||["completed","cancelled"].includes(job.status))return jsonError("This Workcard is signed off or closed. Record additional work through an approved variation.",409);
   const value=parsed.value!;
+  const [canManageCosts,canManageSales,canManageSuppliers]=await Promise.all([
+   userHasPermission(access.user!.id,"expenses.manage"),userHasPermission(access.user!.id,"invoices.manage"),userHasPermission(access.user!.id,"suppliers.manage")
+  ]);
+  const {data:existingEntry,error:existingEntryError}=await db.from("job_work_entries").select("cost_unit_price,unit_price,tax_rate,invoiceable,supplier_name").eq("id",entryId).eq("job_id",id).eq("business_id",businessId).maybeSingle();
+  if(existingEntryError||!existingEntry)return jsonError("Workcard entry not found.",404);
+  if(!canManageCosts)value.cost_unit_price=Number(existingEntry.cost_unit_price??0);
+  if(!canManageSales){value.unit_price=Number(existingEntry.unit_price??0);value.tax_rate=Number(existingEntry.tax_rate??0);value.line_total=Number((value.quantity_used*value.unit_price).toFixed(2));value.invoiceable=existingEntry.invoiceable===true;}
+  if(!canManageSuppliers)value.supplier_name=existingEntry.supplier_name??null;
   if(value.service_id){const {data:service}=await db.from("services").select("id").eq("id",value.service_id).eq("business_id",businessId).eq("is_active",true).maybeSingle();if(!service)return jsonError("Select an active service from this business.");}
   const {data:entry,error}=await db.from("job_work_entries").update(value).eq("id",entryId).eq("job_id",id).eq("business_id",businessId).select("id,entry_type,description,quantity,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id").maybeSingle();
   if(error||!entry){console.error("Workcard entry update failed",error);return jsonError("Could not update Workcard entry.",500);}
