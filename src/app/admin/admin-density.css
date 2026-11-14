@@ -445,3 +445,63 @@
 .brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-history {
   width:100%;
 }
+
+
+/* Bookings register: keep appointment details and controls in independent,
+   wrapping columns so the date fields never collide with the record content. */
+.brv-admin-frame .admin-appointments-page .portal-shell { width:100%; max-width:1440px !important; }
+.brv-admin-frame .admin-appointments-page .admin-records-panel .activity-list { display:grid; gap:10px; }
+.brv-admin-frame .admin-appointments-page .admin-records-panel .activity-item {
+  display:grid;
+  grid-template-columns:minmax(150px,.7fr) minmax(220px,1.1fr) minmax(420px,1.6fr);
+  align-items:start;
+  gap:12px 18px;
+  padding:16px;
+  border:1px solid #e1e8ef;
+  border-radius:9px;
+  background:#fff;
+}
+.brv-admin-frame .admin-appointments-page .activity-date,
+.brv-admin-frame .admin-appointments-page .activity-copy,
+.brv-admin-frame .admin-appointments-page .record-actions { min-width:0; }
+.brv-admin-frame .admin-appointments-page .activity-copy { overflow-wrap:anywhere; }
+.brv-admin-frame .admin-appointments-page .activity-copy > span { display:block; line-height:1.55; }
+.brv-admin-frame .admin-appointments-page .record-actions {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:end;
+  gap:9px 10px;
+  width:100%;
+  padding:12px;
+  border:1px solid #e5ebf1;
+  border-radius:8px;
+  background:#f8fafc;
+}
+.brv-admin-frame .admin-appointments-page .record-actions label {
+  display:grid;
+  min-width:0;
+  gap:5px;
+  color:#52677c;
+  font-size:10px;
+  font-weight:700;
+}
+.brv-admin-frame .admin-appointments-page .record-actions input,
+.brv-admin-frame .admin-appointments-page .record-actions select {
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+.brv-admin-frame .admin-appointments-page .record-actions > select { grid-column:1; }
+.brv-admin-frame .admin-appointments-page .record-actions > button { grid-column:2; justify-self:start; }
+.brv-admin-frame .admin-appointments-page .record-actions > small { grid-column:1 / -1; overflow-wrap:anywhere; }
+@media (max-width:1100px) {
+  .brv-admin-frame .admin-appointments-page .admin-records-panel .activity-item { grid-template-columns:minmax(0,1fr); }
+  .brv-admin-frame .admin-appointments-page .record-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:700px) {
+  .brv-admin-frame .admin-appointments-page .admin-records-panel .activity-item { gap:9px; padding:12px; }
+  .brv-admin-frame .admin-appointments-page .record-actions { grid-template-columns:minmax(0,1fr); }
+  .brv-admin-frame .admin-appointments-page .record-actions > select,
+  .brv-admin-frame .admin-appointments-page .record-actions > button,
+  .brv-admin-frame .admin-appointments-page .record-actions > small { grid-column:1; }
+}
