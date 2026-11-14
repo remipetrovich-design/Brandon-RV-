@@ -67,7 +67,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const body=await request.json(),entryId=String(body.entryId??"");
   if(!/^[0-9a-f-]{36}$/i.test(entryId))return jsonError("Select a valid prepared Workcard item.");
   const {data:current,error:currentError}=await access.db.from("job_work_entries")
-   .select("id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,part_number,supplier_name,invoiceable,customer_visible")
+   .select("id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,part_number,supplier_name,invoiceable,customer_visible")
    .eq("id",entryId).eq("job_id",id).eq("business_id",membership.business_id).maybeSingle();
   if(currentError||!current)return jsonError("Prepared Workcard item not found.",404);
   const quantityRequired=body.quantityRequired===undefined?Number(current.quantity_required):Number(body.quantityRequired);
@@ -88,13 +88,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(current.entry_type==="parts"){
    const quantityOrdered=body.quantityOrdered===undefined?Number(current.quantity_ordered):Number(body.quantityOrdered);
    const quantityReceived=body.quantityReceived===undefined?Number(current.quantity_received):Number(body.quantityReceived);
+   const quantityReturned=body.quantityReturned===undefined?Number(current.quantity_returned):Number(body.quantityReturned);
    const orderStatus=String(body.partOrderStatus??current.part_order_status??"not_ordered");
    const allowedStatuses=["not_ordered","ordered","part_received","received","not_required","cancelled"];
-   if(!Number.isFinite(quantityOrdered)||!Number.isFinite(quantityReceived)||quantityOrdered<0||quantityReceived<0||quantityReceived>quantityOrdered||quantityOrdered>10000||!allowedStatuses.includes(orderStatus))return jsonError("Enter valid ordered and received quantities and a valid order status.");
+   if(!Number.isFinite(quantityOrdered)||!Number.isFinite(quantityReceived)||!Number.isFinite(quantityReturned)||quantityOrdered<0||quantityReceived<0||quantityReturned<0||quantityReceived>quantityOrdered||quantityReturned>quantityReceived||quantityOrdered>10000||!allowedStatuses.includes(orderStatus))return jsonError("Enter valid ordered and received quantities and a valid order status.");
    if(["ordered","part_received","received"].includes(orderStatus)&&quantityOrdered<=0)return jsonError("Enter the quantity ordered before changing the order status.");
    if(["part_received","received"].includes(orderStatus)&&quantityReceived<=0)return jsonError("Enter the quantity received before recording a delivery.");
    if(orderStatus==="received"&&quantityReceived<quantityOrdered)return jsonError("The order cannot be marked received until all ordered parts have arrived.");
-   patch.quantity_ordered=quantityOrdered;patch.quantity_received=quantityReceived;patch.part_order_status=orderStatus;
+   patch.quantity_ordered=quantityOrdered;patch.quantity_received=quantityReceived;patch.quantity_returned=quantityReturned;patch.part_order_status=orderStatus;
    if(body.supplierOrderReference!==undefined)patch.supplier_order_reference=String(body.supplierOrderReference).trim().slice(0,120)||null;
    for(const [input,column] of [["orderedAt","ordered_at"],["expectedAt","expected_at"],["receivedAt","received_at"]] as const){
     if(body[input]!==undefined){const value=body[input]?new Date(String(body[input])):null;if(value&&!Number.isFinite(value.getTime()))return jsonError("Enter a valid parts order date.");patch[column]=value?.toISOString()??null;}
@@ -103,7 +104,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   }
   const {data:entry,error}=await access.db.from("job_work_entries").update(patch)
    .eq("id",entryId).eq("job_id",id).eq("business_id",membership.business_id)
-   .select("id,source_quote_item_id,entry_type,description,quantity,quantity_required,quantity_used,quantity_ordered,quantity_received,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,invoiceable,customer_visible,occurred_at").single();
+   .select("id,source_quote_item_id,entry_type,description,quantity,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,invoiceable,customer_visible,occurred_at").single();
   if(error||!entry){console.error("Worker Workcard item update failed",error);return jsonError("Could not update the prepared Workcard item.",500);}
   await access.db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.entry_updated",entity_type:"job_work_entry",entity_id:entry.id,details:{job_id:id,entry_type:entry.entry_type,quantity_required:quantityRequired,quantity_used:quantityUsed,quantity_ordered:entry.quantity_ordered??null,quantity_received:entry.quantity_received??null,invoiceable:entry.invoiceable}});
   return Response.json({entry});
