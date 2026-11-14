@@ -29,7 +29,7 @@ export async function POST(request:Request){
   const db=database(),businessId=access.membership!.business_id;
   const {data:quote,error:quoteError}=await db.from("quotes").select("id,business_id,customer_id,user_id,enquiry_id,quote_number,status,quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)").eq("id",quoteId).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").maybeSingle();
   if(quoteError||!quote||!quote.enquiry_id)return jsonError("Only a customer-accepted quote can create a Workcard.",409);
-  const {data:enquiry}=await db.from("enquiries").select("id,request_type,request_number,customer_id,user_id,contact_name,email,description,vehicle_id,archived_at").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
+  const {data:enquiry}=await db.from("enquiries").select("id,request_type,request_number,customer_id,user_id,contact_name,email,description,vehicle_id,archived_at,stage,status").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
   if(!enquiry||enquiry.request_type!=="quote_request"||enquiry.archived_at)return jsonError("The linked Quote Request Jobcard is no longer active.",409);
   const {data:existing}=await db.from("jobs").select("id,job_number,title,status,senior_approval_status,quote_id").eq("business_id",businessId).eq("quote_id",quote.id).maybeSingle();
   if(existing)return Response.json({job:existing,alreadyCreated:true});
@@ -72,6 +72,16 @@ export async function POST(request:Request){
     await db.from("jobs").delete().eq("id",job.id).eq("business_id",businessId);
     return jsonError("Could not prepare the Workcard from the accepted quote. No incomplete Workcard was kept.",500);
    }
+  }
+  const {error:jobcardError}=await db.from("enquiries").update({stage:"converted",status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
+  if(jobcardError){
+   console.error("Jobcard conversion update failed",jobcardError);
+   await db.from("job_work_entries").delete().eq("job_id",job.id).eq("business_id",businessId);
+   await db.from("jobs").delete().eq("id",job.id).eq("business_id",businessId);
+   return jsonError("Could not link the Workcard back to its original Jobcard. No incomplete conversion was kept.",500);
+  }
+  if(enquiry.stage!=="converted"){
+   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage??null,to_stage:"converted",changed_by:access.user!.id,note:"Accepted quote converted into a prepared Workcard."});
   }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review",prepared_entry_count:plannedEntries.length}});
   return Response.json({job},{status:201});
