@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
 import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
@@ -6,7 +6,8 @@ const idPattern=/^[0-9a-f-]{36}$/i;
 
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
+ const access=await authorizePermission("appointments.manage");if(access.response)return access.response;
+ if(!(await userHasPermission(access.user!.id,"jobs.manage")))return jsonError("You do not have permission to manage this Workcard.",403);
  try{
   const {id}=await params,body=await request.json();
   if(!idPattern.test(id))return jsonError("Invalid Workcard ID.");
