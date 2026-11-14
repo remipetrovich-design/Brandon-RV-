@@ -22,7 +22,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(body.internal_notes!==undefined)patch.internal_notes=String(body.internal_notes).trim().slice(0,5000)||null;
   if(body.priority!==undefined){if(!["low","normal","high","urgent"].includes(String(body.priority)))return jsonError("Invalid Workcard priority.");patch.priority=body.priority;}
   if(body.estimated_hours!==undefined){if(body.estimated_hours===null||body.estimated_hours===""){patch.estimated_hours=null;}else{const hours=Number(body.estimated_hours);if(!Number.isFinite(hours)||hours<0||hours>1000)return jsonError("Enter valid estimated labour hours.");patch.estimated_hours=hours;}}
-  if(body.status!==undefined){const next=String(body.status);if(!["pending","scheduled","in_progress","waiting_parts","quality_check","completed","cancelled"].includes(next))return jsonError("Invalid Workcard status.");if(next==="completed"&&current.senior_approval_status!=="approved"&&current.senior_approval_status!=="legacy_approved")return jsonError("Senior approval is required before completing a Workcard.",409);if(next==="completed"&&current.customer_approval_status!=="approved")return jsonError("Customer approval is required before completing a Workcard.",409);patch.status=next;}
+  if(body.status!==undefined){const next=String(body.status);if(!["pending","scheduled","in_progress","waiting_parts","completed","cancelled"].includes(next))return jsonError("Invalid Workcard status.");if(next==="completed"&&current.senior_approval_status!=="approved"&&current.senior_approval_status!=="legacy_approved")return jsonError("Senior approval is required before completing a Workcard.",409);if(next==="completed"&&current.customer_approval_status!=="approved")return jsonError("Customer approval is required before completing a Workcard.",409);patch.status=next;}
   for(const field of ["scheduled_start","scheduled_end"] as const){if(body[field]!==undefined){const value=body[field]?new Date(String(body[field])):null;if(value&&!Number.isFinite(value.getTime()))return jsonError("Enter a valid Workcard schedule.");patch[field]=value?.toISOString()??null;}}
   if(patch.scheduled_start&&patch.scheduled_end&&new Date(String(patch.scheduled_end))<=new Date(String(patch.scheduled_start)))return jsonError("Workcard end must be after its start.");
   if(Object.keys(patch).length===1)return jsonError("No Workcard changes supplied.");
@@ -30,7 +30,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(error||!job)return jsonError("Could not update Workcard.",500);
   if(body.status!==undefined&&current.quote_id){
    const {data:quote}=await db.from("quotes").select("enquiry_id").eq("id",current.quote_id).eq("business_id",businessId).maybeSingle();
-   const stageByStatus:Record<string,string>={waiting_parts:"parts_required",scheduled:"booked",in_progress:"work_in_progress",quality_check:"quality_check",completed:"completed",cancelled:"cancelled"};
+   const stageByStatus:Record<string,string>={waiting_parts:"parts_required",scheduled:"booked",in_progress:"work_in_progress",completed:"completed",cancelled:"cancelled"};
    const nextStage=stageByStatus[String(body.status)];
    if(quote?.enquiry_id&&nextStage){
     const {data:enquiry}=await db.from("enquiries").select("stage").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
