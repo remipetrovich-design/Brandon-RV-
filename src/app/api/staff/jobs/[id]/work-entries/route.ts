@@ -63,8 +63,10 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  try{
   const access=await accessJob(id,user.id,membership.business_id);
   if(!access.job||!access.allowed)return jsonError("Work Order not found or not assigned to you.",404);
-  if(!["pending","scheduled","waiting_parts","in_progress"].includes(access.job.status))return jsonError("This Workcard is no longer open for updates.",409);\n  const isInProgress=access.job.status==="in_progress";
-  const body=await request.json(),entryId=String(body.entryId??"");\n  if(!isInProgress&&["quantityUsed","costUnitPrice","invoiceable","customerVisible"].some(field=>body[field]!==undefined))return jsonError("Actual work, costs and customer-visible completion details can only be recorded after work starts.",409);
+  if(!["pending","scheduled","waiting_parts","in_progress"].includes(access.job.status))return jsonError("This Workcard is no longer open for updates.",409);
+  const isInProgress=access.job.status==="in_progress";
+  const body=await request.json(),entryId=String(body.entryId??"");
+  if(!isInProgress&&["quantityUsed","costUnitPrice","invoiceable","customerVisible"].some(field=>body[field]!==undefined))return jsonError("Actual work, costs and customer-visible completion details can only be recorded after work starts.",409);
   if(!/^[0-9a-f-]{36}$/i.test(entryId))return jsonError("Select a valid prepared Workcard item.");
   const {data:current,error:currentError}=await access.db.from("job_work_entries")
    .select("id,source_quote_item_id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,unit_price,cost_unit_price,part_number,supplier_name,invoiceable,customer_visible")
