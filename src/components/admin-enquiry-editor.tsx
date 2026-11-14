@@ -20,10 +20,10 @@ const money=(v:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency
 export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,canManageQuotes=false,canManageJobs=false}:{enquiryId:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canManageJobs?:boolean}){
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
- const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null);
- const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote">("customer");
+ const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]);
+ const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote"|"workcard"|"booking">("customer");
  function handleTabKeyDown(event:KeyboardEvent<HTMLDivElement>){
-  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?["quote"]:[])];
+  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?["quote","workcard","booking"]:[])];
   const current=tabIds.indexOf(selectedTab),key=event.key;
   const next=key==="ArrowRight"?tabIds[(current+1)%tabIds.length]:key==="ArrowLeft"?tabIds[(current-1+tabIds.length)%tabIds.length]:key==="Home"?tabIds[0]:key==="End"?tabIds[tabIds.length-1]:null;
   if(!next)return;
@@ -35,6 +35,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    const [r,qr]=await Promise.all(requests),d=await r.json();
    if(!r.ok){setNotice(d.error??"Could not load Jobcard.");return;}
    setRecord(d.enquiry);setCustomer(d.customer??null);setVehicle(d.vehicle??null);setStaff(d.staff??[]);
+   if(d.enquiry?.request_type==="quote_request"){const br=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"});const bd=await br.json();if(br.ok)setBookings(bd.bookings??[]);else setNotice(bd.error??"Could not load booking requests.");}
    setAssigned((d.assignments??[]).map((x:any)=>x.staff_id));setHistory(d.history??[]);setAttachments(d.attachments??[]);
    if(qr){const qd=await qr.json();if(qr.ok){const ticketQuotes=(qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard");setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}}
   }catch{setNotice("Could not load Jobcard details.");}
@@ -126,9 +127,17 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    <div className="portal-panel-heading"><div><span className="panel-kicker">QUOTE</span><h2>Quote history &amp; preparation</h2><p>Each revision is retained against this Jobcard. Issued quotes require separate senior approval.</p></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
    {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div><AdminQuoteManagement quoteId={q.id}/><AdminQuoteTools quoteId={q.id}/></article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
    {quotePanelOpen&&<div className="brv-ticket-quote-create"><AdminCreateQuote initialEnquiryId={enquiryId} onCreated={()=>void load()}/></div>}
-   {acceptedQuote&&canManageJobs&&(workcard?<div className="brv-ticket-workcard-create"><span className="panel-kicker">WORKCARD CREATED</span><h3>{workcard.job_number} · {workcard.title}</h3><p>{pretty(workcard.status)} · Setup review: {pretty(workcard.workcard_review_status??"legacy_approved")}</p><a className="text-link" href="/admin/jobs">Open Workcards →</a><AdminWorkcardManagement jobId={workcard.id}/></div>:<div className="brv-ticket-workcard-create"><AdminCreateJob initialQuoteId={acceptedQuote.id} onCreated={()=>void load()}/></div>)}
+   
+  </section>}
+  {isQuoteRequest&&<section id="brv-panel-workcard" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-workcard" hidden={selectedTab!=="workcard"}>
+   <div className="portal-panel-heading"><div><span className="panel-kicker">WORKCARD</span><h2>Workshop job</h2><p>The worker-facing Workcard is managed separately from the customer quote and booking.</p></div></div>
+   {acceptedQuote&&canManageJobs&&(workcard?<div className="brv-ticket-workcard-create"><span className="panel-kicker">WORKCARD CREATED</span><h3>{workcard.job_number} · {workcard.title}</h3><p>{pretty(workcard.status)} · Setup review: {pretty(workcard.workcard_review_status??"legacy_approved")}</p><a className="text-link" href={"/admin/jobs/"+workcard.id}>Open full Workcard →</a><AdminWorkcardManagement jobId={workcard.id} showBookingTab={false}/></div>:<div className="brv-ticket-workcard-create"><AdminCreateJob initialQuoteId={acceptedQuote.id} onCreated={()=>void load()}/></div>)}
    {acceptedQuote&&!canManageJobs&&<p className="panel-footnote">The quote has been accepted. A user with Workcard management permission can create the Workcard.</p>}
-   {!acceptedQuote&&canManageJobs&&<p className="panel-footnote">A Workcard becomes available after the customer accepts a quote.</p>}
+   {!acceptedQuote&&<p className="panel-footnote">A Workcard becomes available after the customer accepts a quote.</p>}
+  </section>}
+  {isQuoteRequest&&<section id="brv-panel-booking" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-booking" hidden={selectedTab!=="booking"}>
+   <div className="portal-panel-heading"><div><span className="panel-kicker">BOOKING</span><h2>Booking requests &amp; appointments</h2><p>Customer booking requests are displayed here against this original Jobcard.</p></div><a className="button button-secondary" href="/admin/appointments">Open bookings calendar →</a></div>
+   {bookings.length?bookings.map(b=><article className="brv-ticket-quote" key={b.id}><div><strong>{pretty(b.status)} · {b.workcard?.job_number??"No Workcard linked"}</strong><span>Customer preferred: {b.preferred_start?new Date(b.preferred_start).toLocaleString("en-AU"):"Not supplied"}{b.preferred_end?" – "+new Date(b.preferred_end).toLocaleString("en-AU"):""}</span><span>Confirmed: {b.starts_at?new Date(b.starts_at).toLocaleString("en-AU"):"Not confirmed"}{b.ends_at?" – "+new Date(b.ends_at).toLocaleString("en-AU"):""}</span><span>Location: {b.location??"Not supplied"}</span><span>Customer notes: {b.customer_notes??"None"}</span>{b.workcard&&<a className="text-link" href={"/admin/jobs/"+b.workcard.id}>Open linked Workcard →</a>}</div></article>):<p className="panel-footnote">No booking requests or appointments are linked to this Jobcard yet.</p>}
   </section>}
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
  </div>;
