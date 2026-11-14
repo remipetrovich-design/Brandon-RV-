@@ -66,13 +66,12 @@ test("master calendar changes synchronise the linked Workcard schedule",async()=
  assert.match(component,/Master bookings & calendar/);
 });
 
-test("booking policy enforces notice, working days, unavailable dates, hours and advance window",async()=>{
+test("booking policy keeps notice, working-day, unavailable-date and advance limits but does not restrict operating hours",async()=>{
  const helper=await read("../src/lib/booking-rules.ts");
  assert.match(helper,/booking_notice_hours/);
  assert.match(helper,/working_days/);
  assert.match(helper,/unavailable_dates/);
- assert.match(helper,/opening_time/);
- assert.match(helper,/closing_time/);
+ assert.doesNotMatch(helper,/opening_time|closing_time/);
  assert.match(helper,/maximum_advance_days/);
  assert.match(helper,/travel_buffer_minutes/);
 });
