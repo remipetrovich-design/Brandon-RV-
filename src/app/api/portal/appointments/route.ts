@@ -31,12 +31,7 @@ export async function POST(request:Request){
   if(workingDays.length&&!workingDays.includes(weekday))return jsonError("That day is outside Brandon RV's configured working days.");
   const unavailable=Array.isArray(bookingConfig.unavailable_dates)?bookingConfig.unavailable_dates.map(String):[];
   if(unavailable.includes(localDate))return jsonError("Brandon RV is unavailable on that date. Please choose another day.");
-  const timeParts=new Intl.DateTimeFormat("en-AU",{timeZone:"Australia/Sydney",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(startDate);
-  const localMinutes=Number(timeParts.find(x=>x.type==="hour")?.value??0)*60+Number(timeParts.find(x=>x.type==="minute")?.value??0);
-  const opening=String(bookingConfig.opening_time??"");const closing=String(bookingConfig.closing_time??"");
-  const toMinutes=(value:string)=>{const [h,m]=value.split(":").map(Number);return h*60+m;};
   const duration=Number(bookingConfig.appointment_duration_minutes??60);
-  if(opening&&closing&&(localMinutes<toMinutes(opening)||localMinutes+duration>toMinutes(closing)))return jsonError("That time is outside Brandon RV's configured operating hours.");
   const travelBuffer=Number(bookingConfig.travel_buffer_minutes??30);
   const bufferedStart=new Date(startDate.getTime()-Math.max(0,travelBuffer)*60000).toISOString();
   const bufferedEnd=new Date(startDate.getTime()+(duration+Math.max(0,travelBuffer))*60000).toISOString();
