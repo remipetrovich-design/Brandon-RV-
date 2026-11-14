@@ -68,3 +68,22 @@ test("Jobcard pipeline includes procurement, booking, work, quality, invoice and
  const route=await read("../src/app/api/admin/enquiries/[id]/route.ts");
  assert.match(route,/parts_required/);
 });
+
+
+test("Jobcard booking does not require an agreed finish time and manager-level roles bypass scheduling policy limits",async()=>{
+ const editor=await read("../src/components/admin-enquiry-editor.tsx");
+ const workcard=await read("../src/components/admin-workcard-management.tsx");
+ const jobcardRoute=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ const workcardRoute=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
+ const calendarRoute=await read("../src/app/api/admin/appointments/route.ts");
+ const policy=await read("../src/lib/booking-rules.ts");
+ const roles=await read("../src/lib/user-role-policy.mjs");
+ assert.doesNotMatch(editor,/Agreed finish|draft\?\.ends_at/);
+ assert.doesNotMatch(workcard,/Agreed finish date and time|bookingEnd/);
+ assert.match(jobcardRoute,/isManagerOrAbove/);
+ assert.match(workcardRoute,/isManagerOrAbove/);
+ assert.match(calendarRoute,/isManagerOrAbove/);
+ assert.match(roles,/isManagerOrAbove/);
+ assert.match(policy,/bypassRestrictions/);
+ assert.match(jobcardRoute,/ends_at:endsAt\?\.toISOString\(\)\?\?null/);
+});
