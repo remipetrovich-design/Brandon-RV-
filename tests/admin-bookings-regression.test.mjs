@@ -21,3 +21,16 @@ test("Bookings page has dedicated non-overlapping responsive layout rules",async
  assert.match(css,/admin-appointments-page[\s\S]*?\.record-actions/);
  assert.match(css,/@media\s*\(max-width:\s*700px\)[\s\S]*?admin-appointments-page[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 });
+
+test("Jobcard exposes Workcard and Booking as separate top-level tabs",async()=>{
+ const editor=await read("../src/components/admin-enquiry-editor.tsx");
+ assert.match(editor,/brv-tab-workcard/);
+ assert.match(editor,/brv-tab-booking/);
+ assert.match(editor,/selectedTab===\"workcard\"/);
+ assert.match(editor,/selectedTab===\"booking\"/);
+});
+test("Jobcard booking feed loads customer requests by original enquiry and active states",async()=>{
+ const route=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ assert.match(route,/eq\("enquiry_id",id\)/);
+ assert.match(route,/requested.*confirmed.*rescheduled/);
+});
