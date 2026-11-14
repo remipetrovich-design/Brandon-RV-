@@ -150,4 +150,5 @@ test("workers cannot change accepted quantities or customer prices outside an ap
  assert.ok(route.includes("const unitPrice=Number(current.unit_price)"),"Customer prices must remain fixed to the approved quote.");
  assert.ok(route.includes("Actual use exceeds the approved quantity"),"Extra quantity requires an approved variation.");
  assert.ok(route.includes("Only items from an accepted quote or approved variation can be marked invoiceable"),"Unapproved worker-added lines cannot be invoiced.");
+ assert.ok(route.includes("quantityUsed>quantityReceived-quantityReturned"),"Workers cannot record use beyond parts actually received and retained.");
 });
