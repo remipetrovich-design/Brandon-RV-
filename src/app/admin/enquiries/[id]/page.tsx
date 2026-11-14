@@ -8,13 +8,13 @@ export default async function AdminEnquiryDetail({params}:{params:Promise<{id:st
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");if(!(await userHasPermission(user.id,"enquiries.view")))return <AdminAccessDenied resource="this Jobcard"/>;
  const {id}=await params;
- const [{data:item},canManageEnquiries,canManageQuotes,canManageJobs,canManageBookings]=await Promise.all([
+ const [{data:item},canManageEnquiries,canManageQuotes,canManageJobs,canManageBookings,canViewBookings]=await Promise.all([
   database().from("enquiries").select("id,request_number,request_type,contact_name,email,created_at,status").eq("id",id).eq("business_id",membership.business_id).maybeSingle(),
-  userHasPermission(user.id,"enquiries.manage"),userHasPermission(user.id,"quotes.manage"),userHasPermission(user.id,"jobs.manage"),userHasPermission(user.id,"appointments.manage")
+  userHasPermission(user.id,"enquiries.manage"),userHasPermission(user.id,"quotes.manage"),userHasPermission(user.id,"jobs.manage"),userHasPermission(user.id,"appointments.manage"),userHasPermission(user.id,"appointments.view")
  ]);
  if(!item)notFound();
  return <main className="portal-page"><div className="shell portal-shell" style={{display:"block",maxWidth:1500}}>
   <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> CUSTOMER WORKSPACE</p><h1>{item.request_number}</h1><p>{item.request_type.replaceAll("_"," ")} · {item.contact_name} · {item.email}</p><Link href="/admin/enquiries" className="text-link">← Back to all enquiries</Link></div>
-  <AdminEnquiryEditor enquiryId={item.id} canManageEnquiries={canManageEnquiries} canManageQuotes={canManageQuotes} canManageJobs={canManageJobs} canManageBookings={canManageBookings}/>
+  <AdminEnquiryEditor enquiryId={item.id} canManageEnquiries={canManageEnquiries} canManageQuotes={canManageQuotes} canManageJobs={canManageJobs} canManageBookings={canManageBookings} canViewBookings={canViewBookings||canManageBookings}/>
  </div></main>;
 }
