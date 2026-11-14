@@ -97,6 +97,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(["ordered","part_received","received"].includes(orderStatus)&&quantityOrdered<=0)return jsonError("Enter the quantity ordered before changing the order status.");
    if(["part_received","received"].includes(orderStatus)&&quantityReceived<=0)return jsonError("Enter the quantity received before recording a delivery.");
    if(orderStatus==="received"&&quantityReceived<quantityOrdered)return jsonError("The order cannot be marked received until all ordered parts have arrived.");
+   if(quantityOrdered>0&&quantityUsed>quantityReceived-quantityReturned)return jsonError("Actual use exceeds the received parts available. Check the delivery or record the missing stock before continuing.",409);
    patch.quantity_ordered=quantityOrdered;patch.quantity_received=quantityReceived;patch.quantity_returned=quantityReturned;patch.part_order_status=orderStatus;
    if(body.supplierOrderReference!==undefined)patch.supplier_order_reference=String(body.supplierOrderReference).trim().slice(0,120)||null;
    for(const [input,column] of [["orderedAt","ordered_at"],["expectedAt","expected_at"],["receivedAt","received_at"]] as const){
