@@ -3,16 +3,16 @@ import {useState} from "react";
 import {useRouter} from "next/navigation";
 type Workcard={id:string;job_number:string;title:string;status:string;customer_name:string|null;appointment_id:string|null};
 export default function AdminCreateAppointment({workcards}:{workcards:Workcard[]}){
- const [jobId,setJobId]=useState(""),[start,setStart]=useState(""),[end,setEnd]=useState(""),[location,setLocation]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false);
+ const [jobId,setJobId]=useState(""),[start,setStart]=useState(""),[location,setLocation]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false);
  const router=useRouter();
  async function create(){
   setBusy(true);setNotice("");
   try{
-   const response=await fetch("/api/admin/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({job_id:jobId,starts_at:start?new Date(start).toISOString():null,ends_at:end?new Date(end).toISOString():null,location})});
+   const response=await fetch("/api/admin/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({job_id:jobId,starts_at:start?new Date(start).toISOString():null,ends_at:null,location})});
    const data=await response.json();
    if(!response.ok){setNotice(data.error??"Could not create appointment.");return;}
    setNotice("Appointment created and added to the master calendar.");
-   setJobId("");setStart("");setEnd("");setLocation("");router.refresh();
+   setJobId("");setStart("");setLocation("");router.refresh();
   }catch{setNotice("Could not create appointment.");}finally{setBusy(false);}
  }
  const available=workcards.filter(job=>!job.appointment_id&&!["completed","cancelled"].includes(job.status));
@@ -23,9 +23,9 @@ export default function AdminCreateAppointment({workcards}:{workcards:Workcard[]
    <label>Workcard<select value={jobId} onChange={event=>setJobId(event.target.value)}><option value="">Select a Workcard</option>{available.map(job=><option key={job.id} value={job.id}>{job.job_number} · {job.title} · {job.customer_name??"Customer not linked"}</option>)}</select></label>
    <label>Service location<input value={location} onChange={event=>setLocation(event.target.value)} maxLength={200} placeholder="Customer address or agreed location"/></label>
    <label>Appointment start<input type="datetime-local" value={start} onChange={event=>setStart(event.target.value)}/></label>
-   <label>Appointment finish<input type="datetime-local" value={end} onChange={event=>setEnd(event.target.value)}/></label>
+   
   </div>
-  <button className="button button-primary" type="button" disabled={busy||!jobId||!start||!end||!location.trim()||new Date(end)<=new Date(start)} onClick={()=>void create()}>{busy?"Creating…":"Create & confirm appointment"}</button>
+  <button className="button button-primary" type="button" disabled={busy||!jobId||!start||!location.trim()} onClick={()=>void create()}>{busy?"Creating…":"Create & confirm appointment"}</button>
   {notice&&<p role="status" className="panel-footnote">{notice}</p>}
  </section>;
 }
