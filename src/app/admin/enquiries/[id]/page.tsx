@@ -8,7 +8,7 @@ export default async function AdminEnquiryDetail({params}:{params:Promise<{id:st
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");if(!(await userHasPermission(user.id,"enquiries.view")))return <AdminAccessDenied resource="this Jobcard"/>;
  const {id}=await params;
- const [{data:item},canManageEnquiries,canManageQuotes,canManageJobs]=await Promise.all([
+ const [{data:item},canManageEnquiries,canManageQuotes,canManageJobs,canManageBookings]=await Promise.all([
   database().from("enquiries").select("id,request_number,request_type,contact_name,email,created_at,status").eq("id",id).eq("business_id",membership.business_id).maybeSingle(),
   userHasPermission(user.id,"enquiries.manage"),userHasPermission(user.id,"quotes.manage"),userHasPermission(user.id,"jobs.manage"),userHasPermission(user.id,"appointments.manage")
  ]);
