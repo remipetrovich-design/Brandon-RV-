@@ -77,8 +77,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(error)return jsonError("Booking updated, but the Workcard link could not be synchronised. Refresh and retry.",500);
   }
   const nextStage=action==="cancel"?"ready_to_schedule":"booked";
-  if(enquiry.stage!==nextStage&&!["work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed","cancelled","closed","declined"].includes(enquiry.stage)){
-   await db.from("enquiries").update({stage:nextStage,updated_at:now}).eq("id",id).eq("business_id",businessId);
+  if(["approved","workcard_created","ready_to_schedule","booking_requested","booked"].includes(enquiry.stage)&&enquiry.stage!==nextStage){
+   await db.from("enquiries").update({stage:nextStage,status:"converted",updated_at:now}).eq("id",id).eq("business_id",businessId);
    await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:id,from_stage:enquiry.stage,to_stage:nextStage,changed_by:access.user!.id,note:action==="cancel"?"Booking cancelled; return to scheduling.":"Booking "+(action==="confirm"?"confirmed":"rescheduled")+" from the Jobcard."});
   }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"jobcard.booking_"+action,entity_type:"appointment",entity_id:appointment.id,details:{enquiry_id:id,quote_id:appointment.quote_id,workcard_ids:(jobs??[]).map(x=>x.id),starts_at:updated.starts_at,ends_at:updated.ends_at,location:updated.location}});
