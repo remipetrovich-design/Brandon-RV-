@@ -43,7 +43,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    appointment=result.data;
    if(result.error||!appointment)return jsonError("Could not load the appointment.",404);
    const startsAt=new Date(String(update.starts_at??appointment.starts_at??appointment.preferred_start??""));
-   const endValue=update.ends_at!==undefined?update.ends_at:appointment.ends_at;
+   const endValue=update.ends_at!==undefined?update.ends_at:null;
    const endsAt=endValue?new Date(String(endValue)):null;
    const location=String(update.location??appointment.location??"").trim();
    const bypassRestrictions=isManagerOrAbove(user.user_role);
