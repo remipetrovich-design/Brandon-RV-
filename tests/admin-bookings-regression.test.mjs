@@ -76,6 +76,7 @@ test("Jobcard booking does not require an agreed finish time and manager-level r
  const jobcardRoute=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
  const workcardRoute=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
  const calendarRoute=await read("../src/app/api/admin/appointments/route.ts");
+ const calendarEditRoute=await read("../src/app/api/admin/[section]/[id]/route.ts");
  const policy=await read("../src/lib/booking-rules.ts");
  const roles=await read("../src/lib/user-role-policy.mjs");
  assert.doesNotMatch(editor,/Agreed finish|draft\?\.ends_at/);
@@ -83,6 +84,8 @@ test("Jobcard booking does not require an agreed finish time and manager-level r
  assert.match(jobcardRoute,/isManagerOrAbove/);
  assert.match(workcardRoute,/isManagerOrAbove/);
  assert.match(calendarRoute,/isManagerOrAbove/);
+ assert.match(calendarEditRoute,/isManagerOrAbove/);
+ assert.match(calendarEditRoute,/ends_at:endsAt\?\.toISOString\(\)\?\?null/);
  assert.match(roles,/isManagerOrAbove/);
  assert.match(policy,/bypassRestrictions/);
  assert.match(policy,/const localParts/);
