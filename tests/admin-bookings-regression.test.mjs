@@ -56,7 +56,7 @@ test("Workcard shows confirmed booking date, time and location even when its boo
 test("service presets create service or labour quote lines rather than parts lines",async()=>{
  const editor=await read("../src/components/admin-create-quote.tsx");
  assert.match(editor,/itemType:"labour"/);
- assert.match(editor,/itemType:"labour"[^}]*serviceId/);
+ assert.match(editor,/itemType:e\\.target\\.value\\?"labour"/);
  const jobs=await read("../src/app/api/admin/jobs/route.ts");
  assert.match(jobs,/entry_type:item\.item_type==="parts"\?"parts":"labour"/);
 });
