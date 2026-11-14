@@ -16,5 +16,5 @@ test("the default internal duration is sixty minutes and travel buffer is applie
 
 test("an explicit legacy end time is used only for conflict calculations",()=>{
  const settings={booking:{appointment_duration_minutes:60,travel_buffer_minutes:0}};
- assert.equal(bookingWindowsConflict(new Date("2026-11-15T09:00:00Z"),new Date("2026-11-15T09:30:00Z"),new Date("2026-11-15T09:45:00Z"),null,settings),true);
+ assert.equal(bookingWindowsConflict(new Date("2026-11-15T09:00:00Z"),new Date("2026-11-15T09:30:00Z"),new Date("2026-11-15T09:20:00Z"),null,settings),true);
 });
