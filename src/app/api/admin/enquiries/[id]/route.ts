@@ -1,7 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 export const runtime="nodejs";
-const stages=["new","contacted","awaiting_information","assessment_required","quote_in_progress","quote_sent","awaiting_approval","approved","declined","converted","closed"];
-const legacyStatus=(stage:string)=>stage==="contacted"||stage==="awaiting_information"||stage==="assessment_required"||stage==="quote_in_progress"?"reviewing":stage==="quote_sent"||stage==="awaiting_approval"?"quoted":stage==="approved"?"accepted":stage==="declined"?"declined":stage==="converted"?"converted":stage==="closed"?"closed":"new";
+const stages=["new","contacted","awaiting_information","assessment_required","quote_in_progress","quote_sent","awaiting_approval","approved","workcard_created","parts_required","parts_ordered","parts_received","ready_to_schedule","booking_requested","booked","work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed","declined","cancelled","converted","closed"];
+const legacyStatus=(stage:string)=>stage==="contacted"||stage==="awaiting_information"||stage==="assessment_required"||stage==="quote_in_progress"?"reviewing":stage==="quote_sent"||stage==="awaiting_approval"?"quoted":stage==="approved"?"accepted":stage==="declined"?"declined":stage==="cancelled"||stage==="closed"?"closed":stage==="converted"||["workcard_created","parts_required","parts_ordered","parts_received","ready_to_schedule","booking_requested","booked","work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed"].includes(stage)?"converted":"new";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const access=await authorizePermission("enquiries.view");if(access.response)return access.response;
  const {id}=await params,db=database(),businessId=access.membership!.business_id;
@@ -44,7 +44,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!Object.keys(update).length)return jsonError("No changes supplied.");
   if(update.stage){
    update.status=legacyStatus(update.stage);
-   if(["closed","declined"].includes(update.stage)){
+   if(["closed","declined","cancelled"].includes(update.stage)){
     update.archived_at=before.archived_at??new Date().toISOString();
     update.guest_access_token_hash=null;
     update.guest_access_expires_at=new Date().toISOString();
