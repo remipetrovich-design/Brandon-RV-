@@ -5,13 +5,13 @@ const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("customer booking requests are linked to matching Workcards",async()=>{
  const route=await read("../src/app/api/portal/appointments/route.ts");
- assert.match(route,/from\("jobs"\)[\s\S]*?\.eq\("quote_id",quote\.id\)[\s\S]*?appointment_id/);
+ assert.match(route,/from\("jobs"\)\.update\(\{appointment_id:appointment\.id/);
 });
 
 test("Workcard booking lookup prefers the current active quote appointment over a stale linked appointment",async()=>{
  const route=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
  assert.match(route,/activeAppointmentResult/);
- assert.match(route,/appointmentResult\.data\?\?activeAppointmentResult\.data/);
+ assert.match(route,/activeAppointmentResult\.data\?\?appointmentResult\.data/);
 });
 
 test("Bookings page has dedicated non-overlapping responsive layout rules",async()=>{
