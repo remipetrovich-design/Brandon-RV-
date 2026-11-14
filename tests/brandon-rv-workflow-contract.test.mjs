@@ -218,7 +218,7 @@ test("Workcard test/check entries are non-billable",async()=>{
  const finish=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
  assert.ok(route.includes('"labour","parts","note","test"'));
  assert.ok(helper.includes('["note", "test"]'));
- assert.ok(finish.includes('!["note","test"].includes(x.entry_type)'));
+ assert.ok(finish.includes('["labour","parts"].includes(x.entry_type)&&x.invoiceable&&Number(x.quantity_used)>0'),"Only actual invoiceable labour and parts can be billed.");
 });
 
 
@@ -264,7 +264,7 @@ test("Workcards retain and display customer, vehicle, accepted quote and booking
  const staffApi=await source("../src/app/api/staff/jobs/route.ts");
  const staffUi=await source("../src/components/staff-work-orders.tsx");
  const adminPage=await source("../src/app/admin/[section]/page.tsx");
- assert.match(staffApi,/quotes\(quote_number,status,total,enquiries\(request_number,vehicle_description,vehicles\(make,model,year,vehicle_type,registration,vin\)\)\)/);
+ assert.match(staffApi,/quotes\(quote_number,status,total,enquiries\(id,request_number,request_type,requested_service,description,location,contact_name,email,phone,vehicle_description,vehicles\(make,model,year,vehicle_type,registration,vin\)\)\)/);
  assert.match(staffUi,/Accepted quote/);
  assert.match(staffUi,/Customer/);
  assert.match(staffUi,/Vehicle/);
