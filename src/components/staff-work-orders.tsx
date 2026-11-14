@@ -12,6 +12,7 @@ export default function StaffWorkOrders(){
  const [busy,setBusy]=useState(false);
  const [expandedId,setExpandedId]=useState<string|null>(null);
  const [entryForms,setEntryForms]=useState<Record<string,{entryType:string;description:string;quantity:string;unitPrice:string;customerVisible:boolean}>>({});
+ const [preparedForms,setPreparedForms]=useState<Record<string,{quantityRequired:string;quantityUsed:string;quantityOrdered:string;quantityReceived:string;partOrderStatus:string;supplierName:string;supplierOrderReference:string;partNumber:string;orderedAt:string;expectedAt:string;receivedAt:string;costUnitPrice:string;unitPrice:string;invoiceable:boolean;customerVisible:boolean}>>({});
  const [summaries,setSummaries]=useState<Record<string,string>>({});
  const [attachments,setAttachments]=useState<Record<string,Attachment[]>>({});
  const [photoVisibility,setPhotoVisibility]=useState<Record<string,boolean>>({});
