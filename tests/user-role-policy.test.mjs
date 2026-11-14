@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer} from "../src/lib/user-role-policy.mjs";
+import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,isManagerOrAbove} from "../src/lib/user-role-policy.mjs";
 
 test("customer-only accounts have no employee access",()=>{
  assert.equal(hasEmployeeAccess({user_role:null,employment_status:null}),false);
@@ -49,4 +49,13 @@ test("active employees and accounts with a role cannot be hired twice",()=>{
 test("inactive or non-customer accounts cannot be hired",()=>{
  assert.equal(isHireableCustomer({primary_group:"customer",status:"inactive",user_role:null,employment_status:null}),false);
  assert.equal(isHireableCustomer({primary_group:"staff",status:"active",user_role:null,employment_status:null}),false);
+});
+
+
+test("every management and executive rank bypasses booking scheduling restrictions",()=>{
+ for(const role of ["office_manager","manager","senior_manager","administrator","general_manager","website_development_specialist","ceo_founder","owner","website_developer"]){assert.equal(isManagerOrAbove(role),true,role+" should bypass booking restrictions");}
+});
+
+test("supervisors and workers retain configured booking restrictions",()=>{
+ for(const role of ["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","accounts"]){assert.equal(isManagerOrAbove(role),false,role+" should retain booking restrictions");}
 });
