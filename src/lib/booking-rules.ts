@@ -9,8 +9,21 @@ export type BookingPolicy = {
   };
 };
 
-export function validateBookingWindow(start: Date, end: Date, settings: BookingPolicy, now = new Date()) {
-  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return "Enter a valid booking start and finish time.";
+const localParts = (date: Date) => {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Sydney",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "long",
+  }).formatToParts(date);
+  const value = (type: string) => parts.find(part => part.type === type)?.value ?? "";
+  return { year: value("year"), month: value("month"), day: value("day"), weekday: value("weekday") };
+};
+
+export function validateBookingWindow(start: Date, end: Date | null, settings: BookingPolicy, now = new Date(), bypassRestrictions = false) {
+  if (!Number.isFinite(start.getTime()) || (end !== null && (!Number.isFinite(end.getTime()) || end <= start))) return "Enter a valid booking start time.";
+  if (bypassRestrictions) return null;
   const booking = settings.booking ?? {};
   const noticeHours = Math.max(1, Number(settings.booking_notice_hours ?? 24));
   if (start.getTime() < now.getTime() + noticeHours * 3600000) return "Choose a booking time at least " + noticeHours + " hours from now.";
