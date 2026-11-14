@@ -4,7 +4,7 @@ import {getWorkforceRankGroup} from "@/lib/workforce-rank-groups.mjs";
 import {FormEvent,useEffect,useMemo,useState} from "react";
 type Permission={permission_key:string;description:string};
 type Group={id:string;name:string;description:string|null;is_system:boolean;permissions:string[]};
-const userRoleOrder=["Customer","Trial Apprentice","Apprentice","Senior Apprentice","Team Leader","Supervisor","Office Admin","Office Supervisor","Office Manager","Manager","Senior Manager","Website Development Specialist","CEO / Founder"];
+const userRoleOrder=["Customer","Trial Apprentice","Apprentice","Senior Apprentice","Team Leader","Supervisor","Office Admin","Office Supervisor","Office Manager","Manager","Senior Manager","Administrator","General Manager","Website Development Specialist","CEO / Founder"];
 const sortUserRoles=(items:Group[])=>[...items].sort((a,b)=>{const ai=userRoleOrder.indexOf(a.name);const bi=userRoleOrder.indexOf(b.name);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);});
 const permissionSections=[
  {title:"Customers & intake",prefixes:["customers.","vehicles.","enquiries.","documents."]},
