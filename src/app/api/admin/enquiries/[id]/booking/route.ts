@@ -34,7 +34,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("enquiries.manage");if(access.response)return access.response;
+ const access=await authorizePermission("appointments.manage");if(access.response)return access.response;
  try{
   const {id}=await params,body=await request.json(),appointmentId=String(body.appointmentId??""),action=String(body.action??"");
   if(!idPattern.test(id)||!idPattern.test(appointmentId))return jsonError("Invalid Jobcard or booking ID.");
