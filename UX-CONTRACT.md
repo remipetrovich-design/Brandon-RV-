@@ -49,7 +49,7 @@ From Customer decision:
 - **Declined:** mark the quote declined, close and archive the Jobcard, revoke guest access immediately, preserve all records and audit history. Decline reason is optional. The customer can still view the archived outcome through their account/history; the guest access link is no longer usable after closure.
 - **Expired:** record expiry distinctly from customer rejection; close/archive only under the agreed expiry policy and notify the customer.
 
-Only an accepted, current quote may proceed to Workcard creation. The Workcard can exist before a booking is arranged. Booking requires an agreed date and start time, actual customer-site location, access conditions and management confirmation. Finish time is optional: do not present it as an agreed finish or require it to confirm a booking. Record an estimated duration separately only when useful; it is not a booking end time. Do not represent a preferred date or requested appointment as confirmed.
+Only an accepted, current quote may proceed to Workcard creation. The Workcard can exist before a booking is arranged. Booking requires an agreed date and start time, actual customer-site location, access conditions and management confirmation. Finish time is optional: do not present it as an agreed finish or require it to confirm a booking. Record an estimated duration separately only when useful; it is not a booking end time. The configured appointment duration may be used internally to check calendar overlap and travel buffers for restricted ranks, but it is never shown or stored as a promised finish. Do not represent a preferred date or requested appointment as confirmed.
 
 ## 5. Workcard state flow
 
