@@ -62,6 +62,8 @@ test("Workcard part-order fields preserve ordered, received and outstanding quan
  for(const field of ["quantity_ordered","quantity_received","quantity_returned","part_order_status","supplier_order_reference","ordered_at","expected_at","received_at"])assert.ok(migration.includes(field),"Missing part-order field: "+field);
  assert.ok(migration.includes("quantity_received <= quantity_ordered"),"Received quantity must not exceed ordered quantity.");
  assert.ok(migration.includes("quantity_returned <= quantity_received"),"Returned quantity must not exceed received quantity.");
+ assert.ok(migration.includes("INSERT INTO public.job_work_entries"),"Existing Workcards must be backfilled from their accepted quote lines.");
+ assert.ok(migration.includes("Existing customer Jobcards remain the master record"),"Existing Jobcards must remain the customer-facing master record.");
 });
 
 test("worker Workcard displays prepared scope and parts, then records actual completion details",async()=>{
