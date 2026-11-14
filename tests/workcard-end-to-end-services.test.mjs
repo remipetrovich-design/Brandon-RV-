@@ -27,12 +27,30 @@ test("Workcard management endpoint returns complete job context and service-link
  for(const field of ["quantity_required","quantity_used","unit_price","cost_unit_price","services:services!job_work_entries_service_id_fkey(name)","customers:users!jobs_customer_id_users_fkey(full_name,email,phone)","from(\"quotes\")","from(\"appointments\")","from(\"services\")","from(\"job_work_entries\")"])assert.ok(route.includes(field),"Missing Workcard API field/query: "+field);
 });
 
-test("accepted quote creates a Workcard without copying quote lines into Parts needed or actual work",async()=>{
+test("accepted quote converts the Jobcard into a pre-populated Workcard without losing approved line detail",async()=>{
  const route=await read("../src/app/api/admin/jobs/route.ts");
- assert.ok(route.includes("quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)"),"Original quote details remain available for the approved scope.");
- assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"Workcard scope can still be seeded from the accepted estimate.");
- assert.ok(!route.includes("const plannedEntries="),"Quote lines must not be inserted as Workcard parts or actual work.");
- assert.ok(!route.includes("source_quote_item_id:item.id"),"Parts needed must be researched and entered independently.");
+ assert.ok(route.includes("quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)"),"Original quote lines must be loaded for conversion.");
+ assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"The approved scope remains attached to the Workcard.");
+ assert.ok(route.includes("const plannedEntries="),"Accepted quote lines must become prepared Workcard entries.");
+ assert.ok(route.includes("source_quote_item_id:item.id"),"Each prepared line must retain its source quote line.");
+ assert.ok(route.includes("quantity_required:Number(item.quantity)"),"Required quantities must be carried into the Workcard.");
+ assert.ok(route.includes("quantity_used:0"),"Planned quantities must not be mistaken for actual usage.");
+ assert.ok(route.includes("invoiceable:false"),"Prepared quote lines must not be invoiced before actual work is recorded.");
+ assert.ok(route.includes("if(entryError)"),"Failed conversion must roll back the new Workcard.");
+});
+
+test("staff Workcard API returns prepared quote lines and supports recording actual quantities, costs and parts orders",async()=>{
+ const list=await read("../src/app/api/staff/jobs/route.ts");
+ const entries=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
+ for(const field of ["source_quote_item_id","quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
+ assert.ok(entries.includes("export async function PATCH"),"Workers must update prepared lines instead of re-entering them.");
+ for(const field of ["quantity_required","quantity_used","cost_unit_price","supplier_name","part_number","invoiceable"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
+ assert.ok(entries.includes("work_order.entry_updated"),"Worker changes must be audited.");
+});
+
+test("worker Workcard displays prepared scope and parts, then records actual completion details",async()=>{
+ const ui=await read("../src/components/staff-work-orders.tsx");
+ for(const token of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","Update prepared item","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
 });
 
 test("Parts needed exposes independent add, edit, update and delete controls with research fields",async()=>{
