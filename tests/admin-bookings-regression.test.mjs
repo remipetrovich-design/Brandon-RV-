@@ -95,3 +95,20 @@ test("Jobcard booking does not require an agreed finish time and manager-level r
  for(const role of ["office_manager","manager","senior_manager","website_development_specialist","ceo_founder"]) assert.ok(roles.includes(role),"missing manager-level role "+role);
  assert.match(jobcardRoute,/ends_at:endsAt\?\.toISOString\(\)\?\?null/);
 });
+
+
+test("Jobcard booking mutations use appointment permission rather than general enquiry edit permission",async()=>{
+ const page=await read("../src/app/admin/enquiries/[id]/page.tsx");
+ const editor=await read("../src/components/admin-enquiry-editor.tsx");
+ const route=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ assert.match(page,/canManageBookings/);
+ assert.match(editor,/canManageBookings/);
+ assert.match(route,/authorizePermission\("appointments\.manage"\)/);
+});
+
+test("Workcard detail reads and edits follow separate view and manage permissions",async()=>{
+ const page=await read("../src/app/admin/jobs/[id]/page.tsx");
+ const route=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
+ assert.match(page,/jobs\.view/);
+ assert.match(route,/authorizePermission\("jobs\.view"\)/);
+});
