@@ -20,5 +20,5 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {data:jobs,error:jobsError}=quoteIds.length?await db.from("jobs").select("id,job_number,title,status,quote_id").eq("business_id",businessId).in("quote_id",quoteIds):{data:[],error:null};
  if(jobsError)return jsonError("Could not load linked Workcards.",500);
  const jobByQuote=new Map((jobs??[]).map(job=>[job.quote_id,job]));
- return Response.json({enquiry,bookings:(appointments??[]).map(appointment=>({...appointment,workcard:jobByQuote.get(appointment.quote_id)??null}))});
+ return Response.json({enquiry,bookings:(appointments??[]).map(appointment=>({...appointment,active:["requested","confirmed","rescheduled"].includes(appointment.status),workcard:jobByQuote.get(appointment.quote_id)??null}))});
 }
