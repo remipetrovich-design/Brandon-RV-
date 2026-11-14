@@ -72,7 +72,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  }
  async function changeStage(stage:string){
   if(!record)return;
-  if(["closed","declined"].includes(stage)&&!window.confirm("This will close the Jobcard and revoke its guest access. Continue?"))return;
+  if(["closed","declined","cancelled"].includes(stage)&&!window.confirm("This will close the Jobcard and revoke its guest access. Continue?"))return;
   setBusy(true);setNotice("");
   try{const r=await fetch("/api/admin/enquiries/"+enquiryId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({stage,stage_note:stageNote||"Updated from Jobcard action"})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update Jobcard status.");return;}setNotice("Jobcard status changed to "+pretty(stage)+".");setStageNote("");await load();}
   catch{setNotice("Could not update Jobcard status.");}finally{setBusy(false);}
