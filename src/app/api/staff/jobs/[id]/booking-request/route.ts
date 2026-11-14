@@ -23,14 +23,13 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(!quote||quote.status!=="accepted")return jsonError("Only an accepted quote can be booked.",409);
   const {data:existing}=await db.from("appointments").select("id,status").eq("business_id",businessId).eq("quote_id",quote.id).in("status",["requested","confirmed","rescheduled"]).limit(1).maybeSingle();
   if(existing)return jsonError("A booking request already exists for this quote. Open the existing appointment to update it.",409);
-  const durationRaw=Number(body.durationMinutes??60),duration=Number.isFinite(durationRaw)?Math.min(480,Math.max(15,durationRaw)):60;
-  const end=new Date(start.getTime()+duration*60000).toISOString();
+
   const {data:enquiry}=await db.from("enquiries").select("id,vehicle_id,contact_name,email").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
   if(!enquiry)return jsonError("The customer Jobcard could not be found.",404);
   const {data:appointment,error}=await db.from("appointments").insert({
    business_id:businessId,customer_id:job.customer_id,user_id:job.user_id,enquiry_id:enquiry.id,quote_id:quote.id,
    vehicle_id:enquiry.vehicle_id,guest_name:job.guest_name??enquiry.contact_name,guest_email:job.guest_email??enquiry.email,
-   preferred_start:start.toISOString(),preferred_end:end,location,customer_notes:notes||null,status:"requested"
+   preferred_start:start.toISOString(),preferred_end:null,location,customer_notes:notes||null,status:"requested"
   }).select("id,status,preferred_start,preferred_end,location").single();
   if(error||!appointment)return jsonError("Could not submit the booking request.",500);
   await db.from("jobs").update({appointment_id:appointment.id,updated_at:new Date().toISOString()}).eq("id",id).eq("business_id",businessId);

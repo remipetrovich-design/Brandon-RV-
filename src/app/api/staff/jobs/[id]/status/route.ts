@@ -21,7 +21,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(job.status==="in_progress")return Response.json({success:true,status:"in_progress",alreadyStarted:true});
    if(!job.appointment_id)return jsonError("A booking must be confirmed before work can start.",409);
    const {data:booking}=await db.from("appointments").select("id,status,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",membership.business_id).maybeSingle();
-   if(!booking||booking.status!=="confirmed"||!booking.starts_at||!booking.ends_at||!booking.location)return jsonError("A complete confirmed booking is required before work can start.",409);
+   if(!booking||booking.status!=="confirmed"||!booking.starts_at||!booking.location)return jsonError("A confirmed booking with a start time and customer-site location is required before work can start.",409);
    if(!canStartWorkOrder(job.status,assignment?.status,false))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
    const {error}=await db.from("jobs").update({status:"in_progress",actual_start:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
    if(error)return jsonError("Could not start Work Order.",500);

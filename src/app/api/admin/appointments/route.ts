@@ -1,5 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
+import {validateBookingWindow} from "@/lib/booking-rules";
+import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
 import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 export async function POST(request:Request){
@@ -36,11 +37,11 @@ export async function POST(request:Request){
   const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
   const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
   const policyError=validateBookingWindow(startsAt,endsAt,settings,now,bypassRestrictions);if(policyError)return jsonError(policyError,409);
-  if(endsAt&&!bypassRestrictions){
-   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
-   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
+  if(!bypassRestrictions){
+   const {data:busyAppointments,error:conflictError}=await db.from("appointments").select("id,starts_at,ends_at").eq("business_id",businessId).in("status",["confirmed","rescheduled"]).not("starts_at","is",null);
    if(conflictError)return jsonError("Could not verify calendar availability.",500);
-   if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
+   const conflict=(busyAppointments??[]).some(existing=>bookingWindowsConflict(startsAt,endsAt,existing.starts_at,existing.ends_at,settings));
+   if(conflict)return jsonError("That time conflicts with another booking or its travel buffer.",409);
   }
   const nowIso=now.toISOString();
   const {data:appointment,error}=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id??null,user_id:job.user_id??null,quote_id:job.quote_id??null,enquiry_id:enquiryId,vehicle_id:vehicleId,guest_name:job.guest_name??null,guest_email:job.guest_email??null,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,preferred_start:startsAt.toISOString(),preferred_end:null,location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:nowIso}).select("id,status,starts_at,ends_at,location,quote_id").single();

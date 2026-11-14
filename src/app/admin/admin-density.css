@@ -505,3 +505,63 @@
   .brv-admin-frame .admin-appointments-page .record-actions > button,
   .brv-admin-frame .admin-appointments-page .record-actions > small { grid-column:1; }
 }
+
+
+/* Operational workflow refinements: readable controls, clear confirmations and read-only views. */
+.brv-admin-frame .auth-form label,
+.brv-admin-frame .portal-panel label,
+.brv-admin-frame .brv-enquiry-manager label { font-size: 12px; line-height: 1.4; }
+.brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .auth-form select,
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .portal-panel select,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager input,
+.brv-admin-frame .brv-enquiry-manager select,
+.brv-admin-frame .brv-enquiry-manager textarea { font-size: 13px; }
+.brv-admin-frame .brv-enquiry-tabs button,
+.brv-admin-frame .brv-workcard-tab { min-height: 36px; font-size: 12px; }
+.brv-admin-frame .activity-copy > span,
+.brv-admin-frame .activity-copy small { font-size: 11px; }
+.brv-admin-frame .brv-action-danger { border: 1px solid #b94a48; background: #fff5f4; color: #963a38; }
+.brv-admin-frame .brv-action-danger:hover { border-color: #963a38; background: #fde9e7; }
+.brv-admin-frame .brv-inline-confirm { display:flex; flex-wrap:wrap; align-items:center; gap:8px; width:100%; margin-top:10px; padding:12px; border:1px solid #e7c8c4; border-radius:8px; background:#fff8f7; }
+.brv-admin-frame .brv-inline-confirm p { flex-basis:100%; margin:0; color:#71413e; font-size:12px; line-height:1.5; }
+.brv-admin-frame .brv-workcard-readonly { display:grid; gap:16px; }
+.brv-admin-frame .brv-workcard-readonly > header { padding-bottom:12px; border-bottom:1px solid #e3eaf0; }
+.brv-admin-frame .brv-workcard-readonly > header h2 { margin:4px 0; font-size:18px; }
+.brv-admin-frame .brv-workcard-readonly > header p,
+.brv-admin-frame .brv-workcard-readonly > section p { margin:4px 0; color:#52677c; font-size:13px; line-height:1.6; }
+.brv-admin-frame .brv-workcard-readonly > section h3 { margin:0 0 8px; font-size:14px; }
+.brv-admin-frame .brv-admin-access-denied { min-height:60vh; }
+.brv-admin-frame .brv-admin-access-denied h1 { margin:6px 0 12px; color:#10283f; font-size:26px; }
+.brv-admin-frame .brv-admin-access-denied p { max-width:580px; color:#52677c; font-size:13px; line-height:1.65; }
+@media (max-width:640px) {
+ .brv-admin-frame .button { min-height:44px; padding-inline:14px; font-size:12px; }
+ .brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+ .brv-admin-frame .auth-form select,
+ .brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+ .brv-admin-frame .portal-panel select,
+ .brv-admin-frame .brv-enquiry-manager input,
+ .brv-admin-frame .brv-enquiry-manager select { min-height:44px; font-size:14px; }
+ .brv-admin-frame .brv-enquiry-tabs button,
+ .brv-admin-frame .brv-workcard-tab { min-height:44px; }
+ .brv-admin-frame .brv-inline-confirm { align-items:stretch; }
+ .brv-admin-frame .brv-inline-confirm .button { flex:1 1 130px; }
+}
+
+.brv-admin-frame .brv-jobcard-next-step { display:grid; gap:4px; margin-top:12px; padding:12px 16px; border-left:3px solid #1767ad; border-radius:0 7px 7px 0; background:#f1f6fb; }
+.brv-admin-frame .brv-jobcard-next-step strong { color:#183047; font-size:13px; line-height:1.5; }
+.brv-admin-frame .brv-jobcard-progress { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin:14px 0 0; padding:0; list-style:none; }
+.brv-admin-frame .brv-jobcard-progress li { display:grid; justify-items:center; gap:6px; min-width:0; padding:8px 4px; border:1px solid #dce5ee; border-radius:7px; background:#fff; color:#60758a; text-align:center; }
+.brv-admin-frame .brv-jobcard-progress li > span { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:#edf2f6; color:#48627a; font-size:11px; font-weight:800; }
+.brv-admin-frame .brv-jobcard-progress li small { font-size:10px; line-height:1.35; }
+.brv-admin-frame .brv-jobcard-progress li.complete { border-color:#c6dfd2; background:#f4faf6; color:#35664c; }
+.brv-admin-frame .brv-jobcard-progress li.complete > span { background:#dcefe3; color:#285b40; }
+.brv-admin-frame .brv-jobcard-progress li.current { border-color:#8bb8dc; background:#eff6fc; color:#164f7f; }
+.brv-admin-frame .brv-jobcard-progress li.current > span { background:#1767ad; color:#fff; }
+@media (max-width:640px) {
+ .brv-admin-frame .brv-jobcard-progress { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ .brv-admin-frame .brv-jobcard-progress li { min-height:64px; }
+}

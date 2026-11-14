@@ -22,7 +22,7 @@ export default function AdminCreateAppointment({workcards}:{workcards:Workcard[]
   <div className="form-grid">
    <label>Workcard<select value={jobId} onChange={event=>setJobId(event.target.value)}><option value="">Select a Workcard</option>{available.map(job=><option key={job.id} value={job.id}>{job.job_number} · {job.title} · {job.customer_name??"Customer not linked"}</option>)}</select></label>
    <label>Service location<input value={location} onChange={event=>setLocation(event.target.value)} maxLength={200} placeholder="Customer address or agreed location"/></label>
-   <label>Appointment start<input type="datetime-local" value={start} onChange={event=>setStart(event.target.value)}/></label>
+   <label>Booking date and start time<input type="datetime-local" value={start} onChange={event=>setStart(event.target.value)}/></label>
    
   </div>
   <button className="button button-primary" type="button" disabled={busy||!jobId||!start||!location.trim()} onClick={()=>void create()}>{busy?"Creating…":"Create & confirm appointment"}</button>

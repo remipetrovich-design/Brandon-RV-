@@ -1,9 +1,10 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 export const runtime="nodejs";
 const stages=["new","contacted","awaiting_information","assessment_required","quote_in_progress","quote_sent","awaiting_approval","approved","workcard_created","parts_required","parts_ordered","parts_received","ready_to_schedule","booking_requested","booked","work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed","declined","cancelled","converted","closed"];
 const legacyStatus=(stage:string)=>stage==="contacted"||stage==="awaiting_information"||stage==="assessment_required"||stage==="quote_in_progress"?"reviewing":stage==="quote_sent"||stage==="awaiting_approval"?"quoted":stage==="approved"?"accepted":stage==="declined"?"declined":stage==="cancelled"||stage==="closed"?"closed":stage==="converted"||["workcard_created","parts_required","parts_ordered","parts_received","ready_to_schedule","booking_requested","booked","work_in_progress","quality_check","ready_to_invoice","invoiced","awaiting_payment","paid","completed"].includes(stage)?"converted":"new";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const access=await authorizePermission("enquiries.view");if(access.response)return access.response;
+ const canManageEnquiries=await userHasPermission(access.user!.id,"enquiries.manage");
  const {id}=await params,db=database(),businessId=access.membership!.business_id;
  const {data:enquiry,error}=await db.from("enquiries").select("*").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!enquiry)return jsonError("Enquiry not found.",404);
@@ -22,7 +23,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const staffById=new Map((staff??[]).map(x=>[x.id,x]));
  const assigned=(assignments??[]).map(x=>({...x,staff:staffById.get(x.staff_id)}));
  const files=await Promise.all((attachments??[]).map(async file=>{const {data}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {id:file.id,file_name:file.file_name,mime_type:file.mime_type,size_bytes:file.size_bytes,created_at:file.created_at,url:data?.signedUrl??null};}));
- return Response.json({enquiry,customer:customer??null,vehicle:vehicle??null,assignments:assigned,staff:staffUsers??[],history:history??[],attachments:files});
+ return Response.json({enquiry:{...enquiry,internal_notes:canManageEnquiries?enquiry.internal_notes:null},customer:customer??null,vehicle:vehicle??null,assignments:assigned,staff:staffUsers??[],history:(history??[]).map(item=>({...item,note:canManageEnquiries?item.note:null})),attachments:files});
 }
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);

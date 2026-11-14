@@ -49,7 +49,7 @@ From Customer decision:
 - **Declined:** mark the quote declined, close and archive the Jobcard, revoke guest access immediately, preserve all records and audit history. Decline reason is optional. The customer can still view the archived outcome through their account/history; the guest access link is no longer usable after closure.
 - **Expired:** record expiry distinctly from customer rejection; close/archive only under the agreed expiry policy and notify the customer.
 
-Only an accepted, current quote may proceed to Workcard creation. The Workcard can exist before a booking is arranged. Booking requires an agreed date, start/end time, actual customer-site location, access conditions and management confirmation. Do not represent a preferred date or requested appointment as confirmed.
+Only an accepted, current quote may proceed to Workcard creation. The Workcard can exist before a booking is arranged. Booking requires an agreed date and start time, actual customer-site location, access conditions and management confirmation. Finish time is optional: do not present it as an agreed finish or require it to confirm a booking. Record an estimated duration separately only when useful; it is not a booking end time. The configured appointment duration may be used internally to check calendar overlap and travel buffers for restricted ranks, but it is never shown or stored as a promised finish. Do not represent a preferred date or requested appointment as confirmed.
 
 ## 5. Workcard state flow
 
@@ -75,8 +75,9 @@ Customer approval is attached to the exact final Jobcard/report revision. A requ
 ## 7. Role boundaries
 
 - **Customer:** sees their Jobcard, their own messages, issued quotes, confirmed booking, customer-visible Workcard updates, final report, invoice and payment history. Can accept/decline a quote, approve/request changes to final work, and approve/decline variations.
-- **Worker:** sees only assigned Workcards and the customer/site information needed to perform them. Can accept assignment, record work, submit variations and sign off own work. Cannot approve own Workcard or see internal financial/admin information beyond what the role requires.
+- **Worker:** sees only assigned Workcards and the customer/site information needed to perform them. Can accept assignment, record actual quantities, labour, parts, supplier/order details, actual costs, photos, tests and customer-visible updates, submit variations and sign off own work. Customer selling prices, tax calculations, invoiceability and final billing remain management-controlled. Cannot approve own Workcard or see other internal financial/admin information.
 - **Senior staff/manager:** reviews scope, creates/sends quotes, confirms bookings, assigns workers, approves variations, reviews/signs off Workcards, authorises final Jobcard and invoice.
+- **Manager rank and above:** Office Manager, Manager, Senior Manager, Administrator, General Manager, Website Development Specialist and CEO / Founder (plus retained legacy aliases) may bypass configured booking-policy restrictions such as notice periods, working days, unavailable dates, advance windows and overlap/travel-buffer checks. They still require `appointments.manage`, an accepted quote, a valid start time, service location and the correct Jobcard/Workcard link. Lower ranks remain subject to configured booking restrictions.
 - **Accounts:** manages invoices and reconciled payments within granted permissions; cannot change technical sign-offs.
 - **Administrator/owner:** manages business configuration and permissions. Server-side authorization is mandatory for every mutation; hidden buttons are not security.
 
