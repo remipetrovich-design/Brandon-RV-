@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
-test("customer booking requests are linked to matching Workcards",async()=>{
+test("customer booking requests are linked to matching Workcards and are not blocked by operating hours",async()=>{
  const route=await read("../src/app/api/portal/appointments/route.ts");
  assert.match(route,/from\("jobs"\)\.update\(\{appointment_id:appointment\.id/);
+ assert.doesNotMatch(route,/opening_time|closing_time|outside Brandon RV.s configured operating hours/);
 });
 
 test("Workcard booking lookup prefers the current active quote appointment over a stale linked appointment",async()=>{
