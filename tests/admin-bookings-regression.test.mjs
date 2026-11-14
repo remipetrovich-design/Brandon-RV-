@@ -85,5 +85,7 @@ test("Jobcard booking does not require an agreed finish time and manager-level r
  assert.match(calendarRoute,/isManagerOrAbove/);
  assert.match(roles,/isManagerOrAbove/);
  assert.match(policy,/bypassRestrictions/);
+ assert.match(policy,/const localParts/);
+ for(const role of ["office_manager","manager","senior_manager","website_development_specialist","ceo_founder"]) assert.ok(roles.includes(role),"missing manager-level role "+role);
  assert.match(jobcardRoute,/ends_at:endsAt\?\.toISOString\(\)\?\?null/);
 });
