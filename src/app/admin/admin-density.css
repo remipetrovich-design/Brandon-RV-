@@ -505,3 +505,48 @@
   .brv-admin-frame .admin-appointments-page .record-actions > button,
   .brv-admin-frame .admin-appointments-page .record-actions > small { grid-column:1; }
 }
+
+
+/* Operational workflow refinements: readable controls, clear confirmations and read-only views. */
+.brv-admin-frame .auth-form label,
+.brv-admin-frame .portal-panel label,
+.brv-admin-frame .brv-enquiry-manager label { font-size: 12px; line-height: 1.4; }
+.brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .auth-form select,
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .portal-panel select,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager input,
+.brv-admin-frame .brv-enquiry-manager select,
+.brv-admin-frame .brv-enquiry-manager textarea { font-size: 13px; }
+.brv-admin-frame .brv-enquiry-tabs button,
+.brv-admin-frame .brv-workcard-tab { min-height: 38px; font-size: 12px; }
+.brv-admin-frame .activity-copy > span,
+.brv-admin-frame .activity-copy small { font-size: 11px; }
+.brv-admin-frame .brv-action-danger { border: 1px solid #b94a48; background: #fff5f4; color: #963a38; }
+.brv-admin-frame .brv-action-danger:hover { border-color: #963a38; background: #fde9e7; }
+.brv-admin-frame .brv-inline-confirm { display:flex; flex-wrap:wrap; align-items:center; gap:8px; width:100%; margin-top:10px; padding:12px; border:1px solid #e7c8c4; border-radius:8px; background:#fff8f7; }
+.brv-admin-frame .brv-inline-confirm p { flex-basis:100%; margin:0; color:#71413e; font-size:12px; line-height:1.5; }
+.brv-admin-frame .brv-workcard-readonly { display:grid; gap:16px; }
+.brv-admin-frame .brv-workcard-readonly > header { padding-bottom:12px; border-bottom:1px solid #e3eaf0; }
+.brv-admin-frame .brv-workcard-readonly > header h2 { margin:4px 0; font-size:18px; }
+.brv-admin-frame .brv-workcard-readonly > header p,
+.brv-admin-frame .brv-workcard-readonly > section p { margin:4px 0; color:#52677c; font-size:13px; line-height:1.6; }
+.brv-admin-frame .brv-workcard-readonly > section h3 { margin:0 0 8px; font-size:14px; }
+.brv-admin-frame .brv-admin-access-denied { min-height:60vh; }
+.brv-admin-frame .brv-admin-access-denied h1 { margin:6px 0 12px; color:#10283f; font-size:26px; }
+.brv-admin-frame .brv-admin-access-denied p { max-width:580px; color:#52677c; font-size:13px; line-height:1.65; }
+@media (max-width:640px) {
+ .brv-admin-frame .button { min-height:44px; padding-inline:14px; font-size:12px; }
+ .brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+ .brv-admin-frame .auth-form select,
+ .brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+ .brv-admin-frame .portal-panel select,
+ .brv-admin-frame .brv-enquiry-manager input,
+ .brv-admin-frame .brv-enquiry-manager select { min-height:44px; font-size:14px; }
+ .brv-admin-frame .brv-enquiry-tabs button,
+ .brv-admin-frame .brv-workcard-tab { min-height:44px; }
+ .brv-admin-frame .brv-inline-confirm { align-items:stretch; }
+ .brv-admin-frame .brv-inline-confirm .button { flex:1 1 130px; }
+}
