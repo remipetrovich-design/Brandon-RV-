@@ -35,17 +35,15 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!canFinishWorkOrder(job.status,assignment?.status,false))return jsonError("Only an in-progress Work Order with an accepted assignment can be finished.",409);
   const summary=String(body.workSummary??"").trim().slice(0,8000);
   if(summary.length<10)return jsonError("Add a useful summary of the work completed before finishing the Work Order.");
-  const {data:entries,error:entryError}=await db.from("job_work_entries").select("id,entry_type,description,quantity,unit_price,tax_rate,line_total").eq("job_id",id).eq("business_id",membership.business_id).order("occurred_at");
-  if(entryError)return jsonError("Could not load Work Order entries.",500);
-  const billable=(entries??[]).filter(x=>!["note","test"].includes(x.entry_type));
-  let items=billable.map((x:any,i:number)=>({description:x.description,quantity:Number(x.quantity),unit_price:Number(x.unit_price),tax_rate:Number(x.tax_rate),line_total:Number(x.line_total),sort_order:i}));
-  if(!items.length&&job.quote_id){
-   const {data:quoteItems}=await db.from("quote_items").select("description,quantity,unit_price,tax_rate,line_total").eq("quote_id",job.quote_id).order("sort_order");
-   items=(quoteItems??[]).map((x:any,i:number)=>({...x,sort_order:i}));
-  }
-  const totals=calculateWorkOrderTotals(billable.length?(entries??[]):items);
+  const {data:entries,error:entryError}=await db.from("job_work_entries").select("id,entry_type,description,quantity,quantity_used,unit_price,tax_rate,line_total,invoiceable").eq("job_id",id).eq("business_id",membership.business_id).order("occurred_at");
+  if(entryError)return jsonError("Could not load Workcard entries.",500);
+  // Only actual work explicitly marked invoiceable can enter the draft invoice.
+  // Planned quote quantities are never substituted for worker-recorded usage.
+  const billable=(entries??[]).filter(x=>["labour","parts"].includes(x.entry_type)&&x.invoiceable&&Number(x.quantity_used)>0);
+  const items=billable.map((x:any,i:number)=>({description:x.description,quantity:Number(x.quantity_used),unit_price:Number(x.unit_price),tax_rate:Number(x.tax_rate),line_total:Number((Number(x.quantity_used)*Number(x.unit_price)).toFixed(2)),sort_order:i}));
+  const totals=calculateWorkOrderTotals(items);
   const {subtotal,taxAmount,total}=totals;
-  if(!items.length)return jsonError("Add at least one billable work item or link an approved quote before finishing this Work Order.",409);
+  if(!items.length)return jsonError("Record actual labour or parts used and mark at least one completed item as invoiceable before signing off this Workcard.",409);
   const {data:invoice,error:invoiceError}=await db.from("invoices").insert({
    business_id:membership.business_id,customer_id:job.customer_id,user_id:job.user_id,job_id:id,quote_id:job.quote_id,
    invoice_number:"BRV-I-"+Date.now().toString(36).toUpperCase(),status:"draft",subtotal,tax_amount:taxAmount,total,amount_paid:0,
