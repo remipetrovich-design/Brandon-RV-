@@ -112,3 +112,29 @@ test("Workcard detail reads and edits follow separate view and manage permission
  assert.match(page,/jobs\.view/);
  assert.match(route,/authorizePermission\("jobs\.view"\)/);
 });
+
+
+test("Workcard management navigation is not exposed to ordinary workers",async()=>{
+ const layout=await read("../src/app/admin/layout.tsx");
+ assert.match(layout,/label:"Workcard management",href:"\/admin\/jobs",permission:"jobs\.manage"/);
+ assert.match(layout,/label:"My Workcards",href:"\/admin\/my-workcards",permission:"jobs\.view"/);
+});
+
+test("Workcard detail read access is assignment-scoped and private data is permission-filtered",async()=>{
+ const route=await read("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
+ assert.match(route,/authorizePermission\("jobs\.view"\)/);
+ assert.match(route,/job_assignments/);
+ assert.match(route,/This Workcard is not assigned to you/);
+ assert.match(route,/internal_notes:canManage\?/);
+ assert.match(route,/cost_unit_price:canViewCosts\?/);
+ assert.match(route,/supplier_name:canViewSuppliers\?/);
+ assert.match(route,/unit_price:canViewSales\?/);
+ assert.match(route,/userHasPermission\(access\.user!\.id,"expenses\.manage"\)/);
+ assert.match(route,/userHasPermission\(access\.user!\.id,"invoices\.manage"\)/);
+});
+
+test("Workcard read-only view does not expose edit controls",async()=>{
+ const editor=await read("../src/components/admin-workcard-management.tsx");
+ assert.match(editor,/WorkcardReadOnly/);
+ assert.match(editor,/:job\?canManage\?/);
+});
