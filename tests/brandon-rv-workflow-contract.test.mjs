@@ -55,7 +55,7 @@ test("a Workcard is created from an accepted quote before booking and only once"
  assert.doesNotMatch(form,/!selected\?\.confirmedBooking/);
  assert.doesNotMatch(form,/appointmentId:selected\?\.confirmedBooking/);
  assert.match(bookingConfirmation,/Create the Workcard from the accepted quote before confirming its booking/);
- assert.match(bookingConfirmation,/update\(\{appointment_id:id/);
+ assert.match(bookingConfirmation,/scheduleUpdate:any=\{appointment_id:id/);
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
