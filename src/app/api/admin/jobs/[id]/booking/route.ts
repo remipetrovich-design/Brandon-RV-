@@ -59,7 +59,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    if(updated.error||!updated.data)return jsonError("Could not confirm the customer's booking request.",500);
    appointment=updated.data;
   }else{
-   const inserted=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id,user_id:job.user_id??null,enquiry_id:enquiryId,quote_id:job.quote_id,vehicle_id:vehicleId,starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),preferred_start:startsAt.toISOString(),preferred_end:endsAt.toISOString(),location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:now}).select("id,status,starts_at,ends_at,location").single();
+   const inserted=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id,user_id:job.user_id??null,enquiry_id:enquiryId,quote_id:job.quote_id,vehicle_id:vehicleId,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,preferred_start:startsAt.toISOString(),preferred_end:null,location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:now}).select("id,status,starts_at,ends_at,location").single();
    if(inserted.error||!inserted.data){console.error("Workcard booking insert failed",inserted.error);return jsonError("Could not create booking.",500);}
    appointment=inserted.data;
   }
