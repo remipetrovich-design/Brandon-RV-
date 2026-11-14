@@ -30,7 +30,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(error||!job)return jsonError("Could not update Workcard.",500);
   if(body.status!==undefined&&current.quote_id){
    const {data:quote}=await db.from("quotes").select("enquiry_id").eq("id",current.quote_id).eq("business_id",businessId).maybeSingle();
-   const stageByStatus:Record<string,string>={waiting_parts:"parts_required",scheduled:"booked",in_progress:"work_in_progress",completed:"completed",cancelled:"cancelled"};
+   const stageByStatus:Record<string,string>={waiting_parts:"parts_required",scheduled:"booked",in_progress:"work_in_progress",completed:"quality_check",cancelled:"cancelled"};
    const nextStage=stageByStatus[String(body.status)];
    if(quote?.enquiry_id&&nextStage){
     const {data:enquiry}=await db.from("enquiries").select("stage").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
