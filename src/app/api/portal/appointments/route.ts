@@ -50,6 +50,13 @@ export async function POST(request:Request){
   if(error||!appointment)return jsonError("Could not submit booking request.",500);
   const {error:workcardLinkError}=await db.from("jobs").update({appointment_id:appointment.id,updated_at:new Date().toISOString()}).eq("business_id",customer.business_id).eq("quote_id",quote.id);
   if(workcardLinkError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",customer.business_id);return jsonError("Your booking request could not be linked to the Workcard. Please try again.",500);}
+  if(enquiryId){
+   const {data:enquiry}=await db.from("enquiries").select("stage").eq("id",enquiryId).eq("business_id",customer.business_id).maybeSingle();
+   if(enquiry&&["approved","workcard_created","ready_to_schedule"].includes(enquiry.stage)){
+    await db.from("enquiries").update({stage:"booking_requested",status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiryId).eq("business_id",customer.business_id);
+    await db.from("enquiry_stage_history").insert({business_id:customer.business_id,enquiry_id:enquiryId,from_stage:enquiry.stage,to_stage:"booking_requested",changed_by:user.id,note:"Customer submitted a booking request."});
+   }
+  }
   await db.from("audit_events").insert({business_id:customer.business_id,actor_user_id:user.id,action:"booking.requested_after_quote_acceptance",entity_type:"appointment",entity_id:appointment.id,details:{quote_id:quote.id,preferred_start:appointment.preferred_start}});
   return Response.json({success:true,appointment,message:"Your preferred booking time has been sent. It is not confirmed until Brandon RV agrees the date, time and location."},{status:201});
  }catch{return jsonError("Could not submit booking request.",500);}
