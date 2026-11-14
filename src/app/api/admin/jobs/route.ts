@@ -52,10 +52,28 @@ export async function POST(request:Request){
    }
    return jsonError("Could not create Workcard.",500);
   }
-  // The accepted quote remains the estimate and approved scope reference.
-  // Parts needed and actual work are researched and entered by workshop staff
-  // directly on the Workcard; quote lines are deliberately not copied here.
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review"}});
+  // Convert the accepted quote into a prepared worker Workcard.
+  // These are planned lines only: no quantity is treated as used or invoiceable.
+  const plannedEntries=(quote.quote_items??[]).map((item:any)=>({
+   business_id:businessId,job_id:job.id,created_by:access.user!.id,
+   source_quote_item_id:item.id,entry_type:item.item_type==="labour"?"labour":"parts",
+   description:String(item.description),quantity:Number(item.quantity),
+   quantity_required:Number(item.quantity),quantity_used:0,
+   quantity_ordered:0,quantity_received:0,
+   part_order_status:item.item_type==="parts"?"not_ordered":"not_required",
+   unit_price:Number(item.unit_price),cost_unit_price:0,tax_rate:Number(item.tax_rate??0),
+   line_total:0,service_id:item.service_id??null,
+   customer_visible:false,invoiceable:false
+  }));
+  if(plannedEntries.length){
+   const {error:entryError}=await db.from("job_work_entries").insert(plannedEntries);
+   if(entryError){
+    console.error("Prepared Workcard entry creation failed",entryError);
+    await db.from("jobs").delete().eq("id",job.id).eq("business_id",businessId);
+    return jsonError("Could not prepare the Workcard from the accepted quote. No incomplete Workcard was kept.",500);
+   }
+  }
+  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review",prepared_entry_count:plannedEntries.length}});
   return Response.json({job},{status:201});
  }catch(error){
   console.error("Workcard creation failed",error);
