@@ -68,6 +68,8 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    <button id="brv-tab-attachments" type="button" role="tab" aria-selected={selectedTab==="attachments"} aria-controls="brv-panel-attachments" tabIndex={selectedTab==="attachments"?0:-1} onClick={()=>setSelectedTab("attachments")}>Attachments <span>{attachments.length}</span></button>
    <button id="brv-tab-activity" type="button" role="tab" aria-selected={selectedTab==="activity"} aria-controls="brv-panel-activity" tabIndex={selectedTab==="activity"?0:-1} onClick={()=>setSelectedTab("activity")}>Activity <span>{history.length}</span></button>
    {isQuoteRequest&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" tabIndex={selectedTab==="quote"?0:-1} onClick={()=>setSelectedTab("quote")}>Quote <span>{quotes.length}</span></button>}
+   {isQuoteRequest&&<button id="brv-tab-workcard" type="button" role="tab" aria-selected={selectedTab==="workcard"} aria-controls="brv-panel-workcard" tabIndex={selectedTab==="workcard"?0:-1} onClick={()=>setSelectedTab("workcard")}>Workcard</button>}
+   {isQuoteRequest&&<button id="brv-tab-booking" type="button" role="tab" aria-selected={selectedTab==="booking"} aria-controls="brv-panel-booking" tabIndex={selectedTab==="booking"?0:-1} onClick={()=>setSelectedTab("booking")}>Booking <span>{bookings.filter(b=>["requested","confirmed","rescheduled"].includes(b.status)).length}</span></button>}
   </div>
 
   <section id="brv-panel-customer" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-customer" hidden={selectedTab!=="customer"}>
