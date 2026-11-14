@@ -13,7 +13,7 @@ test("Workcard has a working Job details panel",async()=>{
 
 test("service catalogue selection is a category and never replaces the actual work item",async()=>{
  const component=await read("../src/components/admin-workcard-management.tsx");
- assert.match(component,/Service category \/ type of work/);
+ assert.match(component,/Service preset category \/ type of work/);
  assert.match(component,/Actual work item description/);
  assert.match(component,/Category:/);
  assert.doesNotMatch(component,/description:s\?\.name/);
