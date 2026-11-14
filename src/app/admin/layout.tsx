@@ -12,7 +12,7 @@ const navigation:AdminNavGroup[]=[
   {label:"Enquiries & requests",href:"/admin/enquiries",permission:"enquiries.view",icon:"inbox"},
   {label:"Quotes",href:"/admin/quotes",permission:"quotes.view",icon:"quote"},
   {label:"My Workcards",href:"/admin/my-workcards",permission:"jobs.view",icon:"jobs"},
-  {label:"Workcard management",href:"/admin/jobs",permission:"jobs.view",icon:"jobs"},
+  {label:"Workcard management",href:"/admin/jobs",permission:"jobs.manage",icon:"jobs"},
   {label:"Bookings & calendar",href:"/admin/appointments",permission:"appointments.view",icon:"calendar"}
  ]},
  {title:"Customers & vehicles",items:[
