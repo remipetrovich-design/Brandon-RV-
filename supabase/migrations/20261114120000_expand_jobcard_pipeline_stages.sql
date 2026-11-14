@@ -1,0 +1,30 @@
+-- Expand the customer Jobcard pipeline to cover the complete operational lifecycle.
+ALTER TABLE public.enquiries DROP CONSTRAINT IF EXISTS enquiries_stage_check;
+ALTER TABLE public.enquiries ADD CONSTRAINT enquiries_stage_check CHECK (stage IN (
+  'new',
+  'contacted',
+  'awaiting_information',
+  'assessment_required',
+  'quote_in_progress',
+  'quote_sent',
+  'awaiting_approval',
+  'approved',
+  'workcard_created',
+  'parts_required',
+  'parts_ordered',
+  'parts_received',
+  'ready_to_schedule',
+  'booking_requested',
+  'booked',
+  'work_in_progress',
+  'quality_check',
+  'ready_to_invoice',
+  'invoiced',
+  'awaiting_payment',
+  'paid',
+  'completed',
+  'declined',
+  'cancelled',
+  'converted',
+  'closed'
+));
