@@ -1,15 +1,18 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
+import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("appointments.manage");if(access.response)return access.response;
  try{
   const body=await request.json(),jobId=String(body.job_id??"");
-  const startsAt=new Date(String(body.starts_at??"")),endsAt=new Date(String(body.ends_at??""));
+  const startsAt=new Date(String(body.starts_at??""));
+  const endsAt=body.ends_at?new Date(String(body.ends_at)):null;
   const location=String(body.location??"").trim().slice(0,200);
+  const bypassRestrictions=isManagerOrAbove(access.user?.user_role);
   if(!/^[0-9a-f-]{36}$/i.test(jobId))return jsonError("Select a Workcard for this appointment.");
-  if(!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)return jsonError("Enter a valid start and finish time.");
+  if(!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Enter a valid appointment start time.");
   if(location.length<3)return jsonError("Enter the agreed service location.");
   const db=database(),businessId=access.membership!.business_id,now=new Date();
   const {data:job,error:jobError}=await db.from("jobs").select("id,job_number,status,appointment_id,quote_id,customer_id,user_id,guest_name,guest_email").eq("id",jobId).eq("business_id",businessId).maybeSingle();
@@ -32,15 +35,17 @@ export async function POST(request:Request){
   }
   const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
   const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
-  const policyError=validateBookingWindow(startsAt,endsAt,settings,now);if(policyError)return jsonError(policyError,409);
-  const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
-  const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
-  if(conflictError)return jsonError("Could not verify calendar availability.",500);
-  if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
+  const policyError=validateBookingWindow(startsAt,endsAt,settings,now,bypassRestrictions);if(policyError)return jsonError(policyError,409);
+  if(endsAt&&!bypassRestrictions){
+   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
+   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
+   if(conflictError)return jsonError("Could not verify calendar availability.",500);
+   if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
+  }
   const nowIso=now.toISOString();
-  const {data:appointment,error}=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id??null,user_id:job.user_id??null,quote_id:job.quote_id??null,enquiry_id:enquiryId,vehicle_id:vehicleId,guest_name:job.guest_name??null,guest_email:job.guest_email??null,starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),preferred_start:startsAt.toISOString(),preferred_end:endsAt.toISOString(),location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:nowIso}).select("id,status,starts_at,ends_at,location,quote_id").single();
+  const {data:appointment,error}=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id??null,user_id:job.user_id??null,quote_id:job.quote_id??null,enquiry_id:enquiryId,vehicle_id:vehicleId,guest_name:job.guest_name??null,guest_email:job.guest_email??null,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,preferred_start:startsAt.toISOString(),preferred_end:null,location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:nowIso}).select("id,status,starts_at,ends_at,location,quote_id").single();
   if(error||!appointment)return jsonError("Could not create the appointment.",500);
-  const {error:linkError}=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at,status:"scheduled",updated_at:nowIso}).eq("id",job.id).eq("business_id",businessId);
+  const {error:linkError}=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at??null,status:"scheduled",updated_at:nowIso}).eq("id",job.id).eq("business_id",businessId);
   if(linkError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);return jsonError("Appointment could not be linked to the Workcard.",500);}
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"calendar.appointment_created",entity_type:"appointment",entity_id:appointment.id,details:{job_id:job.id,job_number:job.job_number,starts_at:appointment.starts_at,ends_at:appointment.ends_at,location}});
   return Response.json({appointment,jobId:job.id},{status:201});

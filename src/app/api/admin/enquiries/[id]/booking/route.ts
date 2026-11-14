@@ -1,5 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
+import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
@@ -52,17 +53,22 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   let patch:any={updated_at:now};
   if(action==="cancel"){patch.status="cancelled";}
   else{
-   const startsAt=new Date(String(body.starts_at??"")),endsAt=new Date(String(body.ends_at??"")),location=String(body.location??"").trim().slice(0,200);
-   if(!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)return jsonError("Enter a valid booking start and finish time.");
+   const startsAt=new Date(String(body.starts_at??""));
+   const endsAt=body.ends_at?new Date(String(body.ends_at)):null;
+   const location=String(body.location??"").trim().slice(0,200);
+   const bypassRestrictions=isManagerOrAbove(access.user?.user_role);
+   if(!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Enter a valid booking start time.");
    if(location.length<3)return jsonError("Enter the agreed service location.");
    const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
    const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
-   const policyError=validateBookingWindow(startsAt,endsAt,settings);if(policyError)return jsonError(policyError,409);
-   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
-   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).neq("id",appointment.id).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
-   if(conflictError)return jsonError("Could not verify calendar availability.",500);
-   if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
-   patch={...patch,starts_at:startsAt.toISOString(),ends_at:endsAt.toISOString(),location,status:action==="confirm"?"confirmed":"rescheduled",confirmed_by:access.user!.id,confirmed_at:now};
+   const policyError=validateBookingWindow(startsAt,endsAt,settings,new Date(),bypassRestrictions);if(policyError)return jsonError(policyError,409);
+   if(endsAt&&!bypassRestrictions){
+    const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
+    const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",businessId).neq("id",appointment.id).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
+    if(conflictError)return jsonError("Could not verify calendar availability.",500);
+    if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
+   }
+   patch={...patch,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,location,status:action==="confirm"?"confirmed":"rescheduled",confirmed_by:access.user!.id,confirmed_at:now};
   }
   const {data:updated,error:updateError}=await db.from("appointments").update(patch).eq("id",appointment.id).eq("business_id",businessId).select("id,status,quote_id,enquiry_id,preferred_start,preferred_end,starts_at,ends_at,location,customer_notes,internal_notes,created_at,updated_at").single();
   if(updateError||!updated)return jsonError("Could not update this booking.",500);
