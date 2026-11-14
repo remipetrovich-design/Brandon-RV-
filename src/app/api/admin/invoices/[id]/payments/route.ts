@@ -9,7 +9,9 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const amount=Number(body.amount),method=String(body.method??"other"),reference=String(body.reference??"").trim().slice(0,120);
   if(!Number.isFinite(amount)||amount<=0||amount>10000000)return jsonError("Enter a valid payment amount.");
   if(!["cash","bank_transfer","card","other"].includes(method))return jsonError("Select a valid payment method.");
-  const db=database();\n  const {data:invoice}=await db.from("invoices").select("job_id,quote_id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();\n  const {data,error}=await db.rpc("record_invoice_payment",{p_invoice_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_amount:amount,p_method:method,p_reference:reference||null});
+  const db=database();
+  const {data:invoice}=await db.from("invoices").select("job_id,quote_id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+  const {data,error}=await db.rpc("record_invoice_payment",{p_invoice_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_amount:amount,p_method:method,p_reference:reference||null});
   if(error){if(error.code==="P0001")return jsonError(error.message??"This invoice cannot accept payment.",409);if(error.code==="22023")return jsonError(error.message??"Enter a valid payment.",400);return jsonError("Could not record payment. No changes were made.",500);}
   if(invoice&&(data?.invoiceStatus==="part_paid"||data?.invoiceStatus==="paid")){
    let enquiryId:string|null=null;
