@@ -48,6 +48,8 @@ test("staff Workcard API returns prepared quote lines and supports recording act
  assert.ok(entries.includes("export async function PATCH"),"Workers must update prepared lines instead of re-entering them.");
  for(const field of ["quantity_required","quantity_used","cost_unit_price","supplier_name","part_number","invoiceable"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
  assert.ok(entries.includes("work_order.entry_updated"),"Worker changes must be audited.");
+ assert.ok(entries.includes('["pending","scheduled","waiting_parts","in_progress"].includes(access.job.status)'),"Workers must be able to update supplier orders before starting the repair.");
+ assert.ok(entries.includes("Actual work, costs and customer-visible completion details can only be recorded after work starts."),"Pre-start updates must be limited to parts ordering.");
 });
 
 test("Workcard part-order fields preserve ordered, received and outstanding quantities",async()=>{
@@ -59,7 +61,7 @@ test("Workcard part-order fields preserve ordered, received and outstanding quan
 
 test("worker Workcard displays prepared scope and parts, then records actual completion details",async()=>{
  const ui=await read("../src/components/staff-work-orders.tsx");
- for(const token of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","Save prepared item","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
+ for(const token of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","Save prepared item","Save parts order","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
 });
 
 test("Parts needed exposes independent add, edit, update and delete controls with research fields",async()=>{
