@@ -60,7 +60,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;location:string}>>({});
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[confirmCancelId,setConfirmCancelId]=useState<string|null>(null),[confirmCloseStage,setConfirmCloseStage]=useState<string|null>(null),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote"|"workcard"|"booking">("customer");
  function handleTabKeyDown(event:KeyboardEvent<HTMLDivElement>){
-  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?["quote","workcard",...(canViewBookings?["booking"]:[])]:[])];
+  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?[...(canManageQuotes?["quote"]:[]),...(canManageJobs&&canManageQuotes?["workcard"]:[]),...(canViewBookings?["booking"]:[])]:[])];
   const current=tabIds.indexOf(selectedTab),key=event.key;
   const next=key==="ArrowRight"?tabIds[(current+1)%tabIds.length]:key==="ArrowLeft"?tabIds[(current-1+tabIds.length)%tabIds.length]:key==="Home"?tabIds[0]:key==="End"?tabIds[tabIds.length-1]:null;
   if(!next)return;
@@ -120,8 +120,8 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    <button id="brv-tab-conversation" type="button" role="tab" aria-selected={selectedTab==="conversation"} aria-controls="brv-panel-conversation" tabIndex={selectedTab==="conversation"?0:-1} onClick={()=>setSelectedTab("conversation")}>{record.request_type==="general_enquiry"?"Follow-up":"Conversation"}</button>
    <button id="brv-tab-attachments" type="button" role="tab" aria-selected={selectedTab==="attachments"} aria-controls="brv-panel-attachments" tabIndex={selectedTab==="attachments"?0:-1} onClick={()=>setSelectedTab("attachments")}>Attachments <span>{attachments.length}</span></button>
    <button id="brv-tab-activity" type="button" role="tab" aria-selected={selectedTab==="activity"} aria-controls="brv-panel-activity" tabIndex={selectedTab==="activity"?0:-1} onClick={()=>setSelectedTab("activity")}>Activity <span>{history.length}</span></button>
-   {isQuoteRequest&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" tabIndex={selectedTab==="quote"?0:-1} onClick={()=>setSelectedTab("quote")}>Quote <span>{quotes.length}</span></button>}
-   {isQuoteRequest&&<button id="brv-tab-workcard" type="button" role="tab" aria-selected={selectedTab==="workcard"} aria-controls="brv-panel-workcard" tabIndex={selectedTab==="workcard"?0:-1} onClick={()=>setSelectedTab("workcard")}>Workcard</button>}
+   {isQuoteRequest&&canManageQuotes&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" tabIndex={selectedTab==="quote"?0:-1} onClick={()=>setSelectedTab("quote")}>Quote <span>{quotes.length}</span></button>}
+   {isQuoteRequest&&canManageJobs&&canManageQuotes&&<button id="brv-tab-workcard" type="button" role="tab" aria-selected={selectedTab==="workcard"} aria-controls="brv-panel-workcard" tabIndex={selectedTab==="workcard"?0:-1} onClick={()=>setSelectedTab("workcard")}>Workcard</button>}
    {isQuoteRequest&&canViewBookings&&<button id="brv-tab-booking" type="button" role="tab" aria-selected={selectedTab==="booking"} aria-controls="brv-panel-booking" tabIndex={selectedTab==="booking"?0:-1} onClick={()=>setSelectedTab("booking")}>Booking <span>{bookings.filter(b=>["requested","confirmed","rescheduled"].includes(b.status)).length}</span></button>}
   </div>
 
@@ -178,13 +178,13 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
    {record.request_type==="general_enquiry"&&<><span className="panel-kicker">FOLLOW-UP</span><h2>Contact the customer directly</h2><p>General enquiries are handled by phone or email. Record call attempts and outcomes in internal notes; this record has no customer reply composer.</p></>}
   </section>
 
-  {isQuoteRequest&&<section id="brv-panel-quote" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-quote" hidden={selectedTab!=="quote"}>
+  {isQuoteRequest&&canManageQuotes&&<section id="brv-panel-quote" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-quote" hidden={selectedTab!=="quote"}>
    <div className="portal-panel-heading"><div><span className="panel-kicker">QUOTE</span><h2>Quote history &amp; preparation</h2><p>Each revision is retained against this Jobcard. Issued quotes require separate senior approval.</p></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
    {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div><AdminQuoteManagement quoteId={q.id}/><AdminQuoteTools quoteId={q.id}/></article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
    {quotePanelOpen&&<div className="brv-ticket-quote-create"><AdminCreateQuote initialEnquiryId={enquiryId} onCreated={()=>void load()}/></div>}
    
   </section>}
-  {isQuoteRequest&&<section id="brv-panel-workcard" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-workcard" hidden={selectedTab!=="workcard"}>
+  {isQuoteRequest&&canManageJobs&&canManageQuotes&&<section id="brv-panel-workcard" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-workcard" hidden={selectedTab!=="workcard"}>
    <div className="portal-panel-heading"><div><span className="panel-kicker">WORKCARD</span><h2>Workshop job</h2><p>The worker-facing Workcard is managed separately from the customer quote and booking.</p></div></div>
    {acceptedQuote&&canManageJobs&&(workcard?<div className="brv-ticket-workcard-create"><span className="panel-kicker">WORKCARD CREATED</span><h3>{workcard.job_number} · {workcard.title}</h3><p>{pretty(workcard.status)} · Setup review: {pretty(workcard.workcard_review_status??"legacy_approved")}</p><a className="text-link" href={"/admin/jobs/"+workcard.id}>Open full Workcard →</a><AdminWorkcardManagement jobId={workcard.id} showBookingTab={false}/></div>:<div className="brv-ticket-workcard-create"><AdminCreateJob initialQuoteId={acceptedQuote.id} onCreated={()=>void load()}/></div>)}
    {acceptedQuote&&!canManageJobs&&<p className="panel-footnote">The quote has been accepted. A user with Workcard management permission can create the Workcard.</p>}
