@@ -33,6 +33,8 @@ test("accepted quote converts the Jobcard into a pre-populated Workcard without 
  assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"The approved scope remains attached to the Workcard.");
  assert.ok(route.includes("const plannedEntries="),"Accepted quote lines must become prepared Workcard entries.");
  assert.ok(route.includes("source_quote_item_id:item.id"),"Each prepared line must retain its source quote line.");
+ assert.ok(route.includes('update({stage:"converted",status:"converted"'),"The original Jobcard must record its conversion to a Workcard.");
+ assert.ok(route.includes("enquiry_stage_history"),"The Jobcard conversion must be recorded in its stage history.");
  assert.ok(route.includes("quantity_required:Number(item.quantity)"),"Required quantities must be carried into the Workcard.");
  assert.ok(route.includes("quantity_used:0"),"Planned quantities must not be mistaken for actual usage.");
  assert.ok(route.includes("invoiceable:false"),"Prepared quote lines must not be invoiced before actual work is recorded.");
@@ -42,7 +44,7 @@ test("accepted quote converts the Jobcard into a pre-populated Workcard without 
 test("staff Workcard API returns prepared quote lines and supports recording actual quantities, costs and parts orders",async()=>{
  const list=await read("../src/app/api/staff/jobs/route.ts");
  const entries=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
- for(const field of ["source_quote_item_id","quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
+ for(const field of ["source_quote_item_id","quantity_required","quantity_used","quantity_ordered","quantity_received","quantity_returned","part_order_status","supplier_order_reference","cost_unit_price","part_number","supplier_name","invoiceable"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
  assert.ok(entries.includes("export async function PATCH"),"Workers must update prepared lines instead of re-entering them.");
  for(const field of ["quantity_required","quantity_used","cost_unit_price","supplier_name","part_number","invoiceable"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
  assert.ok(entries.includes("work_order.entry_updated"),"Worker changes must be audited.");
@@ -131,4 +133,12 @@ test("worker completion data is returned on the original customer Jobcard",async
  assert.ok(page.includes("work_summary"),"The worker completion summary must return to the Jobcard.");
  assert.ok(page.includes('eq("customer_visible",true)'),"Only customer-visible completed work may be shown.");
  assert.ok(page.includes("CustomerWorkApproval"),"The customer Jobcard must expose the review and handover step.");
+});
+
+
+test("worker Workcard includes the original Jobcard description, contact context and submitted files",async()=>{
+ const route=await read("../src/app/api/staff/jobs/route.ts");
+ const ui=await read("../src/components/staff-work-orders.tsx");
+ for(const field of ["requested_service","description","location","contact_name","enquiry_attachments","createSignedUrl"])assert.ok(route.includes(field),"Missing original Jobcard context: "+field);
+ for(const token of ["ORIGINAL JOBCARD REQUEST","jobcardAttachments","Original customer Jobcard attachment"])assert.ok(ui.includes(token),"Missing original Jobcard details on worker Workcard: "+token);
 });
