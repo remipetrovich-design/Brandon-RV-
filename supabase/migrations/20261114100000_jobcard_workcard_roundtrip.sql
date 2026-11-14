@@ -66,6 +66,8 @@ WHERE j.quote_id IS NOT NULL
 UPDATE public.enquiries e
 SET stage='converted',status='converted',updated_at=now()
 WHERE e.stage IS DISTINCT FROM 'converted'
+  AND e.stage <> 'closed'
+  AND e.status <> 'closed'
   AND EXISTS (
     SELECT 1 FROM public.quotes q
     JOIN public.jobs j ON j.quote_id=q.id
