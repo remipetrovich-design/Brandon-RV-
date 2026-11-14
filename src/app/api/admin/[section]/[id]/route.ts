@@ -1,6 +1,7 @@
 import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
 import {sendEmail} from "@/lib/email";
 import {bookingTravelBuffer,validateBookingWindow} from "@/lib/booking-rules";
+import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const config:any={
  enquiries:{table:"enquiries",permission:"enquiries.manage",status:["new","reviewing","quoted","accepted","declined","converted","closed"],fields:["status","internal_notes"]},
@@ -42,9 +43,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    appointment=result.data;
    if(result.error||!appointment)return jsonError("Could not load the appointment.",404);
    const startsAt=new Date(String(update.starts_at??appointment.starts_at??appointment.preferred_start??""));
-   const endsAt=new Date(String(update.ends_at??appointment.ends_at??appointment.preferred_end??""));
+   const endValue=update.ends_at!==undefined?update.ends_at:appointment.ends_at;
+   const endsAt=endValue?new Date(String(endValue)):null;
    const location=String(update.location??appointment.location??"").trim();
-   if(!location||!Number.isFinite(startsAt.getTime())||!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)return jsonError("Set the agreed date, start time, finish time and service location.");
+   const bypassRestrictions=isManagerOrAbove(user.user_role);
+   if(!location||!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Set a valid booking start time and service location.");
    if(appointment.quote_id){
     const quoteResult=await db.from("quotes").select("id,quote_number,status,enquiry_id").eq("id",appointment.quote_id).eq("business_id",membership.business_id).maybeSingle();quote=quoteResult.data;
     if(!quote||quote.status!=="accepted")return jsonError("The linked quote must be accepted before confirming this booking.",409);
@@ -58,12 +61,14 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    if(linkedWorkcard.appointment_id&&linkedWorkcard.appointment_id!==id)return jsonError("This Workcard is already linked to another appointment.",409);
    const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",membership.business_id).maybeSingle();
    const settings=(settingsRow?.settings&&typeof settingsRow.settings==="object"?settingsRow.settings:{}) as unknown as import("@/lib/booking-rules").BookingPolicy;
-   const policyError=validateBookingWindow(startsAt,endsAt,settings);if(policyError)return jsonError(policyError,409);
-   const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
-   const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",membership.business_id).neq("id",id).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
-   if(conflictError)return jsonError("Could not verify calendar availability.",500);
-   if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
-   update.starts_at=startsAt.toISOString();update.ends_at=endsAt.toISOString();update.location=location;
+   const policyError=validateBookingWindow(startsAt,endsAt,settings,new Date(),bypassRestrictions);if(policyError)return jsonError(policyError,409);
+   if(endsAt&&!bypassRestrictions){
+    const buffer=bookingTravelBuffer(settings),bufferedStart=new Date(startsAt.getTime()-buffer*60000).toISOString(),bufferedEnd=new Date(endsAt.getTime()+buffer*60000).toISOString();
+    const {data:conflicts,error:conflictError}=await db.from("appointments").select("id").eq("business_id",membership.business_id).neq("id",id).in("status",["confirmed","rescheduled"]).not("starts_at","is",null).lt("starts_at",bufferedEnd).gt("ends_at",bufferedStart).limit(1);
+    if(conflictError)return jsonError("Could not verify calendar availability.",500);
+    if(conflicts?.length)return jsonError("That time conflicts with another booking or its travel buffer.",409);
+   }
+   update.starts_at=startsAt.toISOString();update.ends_at=endsAt?.toISOString()??null;update.location=location;
    if(update.status==="confirmed"){update.confirmed_by=user.id;update.confirmed_at=new Date().toISOString();}
   }
   update.updated_at=new Date().toISOString();
