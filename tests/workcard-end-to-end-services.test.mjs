@@ -45,6 +45,11 @@ test("staff Workcard API returns prepared quote lines and supports recording act
  const list=await read("../src/app/api/staff/jobs/route.ts");
  const entries=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
  for(const field of ["source_quote_item_id","quantity_required","quantity_used","quantity_ordered","quantity_received","quantity_returned","part_order_status","supplier_order_reference","cost_unit_price","part_number","supplier_name","invoiceable"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
+ assert.ok(list.includes("const firstRelation="),"Nested Supabase relations must be normalised to single records before returning Workcards.");
+ assert.ok(list.includes("firstRelation(x.quotes)"),"The quote relationship must be returned as one quote record.");
+ assert.ok(list.includes("firstRelation(quote?.enquiries)"),"The original Jobcard relationship must be returned as one Jobcard record.");
+ assert.ok(list.includes("firstRelation(enquiry.vehicles)"),"The Jobcard vehicle relationship must be returned as one vehicle record.");
+ assert.ok(list.includes("firstRelation(x.vehicles)"),"The appointment vehicle relationship must be returned as one vehicle record.");
  assert.ok(entries.includes("export async function PATCH"),"Workers must update prepared lines instead of re-entering them.");
  for(const field of ["quantity_required","quantity_used","cost_unit_price","supplier_name","part_number","invoiceable"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
  assert.ok(entries.includes("work_order.entry_updated"),"Worker changes must be audited.");
