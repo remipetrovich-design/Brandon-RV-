@@ -14,6 +14,7 @@ import AdminCustomerResetLink from "@/components/admin-customer-reset-link";
 import AdminCustomerEmailVerification from "@/components/admin-customer-email-verification";
 import AdminCreateCustomer from "@/components/admin-create-customer";
 import AdminCreateAppointment from "@/components/admin-create-appointment";
+import AdminAccessDenied from "@/components/admin-access-denied";
 export const dynamic="force-dynamic";
 const sections:any={
  enquiries:{title:"All enquiries",permission:"enquiries.view",table:"enquiries",columns:"id,request_number,request_type,contact_name,email,phone,requested_service,status,location,created_at",fields:["request_number","request_type","contact_name","email","phone","requested_service","status","location","created_at"]},
@@ -40,7 +41,7 @@ export default async function AdminSectionPage({params,searchParams}:{params:Pro
  const {section}=await params;if(section==="website")redirect("/admin/website-builder");if(section==="general-enquiries")redirect("/admin/enquiries?type=general_enquiry");if(section==="customer-enquiries")redirect("/admin/enquiries?type=customer_enquiry");if(section==="quote-requests")redirect("/admin/enquiries?type=quote_request");if(section==="enquiries")redirect("/admin/enquiries");const config=sections[section];if(!config)notFound();
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/staff");
- if(!(await userHasPermission(user.id,config.permission)))redirect("/admin");
+ if(!(await userHasPermission(user.id,config.permission)))return <AdminAccessDenied resource={"the "+config.title.toLowerCase()+" page"}/>;
  const canManageCustomers=section==="customers"&&await userHasPermission(user.id,"customers.manage");
  const canManageAppointments=section==="appointments"&&await userHasPermission(user.id,"appointments.manage");
  const canManageJobs=section==="jobs"&&await userHasPermission(user.id,"jobs.manage");
